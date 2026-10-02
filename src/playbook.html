@@ -469,6 +469,8 @@ td .pre { white-space: pre-line; }
     <div class="stack">
     <form class="card stack" id="tform" autocomplete="off">
       <fieldset>
+        <div class="field"><label for="f-preset">Load a real order</label>
+          <select id="f-preset"><option value="13073">WN-13073 · Sumner · 1 pallet cat food · T3RA</option><option value="13026">WN-13026 · Sumner · 2 pallets · Cheema</option></select></div>
         <legend>Identity</legend>
         <div class="row2">
           <div class="field"><label for="f-whn">WarehouseNow PO#</label><input id="f-whn" class="po" type="text" value="13073"></div>
@@ -493,7 +495,7 @@ td .pre { white-space: pre-line; }
         <div class="row2">
           <div class="field"><label for="f-recv">Refused at depot on (sticker date)</label><input id="f-recv" type="date" value="2026-10-02"></div>
           <div class="field"><label for="f-stage">Pallet status for the ADW email</label>
-            <select id="f-stage"><option value="arriving">on its way to the WH</option><option value="today" selected>offloaded and being reworked today</option><option value="done">offloaded and reworked</option></select></div>
+            <select id="f-stage"><option value="arriving">on its way to the WH</option><option value="today">offloaded and being reworked today</option><option value="done">offloaded and reworked</option></select></div>
           <div class="field"><label for="f-whov">Rework WH (leave blank to use the sheet's)</label><input id="f-whov" type="text" placeholder="e.g. JRY Warehouse"></div>
         </div>
         <div class="row2">
@@ -1296,7 +1298,20 @@ function addSkuLine(sku = '', qty = '') {
   div.querySelector('button').addEventListener('click', () => { div.remove(); build(); });
   $('#skuLines').appendChild(div);
 }
-addSkuLine('450195', '1 pallet');
+const PRESETS = {
+  '13073': { whn: '13073', date: '2026-10-02', po: '1710918504', carrier: 'T3RA', origin: 'Ripon CA 95366', skus: [['450195', '1 pallet refused 60 SU']], recv: '2026-10-02', stage: 'arriving', plts: 1, rw: 1 },
+  '13026': { whn: '13026', date: '2026-10-01', po: '1710917341', carrier: 'Cheema', origin: 'Lathrop CA 95330', skus: [['1101794', '1 pallet refused 60 SU'], ['25350', '1 pallet refused 28 SU']], recv: '2026-10-01', stage: 'arriving', plts: 2, rw: 2 },
+};
+function loadPreset(k) {
+  const pr = PRESETS[k]; if (!pr) return;
+  $('#f-whn').value = pr.whn; $('#f-date').value = pr.date; $('#f-po').value = pr.po;
+  $('#f-carrier').value = pr.carrier; $('#f-origin').value = pr.origin; $('#f-recv').value = pr.recv; $('#f-stage').value = pr.stage;
+  $('#f-reason').value = 'Damage'; $('#f-disp').value = 'Rework'; $('#f-whov').value = ''; $('#f-payer').value = 'diamond';
+  $('#f-plts').value = pr.plts; $('#f-rw').value = pr.rw; $('#f-redel').checked = true; $('#f-ot').checked = false; $('#f-ltl').value = 0;
+  $('#skuLines').innerHTML = ''; pr.skus.forEach(([sku, q]) => addSkuLine(sku, q));
+}
+$('#f-preset').addEventListener('change', e => { loadPreset(e.target.value); build(); });
+addSkuLine('450195', '1 pallet refused 60 SU');
 $('#addSku').addEventListener('click', () => { addSkuLine(); build(); });
 $('#tform').addEventListener('input', build);
 $('#tform').addEventListener('change', build);
@@ -1318,6 +1333,10 @@ function build() {
     return s ? { ...s, qty: l.querySelector('input').value.trim() } : null;
   }).filter(Boolean);
   const qtyText = lines.map(l => l.qty).filter(Boolean).join(' + ');
+  // Diamond's sheet puts the total on the ticket ("2 pallets"); per-SKU detail lives in the SKU rows
+  const totPl = Math.max(0, +$('#f-plts').value || 0);
+  const anyPallet = lines.some(l => /pallet|plt/i.test(l.qty));
+  const ticketQty = lines.length > 1 || anyPallet ? `${totPl} pallet${totPl === 1 ? '' : 's'}` : qtyText;
   const retDest = disp === 'Rework' ? dest : disp === 'Return' ? origin : '';
 
   $('#t-id').textContent = `WN ${whn || '—'} · PO ${po || '—'}`;
@@ -1332,9 +1351,9 @@ function build() {
   ].join('') + (wh ? `<div style="grid-column:1/-1"><span class="label">WH details for the cx (carrier) and the ADW email</span><span class="v" style="font-weight:400;white-space:pre-line">${esc(wh.address)}\nHours: ${esc(wh.hours)}\n${esc(wh.contact)}</span></div>` : '');
 
   // View Engine B32: TEXTJOIN(", ", Costco PO, Qty, Disposition, Origin, Destination - WHNow PO)
-  const subject = [po, qtyText, disp, origin, dest ? `${dest} - ${whn}` : ''].filter(Boolean).join(', ');
+  const subject = [po, ticketQty, disp, origin, dest ? `${dest} - ${whn}` : ''].filter(Boolean).join(', ');
   $('#t-subject').textContent = subject || '—';
-  $('#t-whsub').textContent = `WN-${whn} Rework Diamond pet food ${qtyText}`.trim();
+  $('#t-whsub').textContent = `WN-${whn} Rework Diamond pet food ${ticketQty}`.trim();
 
   const team = 'diamondosd@diamondpet.com, diamondpet@warehousenow.com';
   $('#t-cx').value = wh ? `Team
@@ -1361,13 +1380,13 @@ Thank you!` : 'Enter a Costco PO with a go-to warehouse to build the confirmatio
   // Same order as the ticket image in the ADW email: date, PO, qty, reason, carrier, disposition, origin, WH, WN#
   const whName = v('#f-whov') || (wh ? wh.code : '');
   const tDate = v('#f-date') ? new Date(v('#f-date') + 'T12:00').toLocaleDateString('en-US') : '';
-  const card = [tDate, po, qtyText, v('#f-reason'), v('#f-carrier'), disp, origin, whName, whn].filter(Boolean);
+  const card = [tDate, po, ticketQty, v('#f-reason'), v('#f-carrier'), disp, origin, whName, whn].filter(Boolean);
   $('#t-card').textContent = card.join('\n') || '—';
   const recv = v('#f-recv') ? new Date(v('#f-recv') + 'T12:00') : null;
   const daysAgo = recv ? Math.round((new Date().setHours(12) - recv) / 864e5) : null;
   const recvWord = !recv ? '[day]' : daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : daysAgo < 7 ? 'on ' + recv.toLocaleDateString('en-US', { weekday: 'long' }) : 'on ' + recv.toLocaleDateString('en-US');
   const st = (dest.match(/,\s*([A-Z]{2})$/) || [])[1] || 'the';
-  const stage = { arriving: 'the pallet is on its way to our warehouse for rework', today: 'pallet was offloaded and is being reworked today', done: 'pallet was offloaded and has been reworked' }[v('#f-stage')];
+  const stage = { arriving: `the ${totPl > 1 ? 'pallets are' : 'pallet is'} on the way to our warehouse for rework`, today: `${totPl > 1 ? 'pallets were' : 'pallet was'} offloaded and ${totPl > 1 ? 'are' : 'is'} being reworked today`, done: `${totPl > 1 ? 'pallets were' : 'pallet was'} offloaded and ${totPl > 1 ? 'have' : 'has'} been reworked` }[v('#f-stage')];
   const hour = new Date().getHours();
   $('#t-email').value =
 `From: requests@warehousenow.com
