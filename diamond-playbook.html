@@ -487,6 +487,7 @@ Jacob</div><button class="btn" type="button" data-copy="wed-email">Copy</button>
     <div class="card stack">
       <h3>Glossary</h3>
       <dl class="gloss" style="border:0">
+        <div><dt>cx</dt><dd>The customer. On Diamond loads that's usually the carrier</dd></div>
         <div><dt>OS&amp;D</dt><dd>Over, Short &amp; Damaged</dd></div>
         <div><dt>SU</dt><dd>Single units (loose bags) instead of full pallets, e.g. "3 SU"</dd></div>
         <div><dt>ADW / ADWW</dt><dd>The Costco-side reps for each depot. They receive the ticket</dd></div>
@@ -596,7 +597,7 @@ const skuBy = c => D.skus.find(s => s.costco === String(c));
 /* ---------- triage ---------- */
 const CASES = [
   { id: 'rework', t: 'Damaged pallets', s: 'Standard rework, ~87% of tickets',
-    steps: ['Confirm #qb-team opened the Slack channel / AT order', 'Collect BOL, receiver rejection sticker and pallet photos from the carrier', 'Decode the depot from the Costco PO and find the go-to WH (e.g. Frederick MD → Runners Inc)', 'Send the order to that WH', 'Send the WH address to the cx (name, address, hours, check-in #; ask for driver info + ETA)', 'Email the WH with the WN#, paperwork + photos. Pin the subject in Slack', 'Make the ticket in Diamond\u2019s sheet', 'Report to ADW: email the ticket card, BOL, SKU page and photos to the depot\u2019s ADW contacts + Diamond OS&D + diamondpet@', 'Update the app and mark the order as approved', 'Watch the ADW email thread for replies', 'Get arrival photos + rework timing from the WH and post them in Slack', 'Get the damage count in bags by SKU / Item ID (by color if mixed)', 'Get reworked pallet photos. Status → Ready', 'Book the appointment in the Costco portal (2+ days out). Status → Requested', 'On APPROVED / APPT REVISED, send confirmation #, time and exact PO#s. Status → Scheduled', 'After delivery get the POD with the sticker listing all PO#s. Status → Delivered', 'Enter charges. Status → Invoiced'],
+    steps: ['Confirm #qb-team opened the Slack channel / AT order', 'Collect BOL, receiver rejection sticker and pallet photos from the carrier', 'Decode the depot from the Costco PO and find the go-to WH (e.g. Frederick MD → Runners Inc)', 'Send the order to that WH', 'Send the WH address to the cx, the customer (usually the carrier): name, address, hours, check-in #. Ask for driver info + ETA', 'Email the WH with the WN#, paperwork + photos. Pin the subject in Slack', 'Make the ticket in Diamond\u2019s sheet', 'Report to ADW: email the ticket card, WH address, BOL, SKU page and photos to the depot\u2019s ADW contacts + Diamond OS&D + diamondpet@', 'Update the app and mark the order as approved', 'Watch the ADW email thread for replies', 'Get arrival photos + rework timing from the WH and post them in Slack', 'Get the damage count in bags by SKU / Item ID (by color if mixed)', 'Get reworked pallet photos. Status → Ready', 'Book the appointment in the Costco portal (2+ days out). Status → Requested', 'On APPROVED / APPT REVISED, send confirmation #, time and exact PO#s. Status → Scheduled', 'After delivery get the POD with the sticker listing all PO#s. Status → Delivered', 'Enter charges. Status → Invoiced'],
     side: [['ok', 'Bill: $25/plt handling + $65/plt rework + $400 redelivery.'], ['', 'Real example: Costco PO 10520914317, 2 pallets damaged, Pace Logistics from Gaston SC → Frederick depot (1052) → Runners Inc (RUN-FRE-MD), WN# 12840. Ticket went to Krista Davidson + Jenniffer Vasiento.'], ['', 'If the depot is on Master POs (Mira Loma), hold the pallets and use the Wednesday cycle instead of booking right away.']] },
   { id: 'small', t: '≤5 damaged bags', s: 'Driver handles it at the next stop',
     steps: ['No WH needed. The driver can donate or dispose at the next stop', '#qb-team sends the OS&D note: "Per SOP, driver is okay to donate or dispose of the N damaged bags."', 'Create the ticket. Disposition: Donate / Dispose, Qty in SU', 'Send the ticket to ADW via #qb-team', 'Status → Disposed'],
@@ -690,7 +691,7 @@ function build() {
     cell('Return destination', retDest, disp === 'Donate / Dispose' ? 'None (disposed)' : '—'),
     cell('ADW contact', reps.map(r => r.name).join(', '), depot ? 'No ADW contact mapped' : '—'),
     cell('ADW email', reps.map(r => r.email).join(', '), '—'),
-  ].join('') + (wh ? `<div style="grid-column:1/-1"><span class="label">WH details for the carrier</span><span class="v" style="font-weight:400;white-space:pre-line">${esc(wh.address)}\nHours: ${esc(wh.hours)}\n${esc(wh.contact)}</span></div>` : '');
+  ].join('') + (wh ? `<div style="grid-column:1/-1"><span class="label">WH details for the cx (carrier) and the ADW email</span><span class="v" style="font-weight:400;white-space:pre-line">${esc(wh.address)}\nHours: ${esc(wh.hours)}\n${esc(wh.contact)}</span></div>` : '');
 
   // View Engine B32: TEXTJOIN(", ", Costco PO, Qty, Disposition, Origin, Destination - WHNow PO)
   const subject = [po, qtyText, disp, origin, dest ? `${dest} - ${whn}` : ''].filter(Boolean).join(', ');
@@ -710,7 +711,12 @@ Team,
 Please see the ticket below for refused Diamond product.
 
 ${card.join('\n')}
-
+${wh ? `
+Rework warehouse:
+${wh.name || wh.code}
+${wh.address}
+Hours: ${wh.hours}
+` : ''}
 Items & quantities refused:
 ${itemLines}
 
