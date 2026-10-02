@@ -162,6 +162,7 @@ textarea { font-family: var(--mono); font-size: .82rem; line-height: 1.5; resize
 .auto .v.miss { color: var(--bad); font-weight: 500; }
 .copyrow { display: flex; gap: 8px; align-items: start; }
 .copyrow .box { flex: 1; min-width: 0; padding: 8px 10px; background: var(--sunken); border: 1px solid var(--line); border-radius: 4px; font-family: var(--mono); font-size: .84rem; overflow-wrap: anywhere; }
+.tcard { flex: 1; min-width: 0; background: #ffffff; color: #111111; border: 1px solid var(--line); border-radius: 4px; padding: 14px 10px; text-align: center; font: 500 .9rem/1.6 var(--body); white-space: pre-line; }
 .money { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; font-variant-numeric: tabular-nums; font-size: .94rem; }
 .money .tot { font: 700 1.5rem/1.2 var(--display); border-top: 1px solid var(--line); padding-top: 6px; }
 .money span:nth-child(even) { text-align: right; font-family: var(--mono); }
@@ -389,6 +390,10 @@ td .pre { white-space: pre-line; }
         <div class="ticket-body">
           <div class="auto" id="t-auto"></div>
           <div class="stack" style="gap:6px">
+            <span class="label">Ticket card (screenshot it and attach it to the ADW email)</span>
+            <div class="copyrow"><div class="tcard" id="t-card"></div><button class="btn" type="button" data-copy="t-card">Copy</button></div>
+          </div>
+          <div class="stack" style="gap:6px">
             <span class="label">Subject line</span>
             <div class="copyrow"><div class="box" id="t-subject"></div><button class="btn" type="button" data-copy="t-subject">Copy</button></div>
           </div>
@@ -396,7 +401,12 @@ td .pre { white-space: pre-line; }
             <span class="label">Email draft</span>
             <textarea id="t-email" rows="16" aria-label="Email draft" readonly></textarea>
             <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" data-copy="t-email">Copy email</button></div>
-            <p style="font-size:.82rem;color:var(--muted)">This draft uses the fields from View Ticket. The sheet's own <em>Create Email Draft</em> button may lay it out differently.</p>
+            <p style="font-size:.82rem;color:var(--muted)">Laid out like the ADW emails you already send. Everyone goes on the To line: the depot's ADW contacts, Diamond OS&amp;D and diamondpet@warehousenow.com.</p>
+          </div>
+          <div class="stack" style="gap:6px">
+            <span class="label">Attach before sending</span>
+            <ol class="check" id="t-attach"></ol>
+            <div class="note">ADW replies come back in this same thread after the ticket goes out. Keep it as the record for this PO and pin the subject in Slack.</div>
           </div>
           <div class="stack" style="gap:6px">
             <span class="label" id="t-money-label">Invoice to Diamond</span>
@@ -586,8 +596,8 @@ const skuBy = c => D.skus.find(s => s.costco === String(c));
 /* ---------- triage ---------- */
 const CASES = [
   { id: 'rework', t: 'Damaged pallets', s: 'Standard rework, ~87% of tickets',
-    steps: ['Confirm #qb-team opened the Slack channel / AT order', 'Collect BOL, receiver rejection sticker and pallet photos from the carrier', 'Decode the depot from the Costco PO and pick the go-to WH (Ticket builder)', 'Send carrier WH name, address, hours, check-in #; ask for driver info + ETA', 'Email the WH: Diamond load inbound, attach paperwork + photos. Pin the subject in Slack', 'Create the ticket and send it to the ADW contact(s), CC diamondpet@ and diamondosd@', 'Get arrival photos + rework timing from the WH and post them in Slack', 'Get the damage count in bags by SKU / Item ID (by color if mixed)', 'Get reworked pallet photos. Status → Ready', 'Book the appointment in the Costco portal (2+ days out). Status → Requested', 'On APPROVED / APPT REVISED, send confirmation #, time and exact PO#s. Status → Scheduled', 'After delivery get the POD with the sticker listing all PO#s. Status → Delivered', 'Enter charges. Status → Invoiced'],
-    side: [['ok', 'Bill: $25/plt handling + $65/plt rework + $400 redelivery.'], ['', 'If the depot is on Master POs (Mira Loma), hold the pallets and use the Wednesday cycle instead of booking right away.']] },
+    steps: ['Confirm #qb-team opened the Slack channel / AT order', 'Collect BOL, receiver rejection sticker and pallet photos from the carrier', 'Decode the depot from the Costco PO and find the go-to WH (e.g. Frederick MD → Runners Inc)', 'Send the order to that WH', 'Send the WH address to the cx (name, address, hours, check-in #; ask for driver info + ETA)', 'Email the WH with the WN#, paperwork + photos. Pin the subject in Slack', 'Make the ticket in Diamond\u2019s sheet', 'Report to ADW: email the ticket card, BOL, SKU page and photos to the depot\u2019s ADW contacts + Diamond OS&D + diamondpet@', 'Update the app and mark the order as approved', 'Watch the ADW email thread for replies', 'Get arrival photos + rework timing from the WH and post them in Slack', 'Get the damage count in bags by SKU / Item ID (by color if mixed)', 'Get reworked pallet photos. Status → Ready', 'Book the appointment in the Costco portal (2+ days out). Status → Requested', 'On APPROVED / APPT REVISED, send confirmation #, time and exact PO#s. Status → Scheduled', 'After delivery get the POD with the sticker listing all PO#s. Status → Delivered', 'Enter charges. Status → Invoiced'],
+    side: [['ok', 'Bill: $25/plt handling + $65/plt rework + $400 redelivery.'], ['', 'Real example: Costco PO 10520914317, 2 pallets damaged, Pace Logistics from Gaston SC → Frederick depot (1052) → Runners Inc (RUN-FRE-MD), WN# 12840. Ticket went to Krista Davidson + Jenniffer Vasiento.'], ['', 'If the depot is on Master POs (Mira Loma), hold the pallets and use the Wednesday cycle instead of booking right away.']] },
   { id: 'small', t: '≤5 damaged bags', s: 'Driver handles it at the next stop',
     steps: ['No WH needed. The driver can donate or dispose at the next stop', '#qb-team sends the OS&D note: "Per SOP, driver is okay to donate or dispose of the N damaged bags."', 'Create the ticket. Disposition: Donate / Dispose, Qty in SU', 'Send the ticket to ADW via #qb-team', 'Status → Disposed'],
     side: [['', 'No new Slack channel or AT order for this.']] },
@@ -686,35 +696,32 @@ function build() {
   const subject = [po, qtyText, disp, origin, dest ? `${dest} - ${whn}` : ''].filter(Boolean).join(', ');
   $('#t-subject').textContent = subject || '—';
 
-  const cc = 'diamondpet@warehousenow.com, diamondosd@diamondpet.com';
-  const first = reps.map(r => r.name.trim().split(/\s+/)[0]).join(' / ') || 'team';
+  const team = 'diamondosd@diamondpet.com, diamondpet@warehousenow.com';
   const itemLines = lines.length ? lines.map(l => `  • ${l.costco}  ${l.size} ${l.name}  —  ${l.qty || '?'}`).join('\n') : '  • (add SKUs)';
+  // Same order as the ticket image in the ADW email: PO, qty, reason, carrier, disposition, origin, WH code, WN#
+  const card = [po, qtyText, v('#f-reason'), v('#f-carrier'), disp, origin, wh ? wh.code : '', whn].filter(Boolean);
+  $('#t-card').textContent = card.join('\n') || '—';
   $('#t-email').value =
-`To: ${reps.map(r => r.email).join(', ') || '[ADW contact]'}
-Cc: ${cc}
+`To: ${[...reps.map(r => r.email), team].join(', ')}
 Subject: ${subject}
 
-Hello ${first},
+Team,
 
 Please see the ticket below for refused Diamond product.
 
-Date:              ${v('#f-date')}
-Costco PO:         ${po}
-WarehouseNow PO:   ${whn}
-Carrier:           ${v('#f-carrier')}
-Origin:            ${origin}
-Destination:       ${dest}${depot ? ' (' + depot.code + ')' : ''}
-Reason refused:    ${v('#f-reason')}
-Disposition:       ${disp}
-Rework WH:         ${wh ? wh.code : ''}
-Return destination:${retDest ? ' ' + retDest : ''}
+${card.join('\n')}
 
 Items & quantities refused:
 ${itemLines}
 
+Attached: ticket, BOL, page with SKU #s and pallet photos.
+
 Thank you,
 Jacob
 WarehouseNow`;
+  const att = ['Ticket card screenshot', 'BOL', 'Page with the SKU #s (from the BOL / initial order)', 'Pallet photos', 'Receiver rejection sticker'];
+  const prevAtt = [...document.querySelectorAll('#t-attach input:checked')].map(i => i.id);
+  $('#t-attach').innerHTML = att.map((a, i) => `<li><input type="checkbox" id="att-${i}" ${prevAtt.includes('att-' + i) ? 'checked' : ''}><label for="att-${i}">${esc(a)}</label></li>`).join('');
 
   // charges
   const n = id => Math.max(0, +$(id).value || 0);
