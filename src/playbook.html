@@ -877,12 +877,12 @@ function warehouseFor(dest) {
 }
 // People seen on real ADW threads who aren't in Diamond's contact sheet yet
 const EXTRA_ADW = {
-  '171': [{ name: 'Grey Secord', email: 'Gsecord@acosta.com', note: 'NW Sales Support (Acosta), on the WN-13073 thread' }],
-  '584': [{ name: 'Grey Secord', email: 'Gsecord@acosta.com', note: 'NW Sales Support (Acosta)' }],
+  '171': [{ name: 'Grey Secord', email: 'Gsecord@acosta.com', cc: true, note: 'NW Sales Support (Acosta). On carrier threads only, not in Diamond\u2019s sheet or the ticket email' }],
+  '584': [{ name: 'Grey Secord', email: 'Gsecord@acosta.com', cc: true, note: 'NW Sales Support (Acosta). Not in Diamond\u2019s sheet' }],
 };
 function adwwFor(code) {
   const ids = [...new Set(D.adwwMap.filter(m => m.code === code).map(m => m.contact))];
-  return [...ids.map(id => D.contacts[id]).filter(Boolean), ...(EXTRA_ADW[code] || [])];
+  return ids.map(id => D.contacts[id]).filter(Boolean);
 }
 const skuBy = c => D.skus.find(s => s.costco === String(c));
 
@@ -975,7 +975,7 @@ function buildAppt() {
     cell('Unload · Commodity', 'LIVE · Pet Food'),
   ].join('');
 
-  const to = [...reps.map(r => r.email), 'diamondosd@diamondpet.com'].join(', ');
+  const to = [...reps.filter(r => !r.cc).map(r => r.email), 'diamondosd@diamondpet.com', ...reps.filter(r => r.cc).map(r => r.email + ' (cc)')].join(', ');
   const miniText = minis.map(m => `${m.po} – ${m.plts} pallet${m.plts === 1 ? '' : 's'} item ${m.item || '?'} // WN-${m.wn || '?'}`).join('\n\n');
   $('#m-req').value =
 `To: ${to}
@@ -1352,7 +1352,7 @@ function build() {
     cell('Go-to WH (Return Origin)', v('#f-whov') ? v('#f-whov') + ' (typed in)' : wh ? `${wh.code} · ${wh.name || '(no name)'}` : '', dest ? 'No go-to WH for this city' : '—'),
     cell('Return destination', retDest, disp === 'Donate / Dispose' ? 'None (disposed)' : '—'),
     cell('ADW contact', reps.map(r => r.name).join(', '), depot ? 'No ADW contact mapped' : '—'),
-    cell('ADW email', reps.map(r => r.email).join(', '), '—'),
+    cell('ADW email', reps.map(r => r.email + (r.cc ? ' (cc)' : '')).join(', '), '—'),
   ].join('') + (wh ? `<div style="grid-column:1/-1"><span class="label">WH details for the cx (carrier) and the ADW email</span><span class="v" style="font-weight:400;white-space:pre-line">${esc(wh.address)}\nHours: ${esc(wh.hours)}\n${esc(wh.contact)}</span></div>` : '');
 
   // View Engine B32: TEXTJOIN(", ", Costco PO, Qty, Disposition, Origin, Destination - WHNow PO)
@@ -1400,8 +1400,8 @@ Thank you!` : 'Enter a Costco PO with a go-to warehouse to build the confirmatio
   const hour = new Date().getHours();
   $('#t-email').value =
 `From: requests@warehousenow.com
-To: ${reps.map(r => r.email).join(', ') || '[ADW contact]'}
-Cc: ${team}
+To: ${reps.filter(r => !r.cc).map(r => r.email).join(', ') || '[ADW contact]'}
+Cc: ${[team, ...reps.filter(r => r.cc).map(r => r.email)].join(', ')}
 Subject: ${subject}
 
 ${hour < 12 ? 'Morning' : 'Afternoon'}
@@ -1483,6 +1483,7 @@ Attached: ticket image, Costco sticker, merged PDF (photos, BOL, order confirmat
   const warns = [];
   if (!whn) warns.push(['bad', 'No WarehouseNow PO. Add it before the ticket goes out.']);
   if (whn) warns.push(['', `Reusing an older email as a template? Check that every WN# says ${whn}. On WN-13073 the first carrier confirmation still said #13026 from the last Sumner order.`]);
+  if (depot && EXTRA_ADW[depot.code]) warns.push(['', `${EXTRA_ADW[depot.code].map(c => c.name).join(', ')} isn\u2019t on Diamond\u2019s ticket email for this depot. If they\u2019re on the carrier\u2019s thread, they\u2019ll see your reply-all there.`]);
   if (wh && wh.code === 'GEF-TAC-WA') warns.push(['', 'GEF Logistics also goes by Syndicate Trucking. The sheet lists hours as 0800-1400 M-F, but 0800-1530 M-F went out on WN-13073. Confirm with Gloria which is right.']);
   if (depot && !depot.city) warns.push(['bad', `Depot ${depot.code} (${depot.facility}) has no city in the sheet, so Destination and Go-to WH come up blank. Fill them in by hand.`]);
   if (depot && !reps.length) warns.push(['bad', `No ADW contact mapped for code ${depot.code}. Ask Genderson who gets these.`]);
