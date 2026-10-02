@@ -1534,7 +1534,7 @@ function addSkuLine(sku = '', qty = '') {
 }
 const PRESETS = {
   '13073': { whn: '13073', date: '2026-10-02', po: '1710918504', carrier: 'T3RA', origin: 'Ripon CA 95366', skus: [['450195', '1 pallet refused 60 SU']], recv: '2026-10-02', stage: 'arriving', plts: 1, rw: 1 },
-  '13087': { whn: '13087', date: '2026-10-02', po: '1750917236', carrier: 'T3RA', origin: 'Rushville IN 46173', skus: [], why: 'the load shifting in transit (they kept 6 pallets of 52296)', recv: '2026-10-02', stage: 'arriving', plts: 31, rw: 31 },
+  '13087': { whn: '13087', date: '2026-10-02', po: '1750917236', carrier: 'T3RA', origin: 'Rushville IN 46173', skus: [['25350', '19 pallets refused 532 SU'], ['25347', '4 pallets refused 112 SU'], ['130317', '1 pallet refused 60 SU'], ['430541', '2 pallets refused 56 SU'], ['470974', '2 pallets refused 64 SU'], ['52296', '3 pallets refused 135 SU']], why: 'the load shifting in transit (they kept 6 pallets of 52296)', recv: '2026-10-02', stage: 'arriving', plts: 31, rw: 31 },
   '13026': { whn: '13026', date: '2026-10-01', po: '1710917341', carrier: 'Cheema', origin: 'Lathrop CA 95330', skus: [['1101794', '1 pallet refused 60 SU'], ['25350', '1 pallet refused 28 SU']], recv: '2026-10-01', stage: 'arriving', plts: 2, rw: 2 },
 };
 function loadPreset(k) {
