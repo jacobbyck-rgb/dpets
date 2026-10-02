@@ -167,6 +167,15 @@ textarea { font-family: var(--mono); font-size: .82rem; line-height: 1.5; resize
 .copyrow { display: flex; gap: 8px; align-items: start; }
 .copyrow .box { flex: 1; min-width: 0; padding: 8px 10px; background: var(--sunken); border: 1px solid var(--line); border-radius: 4px; font-family: var(--mono); font-size: .84rem; overflow-wrap: anywhere; }
 .tcard { flex: 1; min-width: 0; background: #ffffff; color: #111111; border: 1px solid var(--line); border-radius: 4px; padding: 14px 10px; text-align: center; font: 500 .9rem/1.6 var(--body); white-space: pre-line; }
+.timeline { list-style: none; margin: 0; padding: 0; display: grid; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.timeline li { display: grid; grid-template-columns: 120px minmax(0, 1fr) minmax(0, .9fr); gap: 6px 18px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.timeline li:last-child { border-bottom: 0; }
+.timeline .when { font-family: var(--mono); font-size: .8rem; color: var(--muted); display: grid; gap: 4px; align-content: start; }
+.timeline .when .chip { justify-self: start; font-family: var(--body); }
+.timeline .what b { font-weight: 600; }
+.timeline .what p { font-size: .93rem; }
+.timeline .lesson { font-size: .88rem; color: var(--muted); border-left: 3px solid var(--tag); padding-left: 10px; align-self: start; }
+@media (max-width: 760px) { .timeline li { grid-template-columns: 1fr; } }
 .mini-head, .mini-line { display: grid; grid-template-columns: minmax(0, 1.6fr) 70px minmax(0, 1fr) minmax(0, 1fr) 34px; gap: 6px; align-items: center; }
 .mini-head span { font-size: .78rem; color: var(--muted); }
 .money { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; font-variant-numeric: tabular-nums; font-size: .94rem; }
@@ -225,6 +234,7 @@ td .pre { white-space: pre-line; }
   <div class="wrap">
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button class="tab" role="tab" id="tab-process" aria-controls="process" aria-selected="true">How it works</button>
+      <button class="tab" role="tab" id="tab-example" aria-controls="example" aria-selected="false">Real order</button>
       <button class="tab" role="tab" id="tab-triage" aria-controls="triage" aria-selected="false">Triage</button>
       <button class="tab" role="tab" id="tab-ticket" aria-controls="ticket" aria-selected="false">Ticket builder</button>
       <button class="tab" role="tab" id="tab-appt" aria-controls="appt" aria-selected="false">Appointments</button>
@@ -272,14 +282,16 @@ td .pre { white-space: pre-line; }
         <ul><li>Get the POD with the receiving sticker listing <b>every</b> PO# (mandatory)</li><li>podrequests@costco.com for receiving history</li><li>POD status → Completed</li></ul>
         <p class="who"><b>Carrier/WH → Costco</b></p></div>
       <div class="step"><h3>Invoice Diamond</h3>
-        <ul><li>Handling $25/plt, rework $65/plt</li><li>Redelivery $400, OT/weekend $200</li><li>Status → Invoiced</li></ul>
-        <p class="who"><b>You → Ticket System</b></p></div>
+        <ul><li>Confirm who pays: Diamond or the carrier</li><li>Set Customer + Warehouse Final Cost in the app</li><li>App: Complete → Invoiced. Ticket System → Invoiced</li><li>Mariah sends all Diamond invoices</li></ul>
+        <p class="who"><b>You → app, Ticket System, Mariah</b></p></div>
     </div>
   </div>
 
   <div class="grid2">
     <div class="card stack">
-      <h3>Delivery status in the Ticket System</h3>
+      <h3>Two status tracks</h3>
+      <p class="lede" style="font-size:.94rem"><b>WarehouseNow app:</b> Quote Approved → ETA Received → Complete → Invoiced. Changes post to the order's Slack channel.</p>
+      <p class="label">Diamond's Ticket System</p>
       <p class="lede" style="font-size:.94rem">Each ticket moves left to right. Dashed statuses are side exits.</p>
       <div class="status-row">
         <span class="chip on">NA</span><span class="arrow">→</span>
@@ -308,7 +320,11 @@ td .pre { white-space: pre-line; }
         <dt>Jan Tappel</dt><dd>Diamond Key Account Coordinator. Owns the Master PO process (jtappel@diamondpet.com, 866-214-6945 x1126)</dd>
         <dt>ADW contacts</dt><dd>Costco-side reps, one set per depot. They get the ticket email</dd>
         <dt>diamondosd@</dt><dd>Diamond's OS&amp;D inbox, CC'd on every ticket</dd>
-        <dt>#qb-team</dt><dd>Opens Slack channels / AT orders, handles small OS&amp;D messages</dd>
+        <dt>Capri</dt><dd>Slack bot. Creates the order channel and posts quotes and status changes from the app</dd>
+        <dt>#qb-team</dt><dd>Intake (e.g. Anna). Tags @management, @qb and the owners, posts the BOL and photos</dd>
+        <dt>Jainy Maldonado</dt><dd>Ops follow-up. Makes tickets and chases the WH for counts</dd>
+        <dt>Grant</dt><dd>Saves quotes in the app and requests appointments</dd>
+        <dt>Mariah</dt><dd>Sends every Diamond invoice. Diamond wants invoices done a specific way</dd>
         <dt>Genderson</dt><dd>Current account owner. Handing off to Jacob by Oct 31</dd>
         <dt>Go-to WHs</dt><dd>Crossdocks near each Costco depot that do the rework</dd>
       </dl>
@@ -324,6 +340,26 @@ td .pre { white-space: pre-line; }
       <h3>Where refused loads ship from</h3>
       <div class="bars" id="originBars"></div>
     </div>
+  </div>
+</section>
+
+<!-- REAL ORDER -->
+<section class="panel" id="example" role="tabpanel" aria-labelledby="tab-example" hidden>
+  <div class="stack">
+    <h2>WN-11823 · Monroe Township, NJ</h2>
+    <p class="lede">A real order from the Slack channel <code>#11823-monroe-township-nj-rework-diamond-pet-foods-east</code>, start to finish. 24 pallets refused at the Monroe Township depot, reworked at Chem-Secure Solutions (Rob), carrier T3RA. Each step lists who did it and what to take from it.</p>
+  </div>
+  <dl class="kv card" style="grid-template-columns:max-content 1fr">
+    <dt>Customer (cx)</dt><dd>Diamond Pet Foods. Contact on the order: Ankita Srivastava, T3RA Logistics (the carrier)</dd>
+    <dt>Costco PO</dt><dd><code>1750826265</code> · depot 175 Monroe Township</dd>
+    <dt>Warehouse</dt><dd>Chem-Secure Solutions (CHE-MIL-NJ), Rob</dd>
+    <dt>Product</dt><dd>12 pallets <code>25347</code> KS Adult CH RC Veg + 12 pallets <code>25350</code> KS Adult LM RC Veg</dd>
+    <dt>Channel name</dt><dd><code>#&lt;WN&gt;-&lt;city&gt;-&lt;st&gt;-rework-diamond-pet-foods-&lt;region&gt;</code></dd>
+  </dl>
+  <ol class="timeline" id="timeline"></ol>
+  <div class="grid2">
+    <div class="note ok"><b>Genderson's handoff checklist:</b> 1. Check the POs match the Master PO or the OG PO. 2. Send to ADW.</div>
+    <div class="note bad"><b>Before invoicing:</b> confirm who pays. Here T3RA might be paying, not Diamond. Post the answer from the email chain in the channel so Mariah can invoice it.</div>
   </div>
 </section>
 
@@ -399,6 +435,10 @@ td .pre { white-space: pre-line; }
           <div class="stack" style="gap:6px">
             <span class="label">Ticket card (screenshot it and attach it to the ADW email)</span>
             <div class="copyrow"><div class="tcard" id="t-card"></div><button class="btn" type="button" data-copy="t-card">Copy</button></div>
+          </div>
+          <div class="stack" style="gap:6px">
+            <span class="label">WH email subject (pin it in the order channel)</span>
+            <div class="copyrow"><div class="box" id="t-whsub"></div><button class="btn" type="button" data-copy="t-whsub">Copy</button></div>
           </div>
           <div class="stack" style="gap:6px">
             <span class="label">Subject line</span>
@@ -565,7 +605,7 @@ Jacob</div><button class="btn" type="button" data-copy="wed-email">Copy</button>
       <div class="scroll"><table>
         <thead><tr><th>Charge</th><th class="num">Diamond direct</th><th class="num">Carrier pays</th></tr></thead>
         <tbody>
-          <tr><td>Handling (unload + reload), per pallet</td><td class="num">$25</td><td class="num">$15 + $15</td></tr>
+          <tr><td>Handling (unload + reload), per pallet</td><td class="num">$12.50 + $12.50</td><td class="num">$15 + $15</td></tr>
           <tr><td>Rework, per pallet</td><td class="num">$65</td><td class="num">$65</td></tr>
           <tr><td>Redelivery to Costco</td><td class="num">$400</td><td class="num">avoid*</td></tr>
           <tr><td>OT / weekend call</td><td class="num">$200</td><td class="num">—</td></tr>
@@ -586,6 +626,8 @@ Jacob</div><button class="btn" type="button" data-copy="wed-email">Copy</button>
         <div><dt>POD</dt><dd>Proof of delivery. Must show the receiving sticker with every PO#</dd></div>
         <div><dt>Depot code</dt><dd>First 3–4 digits of a Costco PO, e.g. <code>1052</code>0914317 is Frederick</dd></div>
         <div><dt>Rejection sticker</dt><dd>Costco's receiver sticker on refused freight. Mandatory from the carrier</dd></div>
+        <div><dt>OG PO</dt><dd>The original Costco PO on the refused load, before any Master PO</dd></div>
+        <div><dt>WHS EM</dt><dd>The warehouse email. Its subject gets pinned in the order channel</dd></div>
         <div><dt>PO refresh</dt><dd>Ask ADW to reissue a PO after a portal error or a missed appointment</dd></div>
       </dl>
     </div>
@@ -688,7 +730,7 @@ const skuBy = c => D.skus.find(s => s.costco === String(c));
 /* ---------- triage ---------- */
 const CASES = [
   { id: 'rework', t: 'Damaged pallets', s: 'Standard rework, ~87% of tickets',
-    steps: ['Confirm #qb-team opened the Slack channel / AT order', 'Collect BOL, receiver rejection sticker and pallet photos from the carrier', 'Decode the depot from the Costco PO and find the go-to WH (e.g. Frederick MD → Runners Inc)', 'Send the order to that WH', 'Send the WH address to the cx, the customer (usually the carrier): name, address, hours, check-in #. Ask for driver info + ETA', 'Email the WH with the WN#, paperwork + photos. Pin the subject in Slack', 'Make the ticket in Diamond\u2019s sheet', 'Report to ADW: email the ticket card, WH address, BOL, SKU page and photos to the depot\u2019s ADW contacts + Diamond OS&D + diamondpet@', 'Update the app and mark the order as approved', 'Watch the ADW email thread for replies', 'Get arrival photos + rework timing from the WH and post them in Slack', 'Get the damage count in bags by SKU / Item ID (by color if mixed)', 'Get reworked pallet photos. Status → Ready', 'Book the appointment in the Costco portal (2+ days out). Status → Requested', 'On APPROVED / APPT REVISED, send confirmation #, time and exact PO#s. Status → Scheduled', 'After delivery get the POD with the sticker listing all PO#s. Status → Delivered', 'Enter charges. Status → Invoiced'],
+    steps: ['Confirm #qb-team opened the Slack channel / AT order', 'Collect BOL, receiver rejection sticker and pallet photos from the carrier', 'Decode the depot from the Costco PO and find the go-to WH (e.g. Frederick MD → Runners Inc)', 'Send the order to that WH', 'Send the WH address to the cx, the customer (usually the carrier): name, address, hours, check-in #. Ask for driver info + ETA', 'Email the WH with the WN#, paperwork + photos. Pin the subject in Slack', 'Make the ticket in Diamond\u2019s sheet', 'Report to ADW: email the ticket card, WH address, BOL, SKU page and photos to the depot\u2019s ADW contacts + Diamond OS&D + diamondpet@', 'In the WarehouseNow app save the Customer Quote (unload $12.50 + reload $12.50 + rework $65 per pallet, redelivery $400) and the Warehouse Quote. That marks the order approved', 'Watch the ADW email thread for replies', 'Get arrival photos + rework timing from the WH and post them in Slack', 'Get the count by SKU / Item ID (color) and check it against the ticket. Tell ADW if it changes', 'Get reworked pallet photos. Status → Ready', 'Book the appointment in the Costco portal (2+ days out). Status → Requested', 'On APPROVED / APPT REVISED, send confirmation #, time and exact PO#s. Status → Scheduled', 'After delivery get the POD with the sticker listing all PO#s. Status → Delivered', 'Confirm who pays (Diamond or the carrier) from the email chain and post it in the channel for Mariah', 'Set Customer + Warehouse Final Cost in the app. App: Complete → Invoiced', 'Enter charges in the Ticket System. Status → Invoiced'],
     side: [['ok', 'Bill: $25/plt handling + $65/plt rework + $400 redelivery.'], ['', 'Real example: Costco PO 10520914317, 2 pallets damaged, Pace Logistics from Gaston SC → Frederick depot (1052) → Runners Inc (RUN-FRE-MD), WN# 12840. Ticket went to Krista Davidson + Jenniffer Vasiento.'], ['', 'If the depot is on Master POs (Mira Loma), hold the pallets and use the Wednesday cycle instead of booking right away.']] },
   { id: 'small', t: '≤5 damaged bags', s: 'Driver handles it at the next stop',
     steps: ['No WH needed. The driver can donate or dispose at the next stop', '#qb-team sends the OS&D note: "Per SOP, driver is okay to donate or dispose of the N damaged bags."', 'Create the ticket. Disposition: Donate / Dispose, Qty in SU', 'Send the ticket to ADW via #qb-team', 'Status → Disposed'],
@@ -826,8 +868,29 @@ Pallets: ${total}  ·  WN#s: ${minis.map(m => m.wn).filter(Boolean).join(', ')}`
 }
 buildAppt();
 
+/* ---------- real order timeline ---------- */
+const TL = [
+  ['Day 1 · 11:21', 'Intake', 'Capri (bot)', 'Creates the channel and posts "New Order — WN-11823": customer Diamond Pet Foods, contact Ankita Srivastava at T3RA, Monroe Township NJ, rework / dry. Tags Genderson, @east-coverage, @management.', 'The contact on the order is the carrier, which is why "send the address to the cx" means the carrier.'],
+  ['Day 1 · 11:22', 'Intake', 'Anna (#qb)', 'Tags @management, @qb, Danielle, Genderson and Jainy. Posts the paperwork PDF and a photo.', 'The BOL and photos land in the channel first. Pull them from here for the WH and ADW emails.'],
+  ['Day 1 · 11:24', 'Intake', 'Genderson', '"Ticket here … 24 pallets total in the truck right now."', 'Write down the pallet count from the driver. You will check it against the WH count later.'],
+  ['Day 1 · 11:30', 'App', 'Grant', 'Saves the Customer Quote: unloading $12.50 + reloading $12.50 + rework $65 per pallet, redelivery $400 = $490. Saves the Warehouse Quote for Chem-Secure at $0. The app posts "Order approved".', 'This is "update the app and mark as approved". The $25 handling on the ticket is the $12.50 unload plus $12.50 reload in the app.'],
+  ['Day 1 · 11:48', 'Ticket', 'Jainy', '"Doing ticket here." Makes the ticket in Diamond’s sheet and posts it.', ''],
+  ['Day 1 · 12:21', 'WH', 'Jainy', 'Emails the WH and pins the subject: "WHS EM: WN-11823 Rework Diamond pet food 24 pallets".', 'Subject format: WN-#### Rework Diamond pet food <qty>. The Ticket builder now makes it for you.'],
+  ['Day 1 · 4:25 PM', 'Count', 'Jainy', 'WH says 15 pallets received. The ticket says 24, so she double-checks.', 'A count mismatch is common. Don’t correct the ticket or tell ADW until the WH confirms.'],
+  ['Day 2', 'Count', 'Jainy', 'Sets Slack reminders every hour or two to chase the color count. Nothing back yet, so she moves it to the next morning.', 'Use /remind in the channel for every follow-up so nothing drops.'],
+  ['Day 3 · 10:07', 'Count', 'Jainy', 'Rob was mistaken. 24 pallets received, 12 of each item. "ADW aware."', 'Get the count by SKU (color) and tell ADW when it’s settled.'],
+  ['Mon Sep 21 · 8:22', 'Appt', 'Jainy', '"Per ADW, PO refreshed and ready for scheduling." Calls Rob for availability (Tue/Wed/Thu) and requests the appointment.', 'Before booking, ask the WH which days they can load. Then request in the portal.'],
+  ['Later', 'Appt', 'Genderson', 'Confirms 12 × 25347 and 12 × 25350. "I missed this PO request on Friday last week." Posts "24 pallets – PO-1750826265".', 'PO requests run on a weekly cycle. Missing one costs a week.'],
+  ['Later', 'Billing', 'Genderson', 'Tags Mariah: "no delivery cost here." Pins "NO DELIVERY CHARGE TO CX ON THIS ORDER".', 'When billing differs from the standard, pin it in the channel so whoever invoices sees it.'],
+  ['Handoff', 'Handoff', 'Genderson → Jacob', 'Adds Jacob. "1: check the POs match the Master PO or OG PO. 2: send to ADW."', ''],
+  ['Close', 'Billing', 'Jacob', 'Updates the Customer Quote to $90 per pallet (no redelivery). Sets Warehouse Final Cost $0 and Customer Final Cost $1,705. Status goes Quote Approved → Complete → Invoiced.', 'Final cost is the real total for the whole order. The quote is the per-pallet rate.'],
+  ['Close', 'Billing', 'Mariah', '"If Diamond is paying, they have a very specific way we invoice them. I usually send all Diamond invoices. T3RA might be paying. Let me know the response in the email chain."', 'Confirm the payer, post it in the channel, and let Mariah send the invoice.'],
+];
+const stageChip = { Intake: '', App: 'on', Ticket: '', WH: '', Count: '', Appt: '', Billing: 'on', Handoff: 'side' };
+$('#timeline').innerHTML = TL.map(([w, st, who, what, les]) => `<li><div class="when">${esc(w)}<span class="chip ${stageChip[st] || ''}">${esc(st)}</span></div><div class="what"><b>${esc(who)}</b><p>${esc(what)}</p></div>${les ? `<p class="lesson">${esc(les)}</p>` : '<span></span>'}</li>`).join('');
+
 /* ---------- daily checklist ---------- */
-const DAILY = ['Scan #diamond-deliveries for new refusals and updates', 'Every open load has both a Costco PO and a WHNow PO', 'Chase arrival / rework photos from WHs', 'Check pending appointments in the Costco portal (Manual Appt Follow up)', 'Send confirmation #s for newly approved appointments', 'Chase PODs for yesterday’s deliveries', 'Update statuses in the Ticket System', 'Log anything new in the Live Case Log'];
+const DAILY = ['Scan #diamond-deliveries for new refusals and updates', 'Every open load has both a Costco PO and a WHNow PO', 'Chase arrival / rework photos from WHs. Set a Slack reminder for each follow-up', 'Check pending appointments in the Costco portal (Manual Appt Follow up)', 'Send confirmation #s for newly approved appointments', 'Chase PODs for yesterday’s deliveries', 'Update statuses in the Ticket System', 'Log anything new in the Live Case Log'];
 const today = new Date().toISOString().slice(0, 10);
 let ticks = store.get('dp-daily', {});
 if (ticks.day !== today) ticks = { day: today, done: [] };
@@ -886,6 +949,7 @@ function build() {
   // View Engine B32: TEXTJOIN(", ", Costco PO, Qty, Disposition, Origin, Destination - WHNow PO)
   const subject = [po, qtyText, disp, origin, dest ? `${dest} - ${whn}` : ''].filter(Boolean).join(', ');
   $('#t-subject').textContent = subject || '—';
+  $('#t-whsub').textContent = `WN-${whn} Rework Diamond pet food ${qtyText}`.trim();
 
   const team = 'diamondosd@diamondpet.com, diamondpet@warehousenow.com';
   const itemLines = lines.length ? lines.map(l => `  • ${l.costco}  ${l.size} ${l.name}  —  ${l.qty || '?'}`).join('\n') : '  • (add SKUs)';
@@ -929,13 +993,14 @@ WarehouseNow`;
     if (ltl) rows.push(['LTL', ltl]);
     $('#t-money-label').textContent = 'Carrier charges';
   } else {
-    rows = [[`Handling ${plts} × $25`, plts * 25], [`Rework ${rwp} × $65`, rwp * 65]];
+    rows = [[`Unloading ${plts} × $12.50`, plts * 12.5], [`Reloading ${plts} × $12.50`, plts * 12.5], [`Rework ${rwp} × $65`, rwp * 65]];
     if (redel) rows.push(['Redelivery', 400]);
     if (ltl) rows.push(['LTL', ltl]);
     if (ot) rows.push(['OT / weekend call', 200]);
     $('#t-money-label').textContent = 'Invoice to Diamond';
   }
   const total = rows.reduce((a, r) => a + r[1], 0);
+  $('#t-money-label').textContent += ' (lines match the app\u2019s Customer Quote)';
   $('#t-money').innerHTML = rows.map(([k, x]) => `<span>${esc(k)}</span><span>${fmt$(x)}</span>`).join('') + `<span class="tot">Invoice total</span><span class="tot">${fmt$(total)}</span>`;
 
   const warns = [];
@@ -982,6 +1047,7 @@ const ISSUES = [
   ['med', 'Update Ticket has a shorter carrier list', 'New Ticket validates carriers against Aux!A2:A24 but Update Ticket uses Aux!A2:A22, so "WarehouseNow" and "Sunstate Carriers Inc" can’t be picked when updating. Fulmer is also listed twice.'],
   ['med', 'Return Origin holds the warehouse code', 'The "Return_Origin" column stores the rework warehouse code (e.g. SKY-ONT-CA), not an origin. "Return_Destination" is the Costco city for rework or the plant for a return. Don’t let the names confuse you.'],
   ['med', 'Check the door type in the portal', 'Grant\u2019s Master PO request used "1052 - Palletized Load". The 10520930206 appointment approved for 10/04 shows "1052 - LTL (Cigs, Clothing, Electronics, Pharm)" with QTY 2 under Cases instead of PLT Count. It went through, but check with Genderson which door type and UOM Costco expects so a later one isn\u2019t refused.'],
+  ['med', 'Check the payer before invoicing', 'WN-11823 was quoted to Diamond, but T3RA (the carrier) may be paying. Diamond direct and carrier-paid loads bill differently, and Diamond has its own invoice format that Mariah handles.'],
   ['low', 'Free-text in charge columns', 'Redelivery and LTL charge cells hold notes like "Incl 2347" (rides another ticket’s delivery) or "Master PO#9600219395". It’s useful context, but those cells won’t add up as numbers.'],
   ['low', 'Pallet qty is free text', 'Total_Pallets_Rejected mixes "1 pallet", "1 Pallet", "FTL", "1 SU", "1 pallet 1 SU". Counting pallets for billing means reading each one.'],
   ['low', `${(S.status.find(x => x[0] === 'NA') || [0, 0])[1]} tickets still at status NA`, 'More than half the tickets are still at NA, some going back to March. Either nobody updated them or they really are stuck. The status column isn’t a reliable open-items list yet. The Orders Dashboard tab is also marked "Not Updated".'],
