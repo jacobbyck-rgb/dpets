@@ -647,6 +647,11 @@ td .pre { white-space: pre-line; }
             <div><button class="btn primary" type="button" data-copy="t-wh">Copy warehouse email</button></div>
           </div>
           <div class="stack" style="gap:6px">
+            <span class="label">If the WH reports damages under 10 bags: OK to dispose/donate (reply on their thread)</span>
+            <textarea id="t-dmg" rows="12" aria-label="Damages under 10 bags email" readonly></textarea>
+            <div><button class="btn" type="button" data-copy="t-dmg">Copy damages email</button></div>
+          </div>
+          <div class="stack" style="gap:6px">
             <span class="label speed">3 · Ticket + ADW email: next priority, right after the cx and WH</span>
             <div class="copyrow"><div class="tcard" id="t-card"></div><button class="btn" type="button" data-copy="t-card">Copy</button></div>
           </div>
@@ -1752,7 +1757,20 @@ Please hold the rework until we confirm the counts. Thank you!
 
 Jacob Byck
 WarehouseNow · 630-277-9687`;
-  } else $('#t-wh').value = 'Enter a Costco PO with a go-to warehouse to build the warehouse email.';
+    $('#t-dmg').value =
+`To: ${whEmails.join(', ') || '[warehouse email]'}
+Subject: RE: WN-${whn} Rework Diamond pet food ${ticketQty} – damages OK to dispose/donate
+
+Hi ${whFirst},
+
+Thanks for the pictures. Please go ahead and dispose/donate the damaged bags. For this account, anything under 10 bags doesn't need approval, so no need to wait on us next time either.
+
+Please send the final count of disposed bags by SKU so we can update the ticket.
+
+Thank you,
+Jacob Byck
+WarehouseNow · 630-277-9687`;
+  } else { $('#t-wh').value = 'Enter a Costco PO with a go-to warehouse to build the warehouse email.'; $('#t-dmg').value = $('#t-wh').value; }
   $('#t-cx').value = wh ? `Team
 
 Confirmation Details
