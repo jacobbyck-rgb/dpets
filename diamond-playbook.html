@@ -1478,9 +1478,17 @@ function renderBoard() {
     const whs = [...new Set(list.map(o => o.wh).filter(Boolean))], deps = [...new Set(list.map(o => o.depotCode).filter(Boolean))];
     const master = list.find(o => o.masterPo)?.masterPo;
     const notReady = list.filter(o => stageIdx(o.stage) < stageIdx('ready'));
-    // Grant's format: "PO – N pallets item SKU // WN-####"
+    // Team format: "WN-#### // N PALLETS // SKU ######", one line per SKU
     const gid = 'grp-' + k.replace(/[^A-Za-z0-9]/g, '');
-    const poList = `${master ? 'Master PO: ' + master : 'Master PO: (pending)'}\n\n` + list.map(o => `${o.po || '?'} – ${o.qty || (o.pallets + ' pallets')} // WN-${o.wn || '?'}`).join('\n') + `\n\nTotal: ${plts} pallets${whs.length ? ' at ' + whs.join(', ') : ''}`;
+    const pl = n => `${n} PALLET${+n === 1 ? '' : 'S'}`;
+    const skuLines = o => {
+      const q = String(o.qty || '');
+      const multi = [...q.matchAll(/\b(\d{4,9})\s*x\s*(\d+)/gi)];
+      if (multi.length) return multi.map(m => `WN-${o.wn || '?'} // ${pl(m[2])} // SKU ${m[1]}`);
+      const one = q.match(/(?:item|sku)\s*#?\s*(\d{4,9})/i);
+      return [`WN-${o.wn || '?'} // ${pl(o.pallets || '?')}${one ? ' // SKU ' + one[1] : ''}`];
+    };
+    const poList = `Master PO: ${master || '(pending)'}\n\n` + list.flatMap(skuLines).join('\n');
     const warn = whs.length > 1 ? `These are at different warehouses (${whs.join(', ')}), so they can’t ride one truck without a transfer.` : deps.length > 1 ? 'These go to different depots. One request per truck per delivery location.' : '';
     const next = !master ? 'Waiting on the master PO number from ADW. Once it arrives, add it to each order’s Master PO field.'
       : notReady.length ? `Master PO ${master} is in. Still waiting on ${notReady.map(o => 'WN ' + o.wn).join(', ')} to be ready.`
@@ -1493,7 +1501,7 @@ function renderBoard() {
       ${warn ? `<span class="note bad" style="font-size:.85rem">${esc(warn)}</span>` : ''}
       <span><b>Next:</b> ${esc(next)}</span>
       <textarea id="${esc(gid)}" rows="${list.length + 3}" readonly hidden>${esc(poList)}</textarea>
-      <div><button class="btn" type="button" data-copy="${esc(gid)}">Copy PO list for ADW / WH</button></div></div>`;
+      <div><button class="btn" type="button" data-copy="${esc(gid)}">Copy master PO list</button></div></div>`;
   }).join('') || '<p class="meta" style="font-size:.88rem">No consolidations yet. Give orders the same Ships with name (or the same Master PO) to group them.</p>';
 
   // ready to book, grouped by depot
