@@ -178,6 +178,11 @@ textarea { font-family: var(--mono); font-size: .82rem; line-height: 1.5; resize
 @media (max-width: 760px) { .timeline li { grid-template-columns: 1fr; } }
 .mini-head, .mini-line { display: grid; grid-template-columns: minmax(0, 1.6fr) 70px minmax(0, 1fr) minmax(0, 1fr) 34px; gap: 6px; align-items: center; }
 .mini-head span { font-size: .78rem; color: var(--muted); }
+tr.hl td { background: var(--tag-soft); font-weight: 600; }
+.whopt { border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; display: grid; gap: 4px; font-size: .88rem; background: var(--sunken); }
+.whopt b { font-size: .95rem; }
+.whopt.first { border-color: var(--accent); }
+.whopt .pre { white-space: pre-line; color: var(--muted); }
 .money { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; font-variant-numeric: tabular-nums; font-size: .94rem; }
 .money .tot { font: 700 1.5rem/1.2 var(--display); border-top: 1px solid var(--line); padding-top: 6px; }
 .money span:nth-child(even) { text-align: right; font-family: var(--mono); }
@@ -417,16 +422,49 @@ td .pre { white-space: pre-line; }
       <fieldset>
         <legend>Charges</legend>
         <div class="row2">
-          <div class="field"><label for="f-payer">Who pays</label>
-            <select id="f-payer"><option value="diamond">Diamond direct (default)</option><option value="carrier">Carrier pays</option></select></div>
+          <div class="field"><label for="f-payer">Pricing rule</label>
+            <select id="f-payer"><option value="diamond">Diamond direct (default)</option><option value="carrier">Carrier pays</option><option value="small">Less than 5 bags</option></select></div>
           <div class="field"><label for="f-plts">Pallets handled</label><input id="f-plts" type="number" min="0" value="1"></div>
           <div class="field"><label for="f-rw">Pallets reworked</label><input id="f-rw" type="number" min="0" value="1"></div>
           <div class="field"><label for="f-ltl">LTL charge ($)</label><input id="f-ltl" type="number" min="0" value="0"></div>
         </div>
-        <label class="check-inline"><input type="checkbox" id="f-redel" checked> Redelivery to Costco on its own appointment (uncheck if it rides a Master PO)</label>
+        <div class="row2" id="smallFields" hidden>
+          <div class="field"><label for="f-tl">Truckloads (TL) in storage</label><input id="f-tl" type="number" min="0" value="1"></div>
+          <div class="field"><label for="f-days">Storage days</label><input id="f-days" type="number" min="0" value="0"></div>
+        </div>
+        <label class="check-inline"><input type="checkbox" id="f-redel" checked> <span id="redelLabel">Redelivery to Costco on its own appointment (uncheck if it rides a Master PO)</span></label>
         <label class="check-inline"><input type="checkbox" id="f-ot"> OT / weekend call</label>
       </fieldset>
+      <fieldset>
+        <legend>Warehouse quote (what the WH charges us)</legend>
+        <div class="row2">
+          <div class="field"><label for="w-un">Unloading / plt</label><input id="w-un" type="number" min="0" step="0.5" value="5"></div>
+          <div class="field"><label for="w-re">Reloading / plt</label><input id="w-re" type="number" min="0" step="0.5" value="5"></div>
+          <div class="field"><label for="w-rw">Rework / plt</label><input id="w-rw" type="number" min="0" step="0.5" value="55"></div>
+          <div class="field"><label for="w-del">Delivery ($)</label><input id="w-del" type="number" min="0" value="0"></div>
+        </div>
+        <p style="font-size:.82rem;color:var(--muted)" id="w-src"></p>
+      </fieldset>
     </form>
+    <div class="card stack">
+      <h3>Finding the warehouse in Diamond's Excel</h3>
+      <ol style="margin:0;padding-left:20px;display:grid;gap:6px;font-size:.93rem">
+        <li>Take the first 3–4 digits of the Costco PO. That's the depot code (<code>171</code>0918504 = 171).</li>
+        <li>Open the <b>Costco Locations PO reference</b> tab. Find the code and read <b>City Go to WHS</b> (171 → Sumner, WA).</li>
+        <li>Open the <b>Go to Warehouses</b> tab. Find that city in <b>City1</b>. Its row gives the WH code, name, hours, address and contact.</li>
+        <li>Read the set prices on the same row: <b>$</b> (delivery), <b>Rate_per_Pallet</b> (rework / in-out), <b>Crossdock_Storage_Rates</b> and <b>Internal_Notes</b>.</li>
+        <li>Enter those as the <b>Warehouse Quote</b> in the app. If the city has two rows (Monrovia / Monrovia2, Dallas / Dallas2), pick one and type its code on the ticket by hand.</li>
+        <li>City not on the list? Source a WH like a normal load, then add it to Go to Warehouses.</li>
+      </ol>
+      <span class="label">Warehouses on file for this destination</span>
+      <div id="whList" class="stack" style="gap:8px"></div>
+    </div>
+    <div class="card stack">
+      <h3>All ADW emails</h3>
+      <p style="font-size:.9rem;color:var(--muted)">The email draft goes to this depot's contacts (highlighted). Here is everyone on the list, for threads that need more people.</p>
+      <div class="scroll"><table><thead><tr><th>Contact</th><th>Email</th><th>Depots</th></tr></thead><tbody id="adwAll"></tbody></table></div>
+      <div class="copyrow"><div class="box" id="adwAllText"></div><button class="btn" type="button" data-copy="adwAllText">Copy all</button></div>
+    </div>
     <div class="card stack">
       <h3>Reading the rejection sticker</h3>
       <p style="font-size:.9rem;color:var(--muted)">Most of the ticket comes off Costco's receiving sticker. This one is from WN-13073.</p>
@@ -473,7 +511,7 @@ td .pre { white-space: pre-line; }
             <p style="font-size:.82rem;color:var(--muted)">Laid out like the ADW emails you already send. Everyone goes on the To line: the depot's ADW contacts, Diamond OS&amp;D and diamondpet@warehousenow.com.</p>
           </div>
           <div class="stack" style="gap:6px">
-            <span class="label">Attach before sending</span>
+            <span class="label">Attach before sending (besides the ticket)</span>
             <ol class="check" id="t-attach"></ol>
             <div class="note">ADW replies come back in this same thread after the ticket goes out. Keep it as the record for this PO and pin the subject in Slack.</div>
           </div>
@@ -626,15 +664,16 @@ Jacob</div><button class="btn" type="button" data-copy="wed-email">Copy</button>
     <div class="card stack">
       <h3>Pricing</h3>
       <div class="scroll"><table>
-        <thead><tr><th>Charge</th><th class="num">Diamond direct</th><th class="num">Carrier pays</th></tr></thead>
+        <thead><tr><th>Charge</th><th class="num">Diamond direct</th><th class="num">Carrier pays</th><th class="num">&lt; 5 bags</th></tr></thead>
         <tbody>
-          <tr><td>Handling (unload + reload), per pallet</td><td class="num">$12.50 + $12.50</td><td class="num">$15 + $15</td></tr>
-          <tr><td>Rework, per pallet</td><td class="num">$65</td><td class="num">$65</td></tr>
-          <tr><td>Redelivery to Costco</td><td class="num">$400</td><td class="num">avoid*</td></tr>
-          <tr><td>OT / weekend call</td><td class="num">$200</td><td class="num">—</td></tr>
-          <tr><td>Storage</td><td class="num">none</td><td class="num">—</td></tr>
+          <tr><td>Unload, per pallet</td><td class="num">$12.50</td><td class="num">$15</td><td class="num">—</td></tr>
+          <tr><td>Reload, per pallet</td><td class="num">$12.50</td><td class="num">$15</td><td class="num">—</td></tr>
+          <tr><td>Rework, per pallet</td><td class="num">$65</td><td class="num">$65</td><td class="num">—</td></tr>
+          <tr><td>Delivery to Costco</td><td class="num">$400</td><td class="num">avoid*</td><td class="num">$500</td></tr>
+          <tr><td>OT / weekend call</td><td class="num">$200</td><td class="num">—</td><td class="num">—</td></tr>
+          <tr><td>Storage</td><td class="num">none</td><td class="num">—</td><td class="num">$85 / TL / day</td></tr>
         </tbody></table></div>
-      <p style="font-size:.85rem;color:var(--muted)">Assume Diamond pays direct unless Thomas or Jan says otherwise. *Only deliver on a carrier-paid load if Thomas asks for it directly. Never change SKUs on a ticket. Escalate to management instead.</p>
+      <p style="font-size:.85rem;color:var(--muted)">Diamond direct handling is $25 per pallet, entered in the app as $12.50 unload + $12.50 reload. Assume Diamond pays direct unless Thomas or Jan says otherwise. *Only deliver on a carrier-paid load if Thomas asks for it directly. Never change SKUs on a ticket. Escalate to management instead.</p>
     </div>
     <div class="card stack">
       <h3>Glossary</h3>
@@ -679,7 +718,7 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
 };
-const fmt$ = n => '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits: Number.isInteger(+n) ? 0 : 2, maximumFractionDigits: 2});
+const fmt$ = n => (n < 0 ? '-$' : '$') + Math.abs(Number(n)).toLocaleString('en-US', {minimumFractionDigits: Number.isInteger(+n) ? 0 : 2, maximumFractionDigits: 2});
 
 /* ---------- tabs ---------- */
 const tabs = [...document.querySelectorAll('.tab')];
@@ -949,6 +988,11 @@ $('#addSku').addEventListener('click', () => { addSkuLine(); build(); });
 $('#tform').addEventListener('input', build);
 $('#tform').addEventListener('change', build);
 
+// Warehouse Quotes already saved in the app on real orders
+const KNOWN_WH_QUOTES = {
+  'GEF-TAC-WA': { un: 5, re: 5, rw: 55, src: 'the WN-13073 Warehouse Quote (Syndicate Trucking)' },
+};
+let lastWh = null;
 function build() {
   const v = id => $(id).value.trim();
   const po = v('#f-po').replace(/\D/g, ''), whn = v('#f-whn'), disp = v('#f-disp'), origin = v('#f-origin');
@@ -1022,24 +1066,40 @@ Hours: ${wh.hours.split('\n')[0]}
 Items & quantities refused:
 ${itemLines}
 
-Attached: ticket, BOL, page with SKU #s and pallet photos.
+Attached: ticket, Costco rejection sticker, BOL, Diamond order confirmation (SKU page) and pallet photos.
 
 Thank you,
 Jacob
 WarehouseNow`;
-  const att = ['Ticket card screenshot', 'BOL', 'Page with the SKU #s (from the BOL / initial order)', 'Pallet photos', 'Receiver rejection sticker'];
+  const att = [
+    'Ticket card screenshot (the block above)',
+    'Costco receiving / rejection sticker: shows the refused PO, "REFUSED 1 PLT = 60 SU ITM 450195", the reason and ordered vs received',
+    'BOL (Diamond short-form Bill of Lading): BOL #, ship-from plant, carrier, pallets and weight',
+    'Diamond Order Confirmation: the page with the SKU #s (Customer P/N) and qty per item',
+    'Pallet photos of the refused pallet(s), showing the damage',
+    'Tip: the carrier\u2019s ISSUE_REPORTING PDF in the Slack channel usually has all four. Forward the pages from it.',
+  ];
   const prevAtt = [...document.querySelectorAll('#t-attach input:checked')].map(i => i.id);
-  $('#t-attach').innerHTML = att.map((a, i) => `<li><input type="checkbox" id="att-${i}" ${prevAtt.includes('att-' + i) ? 'checked' : ''}><label for="att-${i}">${esc(a)}</label></li>`).join('');
+  $('#t-attach').innerHTML = att.map((a, i) => a.startsWith('Tip:') ? `<li style="grid-template-columns:1fr;color:var(--muted);font-size:.88rem">${esc(a)}</li>` : `<li><input type="checkbox" id="att-${i}" ${prevAtt.includes('att-' + i) ? 'checked' : ''}><label for="att-${i}">${esc(a)}</label></li>`).join('');
 
   // charges
   const n = id => Math.max(0, +$(id).value || 0);
   const plts = n('#f-plts'), rwp = n('#f-rw'), ltl = n('#f-ltl'), redel = $('#f-redel').checked, ot = $('#f-ot').checked;
-  const carrier = $('#f-payer').value === 'carrier';
+  const mode = $('#f-payer').value, carrier = mode === 'carrier', small = mode === 'small';
+  $('#smallFields').hidden = !small;
+  $('#redelLabel').textContent = small ? 'Delivery to Costco ($500 on a less-than-5-bag load)' : carrier ? 'Delivery to Costco (only if Thomas asks for it directly)' : 'Redelivery to Costco on its own appointment (uncheck if it rides a Master PO)';
   let rows;
-  if (carrier) {
-    rows = [[`Unload ${plts} × $15`, plts * 15], [`Reload ${plts} × $15`, plts * 15], [`Rework ${rwp} × $65`, rwp * 65]];
+  if (small) {
+    const tl = n('#f-tl'), days = n('#f-days');
+    rows = [];
+    if (redel) rows.push(['Delivery', 500]);
+    if (days) rows.push([`Storage ${tl} TL × ${days} day${days === 1 ? '' : 's'} × $85`, tl * days * 85]);
     if (ltl) rows.push(['LTL', ltl]);
-    $('#t-money-label').textContent = 'Carrier charges';
+    $('#t-money-label').textContent = 'Less than 5 bags';
+  } else if (carrier) {
+    rows = [[`Unloading ${plts} × $15`, plts * 15], [`Reloading ${plts} × $15`, plts * 15], [`Rework ${rwp} × $65`, rwp * 65]];
+    if (ltl) rows.push(['LTL', ltl]);
+    $('#t-money-label').textContent = 'Bill the carrier';
   } else {
     rows = [[`Unloading ${plts} × $12.50`, plts * 12.5], [`Reloading ${plts} × $12.50`, plts * 12.5], [`Rework ${rwp} × $65`, rwp * 65]];
     if (redel) rows.push(['Redelivery', 400]);
@@ -1048,8 +1108,36 @@ WarehouseNow`;
     $('#t-money-label').textContent = 'Invoice to Diamond';
   }
   const total = rows.reduce((a, r) => a + r[1], 0);
-  $('#t-money-label').textContent += ' (lines match the app\u2019s Customer Quote)';
-  $('#t-money').innerHTML = rows.map(([k, x]) => `<span>${esc(k)}</span><span>${fmt$(x)}</span>`).join('') + `<span class="tot">Invoice total</span><span class="tot">${fmt$(total)}</span>`;
+  $('#t-money-label').textContent += ' (Customer Quote lines in the app)';
+
+  // warehouse cost + margin
+  if (wh && wh.code !== lastWh) {
+    lastWh = wh.code;
+    const k = KNOWN_WH_QUOTES[wh.code];
+    const sheetDel = +(String(wh.delivery || '').match(/\$?\s*(\d{3})/) || [])[1] || 0;
+    if (k) { $('#w-un').value = k.un; $('#w-re').value = k.re; $('#w-rw').value = k.rw; }
+    $('#w-del').value = k?.del ?? sheetDel;
+    $('#w-src').textContent = k ? `Prefilled from ${k.src}. Rates on file in Go to Warehouses: ${(wh.rates || '—').replace(/\n/g, ' · ')}` : `No saved quote for ${wh.code}. Rates on file in Go to Warehouses: ${(wh.rates || '—').replace(/\n/g, ' · ')}${wh.delivery ? ' · Delivery: ' + wh.delivery.replace(/\n/g, ' ') : ''}`;
+  }
+  const whCost = small ? 0 : plts * (n('#w-un') + n('#w-re')) + rwp * n('#w-rw') + (redel && !carrier ? n('#w-del') : 0);
+  const margin = total - whCost - (ltl || 0);
+  $('#t-money').innerHTML = rows.map(([k, x]) => `<span>${esc(k)}</span><span>${fmt$(x)}</span>`).join('')
+    + `<span class="tot">Customer total</span><span class="tot">${fmt$(total)}</span>`
+    + (small ? '' : `<span style="color:var(--muted)">Warehouse cost</span><span style="color:var(--muted)">${fmt$(whCost)}</span><span><b>Margin</b>${ltl ? ' (LTL passed through)' : ''}</span><span style="color:${margin >= 0 ? 'var(--ok)' : 'var(--bad)'}"><b>${fmt$(margin)}</b></span>`);
+
+  // warehouses on file for this destination
+  const city = (dest || '').toLowerCase();
+  const all = D.warehouses.filter(w => w.city && city && city.includes(w.city.replace(/\d+$/, '').toLowerCase()));
+  $('#whList').innerHTML = all.length ? all.map((w, i) => `<div class="whopt ${w === wh ? 'first' : ''}"><b>${esc(w.code)} · ${esc(w.name || '(no name)')}${w === wh ? ' (the sheet picks this one)' : ''}</b><span class="pre">${esc(w.hours)}</span><span><b>Delivery:</b> ${esc(w.delivery || '—')}</span><span><b>Rate/pallet:</b> <span class="pre">${esc(w.rates || '—')}</span></span><span><b>Storage:</b> ${esc(w.storage || '—')}</span>${w.notes ? `<span class="pre">${esc(w.notes)}</span>` : ''}</div>`).join('') : `<p style="font-size:.9rem;color:var(--bad)">${dest ? 'No warehouse on file for ' + esc(dest) + '. Source one as a normal load.' : 'Enter a Costco PO first.'}</p>`;
+
+  // all ADW emails, this depot highlighted
+  const mine = new Set(reps.map(r => r.email.toLowerCase()));
+  const people = {};
+  D.adwwMap.forEach(m => { const c = D.contacts[m.contact]; if (!c) return; (people[c.email] ||= { ...c, codes: new Set() }).codes.add(m.code); });
+  Object.entries(EXTRA_ADW).forEach(([code, list]) => list.forEach(c => (people[c.email] ||= { ...c, codes: new Set() }).codes.add(code)));
+  const plist = Object.values(people).sort((a, b) => mine.has(b.email.toLowerCase()) - mine.has(a.email.toLowerCase()));
+  $('#adwAll').innerHTML = plist.map(c => `<tr class="${mine.has(c.email.toLowerCase()) ? 'hl' : ''}"><td>${esc(c.name.trim())}</td><td class="mono">${esc(c.email.trim())}</td><td class="mono">${esc([...c.codes].join(', '))}</td></tr>`).join('');
+  $('#adwAllText').textContent = plist.map(c => c.email.trim()).join(', ');
 
   const warns = [];
   if (!whn) warns.push(['bad', 'No WarehouseNow PO. Add it before the ticket goes out.']);
@@ -1060,7 +1148,8 @@ WarehouseNow`;
   if (dest && /mira loma/i.test(dest)) warns.push(['', 'Mira Loma runs on Master POs. Hold the reworked pallets for the Wednesday request instead of booking right away. Uncheck Redelivery if it rides a Master PO.']);
   if (/TX/.test(dest)) warns.push(['', 'Texas: redelivery goes LTL through Ibarra Logistics (Omar).']);
   if (disp === 'Return' && v('#f-reason') === 'Overage') warns.push(['', 'Overage return: get Thomas Stone’s OK first, then book LTL back to the plant and enter it as the LTL charge.']);
-  if (carrier && redel) warns.push(['', 'Carrier-paid load: avoid redelivery unless Thomas asks for it directly.']);
+  if (carrier && redel) warns.push(['', 'Carrier-paid load: avoid delivery unless Thomas asks for it directly.']);
+  if (!small && /\b[1-4]\s*(SU|bags?)\b/i.test(qtyText) && !/pallet|plt/i.test(qtyText)) warns.push(['', 'Less than 5 bags? Switch the pricing rule to "Less than 5 bags" ($500 delivery, $85 per TL per day storage), or let the driver donate/dispose at the next stop.']);
   if (lines.length > 1 && lines.some(l => !l.qty)) warns.push(['', 'Each SKU line needs its own quantity.']);
   $('#t-warn').innerHTML = warns.map(([k, t]) => `<div class="note ${k}">${esc(t)}</div>`).join('');
 }
@@ -1101,7 +1190,6 @@ const ISSUES = [
   ['low', 'Free-text in charge columns', 'Redelivery and LTL charge cells hold notes like "Incl 2347" (rides another ticket’s delivery) or "Master PO#9600219395". It’s useful context, but those cells won’t add up as numbers.'],
   ['low', 'Pallet qty is free text', 'Total_Pallets_Rejected mixes "1 pallet", "1 Pallet", "FTL", "1 SU", "1 pallet 1 SU". Counting pallets for billing means reading each one.'],
   ['low', `${(S.status.find(x => x[0] === 'NA') || [0, 0])[1]} tickets still at status NA`, 'More than half the tickets are still at NA, some going back to March. Either nobody updated them or they really are stuck. The status column isn’t a reliable open-items list yet. The Orders Dashboard tab is also marked "Not Updated".'],
-  ['low', 'Two pricing notes don’t match', 'Your notes say "less than 5 bags → Delivery $500; $85 per TL storage per day", while the SOP says Diamond pays no storage and $400 redelivery. Confirm which applies to small-bag cases.'],
 ];
 $('#issues').innerHTML = ISSUES.map(([s, h, p]) => `<div class="issue"><span class="sev ${s}">${s === 'high' ? 'Fix first' : s === 'med' ? 'Watch' : 'Minor'}</span><div><h3>${esc(h)}</h3><p>${esc(p)}</p></div></div>`).join('');
 })();
