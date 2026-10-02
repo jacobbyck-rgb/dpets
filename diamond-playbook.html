@@ -629,9 +629,10 @@ td .pre { white-space: pre-line; }
             </div>
             <p id="att-status" style="font-size:.85rem;color:var(--muted)">Tag each page below. Pages for other POs on the truck should be set to Skip.</p>
             <div class="thumbs" id="att-thumbs"></div>
-            <label class="check-inline"><input type="checkbox" id="att-withticket" checked> Put the ticket on page 1 of the merged PDF (one file to attach)</label>
+            <label class="check-inline"><input type="checkbox" id="att-withticket" checked> Put the ticket on page 1 of the ADW PDF (one file to attach). The WH paperwork never includes the ticket</label>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <button class="btn primary" type="button" id="dl-merged" disabled>Download merged PDF</button>
+              <button class="btn primary" type="button" id="dl-merged" disabled>Download ADW PDF</button>
+              <button class="btn" type="button" id="dl-whpaper" disabled>Download WH paperwork (PDF)</button>
               <button class="btn" type="button" id="dl-sticker" disabled>Download sticker (PNG)</button>
               <button class="btn" type="button" id="att-clear" hidden>Clear files</button>
             </div>
@@ -1191,6 +1192,7 @@ function renderThumbs() {
 function updateAttButtons() {
   const used = att.items.filter(i => i.role !== 'skip');
   $('#dl-merged').disabled = !used.length && !$('#att-withticket').checked;
+  $('#dl-whpaper').disabled = !used.length;
   $('#dl-sticker').disabled = !att.items.some(i => i.role === 'sticker');
   $('#att-clear').hidden = !att.items.length;
   if (att.items.length) $('#att-status').textContent = `${att.items.length} page${att.items.length === 1 ? '' : 's'} loaded, ${used.length} going into the PDF. Merged order: ${$('#att-withticket').checked ? 'ticket, ' : ''}photos, BOL, sticker, order confirmation.`;
@@ -1236,13 +1238,13 @@ async function imageToJpegBytes(img) {
   const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(img, 0, 0);
   return new Uint8Array(await (await canvasBlob(cv, 'image/jpeg', 0.88)).arrayBuffer());
 }
-$('#dl-merged').addEventListener('click', async () => {
-  const btn = $('#dl-merged'); btn.disabled = true; const label = btn.textContent; btn.textContent = 'Building PDF…';
+async function buildMerged(btn, withTicket, suffix) {
+  btn.disabled = true; const label = btn.textContent; btn.textContent = 'Building PDF…';
   try {
     const L = await pdflib();
     const out = await L.PDFDocument.create();
     const srcs = {};
-    if ($('#att-withticket').checked && lastTicket) await ticketPage(out, L);
+    if (withTicket && lastTicket) await ticketPage(out, L);
     for (const role of ['photo', 'bol', 'sticker', 'order']) {
       for (const it of att.items.filter(i => i.role === role)) {
         if (it.kind === 'pdf') {
@@ -1256,10 +1258,12 @@ $('#dl-merged').addEventListener('click', async () => {
       }
     }
     const bytes = await out.save();
-    await saveFile(`WN-${lastTicket?.whn || 'order'}-attachments.pdf`, new Blob([bytes], { type: 'application/pdf' }));
+    await saveFile(`WN-${lastTicket?.whn || 'order'}-${suffix}.pdf`, new Blob([bytes], { type: 'application/pdf' }));
   } catch { toast('Couldn’t build the PDF. Check your connection and try again.'); }
   btn.textContent = label; updateAttButtons();
-});
+}
+$('#dl-merged').addEventListener('click', () => buildMerged($('#dl-merged'), $('#att-withticket').checked, 'ADW-email'));
+$('#dl-whpaper').addEventListener('click', () => buildMerged($('#dl-whpaper'), false, 'WH-paperwork'));
 $('#dl-sticker').addEventListener('click', async () => {
   const it = att.items.find(i => i.role === 'sticker'); if (!it) return;
   let cv;
