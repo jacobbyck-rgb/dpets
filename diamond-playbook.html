@@ -697,6 +697,19 @@ td .pre { white-space: pre-line; }
     <p class="lede">Reworked pallets go back into Costco on an appointment you book in the <strong>Costco appointment portal</strong>. On Master PO depots like Frederick and Mira Loma you book the Master PO, not each refused PO. You then email ADW the Master PO with the mini POs that roll into it, so they can match pallets to POs. When the portal flips to <strong>APPROVED</strong>, reply on the same thread with the confirmation.</p>
   </div>
 
+  <div class="card stack" style="border-left:4px solid var(--tag)">
+    <h3>Consolidating POs onto a master PO</h3>
+    <p style="font-size:.92rem">Before you schedule, make sure every held PO at the same warehouse going to the same depot rides on one master PO. One truck, one appointment.</p>
+    <ol class="check" style="font-size:.93rem">
+      <li><span>1</span><span><b>See what’s held together.</b> On the Order board, check <i>Held at warehouse</i> and the <i>Consolidations</i> list. Give POs at the same WH and depot the same <b>Ships with</b> name.</span></li>
+      <li><span>2</span><span><b>Confirm with the WH</b> that every pallet is reworked and ready, with counts by SKU.</span></li>
+      <li><span>3</span><span><b>ADW creates the master PO</b> (Frederick and Mira Loma weekly; others on request, e.g. Krista for Monroe Township). ADW may ask whether another held PO can ride along. Check the board and answer with the full list.</span></li>
+      <li><span>4</span><span><b>Send the list in the team format</b> using <i>Copy master PO list</i> on the board:<br><code>Master PO: 9600930238</code><br><code>WN-12156 // 1 PALLET // SKU 1162890</code><br><code>WN-12681 // 1 PALLET // SKU 52296</code></span></li>
+      <li><span>5</span><span><b>Request one appointment</b> under the master PO in the portal, with the total pallet count. Put the master PO # in each order’s <b>Master PO</b> field.</span></li>
+      <li><span>6</span><span><b>When approved</b>, reply with the confirmation # and send the WH and carrier every WN# and PO on the truck.</span></li>
+    </ol>
+    <p style="font-size:.85rem;color:var(--muted)">Example: WN-13087 (31 plts, PO 1750917236) + WN-12884 (1 plt 25350, PO 1750914355), both at Chem-Secure, on Krista’s master PO for Monroe Township.</p>
+  </div>
   <div class="grid2">
     <div class="card stack">
       <h3>Costco: CW Traffic portal</h3>
@@ -807,7 +820,7 @@ td .pre { white-space: pre-line; }
   <div class="week">
     <div class="day"><span class="label">Mon</span><h3>Intake</h3><ul><li>Refused product arrives at WHs</li><li>Unload + rework</li><li>Log every WN# and Costco PO</li></ul></div>
     <div class="day"><span class="label">Tue</span><h3>Intake</h3><ul><li>Same as Monday</li><li>Chase reworked-pallet photos</li><li>Confirm bag counts by SKU</li></ul></div>
-    <div class="day hl"><span class="label">Wed</span><h3>Master PO day</h3><ul><li>List the refused pallets held this week</li><li>Email Diamond the WN#/PO pairs</li><li>Ask for a Master PO covering them</li><li>Then book the delivery</li></ul></div>
+    <div class="day hl"><span class="label">Wed</span><h3>Master PO day</h3><ul><li>List the refused pallets held this week</li><li>Email Diamond the WN#/PO pairs</li><li>Ask for a Master PO covering them (Copy master PO list on the board)</li><li>Check for other held POs at the same WH to add</li><li>Then book the delivery</li></ul></div>
     <div class="day"><span class="label">Thu</span><h3>Appointments</h3><ul><li>Request the Master PO appointment in the portal</li><li>Follow up on pending approvals</li></ul></div>
     <div class="day"><span class="label">Fri</span><h3>Close out</h3><ul><li>Chase PODs</li><li>Move Delivered → Invoiced</li><li>Update the takeover tracker</li></ul></div>
   </div>
