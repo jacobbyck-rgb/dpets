@@ -205,6 +205,12 @@ textarea { font-family: var(--mono); font-size: .82rem; line-height: 1.5; resize
 .pill.wait { background: var(--sunken); color: var(--muted); border: 1px solid var(--line); }
 .due-row { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; font-size: .92rem; }
 .book { border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; display: grid; gap: 6px; background: var(--sunken); font-size: .92rem; }
+.hsc { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 860px) { .hsc { grid-template-columns: 1fr; } }
+.hrow { border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; background: var(--sunken); font-size: .88rem; display: grid; gap: 3px; }
+.hrow b { font-weight: 600; }
+.hrow .meta { color: var(--muted); font-size: .82rem; }
+.grp { border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 4px; padding: 10px 12px; display: grid; gap: 6px; font-size: .9rem; background: var(--surface); }
 .mini-head, .mini-line { display: grid; grid-template-columns: minmax(0, 1.6fr) 70px minmax(0, 1fr) minmax(0, 1fr) 34px; gap: 6px; align-items: center; }
 .mini-head span { font-size: .78rem; color: var(--muted); }
 tr.hl td { background: var(--tag-soft); font-weight: 600; }
@@ -406,6 +412,18 @@ td .pre { white-space: pre-line; }
   </div>
 
   <div class="stagebar" id="b-stages"></div>
+
+  <div class="card stack">
+    <h3>Held, scheduled &amp; consolidated</h3>
+    <p style="font-size:.88rem;color:var(--muted)">What's sitting at a warehouse, what's waiting on an appointment, what's booked, and which POs ship together. Group POs with the <b>Ships with</b> field in each order's details.</p>
+    <div class="hsc">
+      <div class="stack" style="gap:8px"><span class="label">Scheduled</span><div id="b-sched" class="stack" style="gap:6px"></div></div>
+      <div class="stack" style="gap:8px"><span class="label">Appointment requested</span><div id="b-req" class="stack" style="gap:6px"></div></div>
+      <div class="stack" style="gap:8px"><span class="label">Held at warehouse</span><div id="b-held" class="stack" style="gap:6px"></div></div>
+    </div>
+    <span class="label">Consolidations: POs shipping together</span>
+    <div id="b-groups" class="stack" style="gap:8px"></div>
+  </div>
 
   <div class="grid2">
     <div class="card stack">
@@ -1444,6 +1462,34 @@ function renderBoard() {
   const due = open.map(o => ({ o, l: lateness(o) })).filter(x => x.l.late).sort((a, b) => stageIdx(b.o.stage) - stageIdx(a.o.stage));
   $('#b-due').innerHTML = due.length ? due.map(({ o, l }) => `<div class="due-row"><span class="pill late">WN ${esc(o.wn || o.id)}</span><span><b>${esc(stageOf(o.stage).t)}</b>: ${esc(l.msg)}. ${esc(nextFor(o))}</span></div>`).join('')
     : `<p style="color:var(--muted);font-size:.92rem">${open.length ? 'Nothing overdue. ' + open.length + ' open order' + (open.length === 1 ? '' : 's') + ' on track.' : 'No open orders yet. Add one below.'}</p>`;
+  // held / requested / scheduled / consolidations
+  const line = o => `<div class="hrow"><b>WN ${esc(o.wn || '?')} · ${esc(o.po || '')}</b><span>${esc([o.qty, o.wh, o.dest].filter(Boolean).join(' · '))}</span><span class="meta">Next: ${esc(o.nextNote || nextFor(o))}</span></div>`;
+  const sched = open.filter(o => o.stage === 'scheduled').sort((a, b) => String(a.apptDate).localeCompare(String(b.apptDate)));
+  $('#b-sched').innerHTML = sched.map(o => `<div class="hrow"><b>${esc(o.apptDate ? new Date(o.apptDate + 'T12:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Date?')} ${esc(o.apptTime || '')} · WN ${esc(o.wn || '?')}</b><span>${esc([o.masterPo ? 'Master ' + o.masterPo : o.po, o.qty, o.dest].filter(Boolean).join(' · '))}</span><span class="meta">Conf # ${esc(o.conf || '—')}</span></div>`).join('') || '<p class="meta" style="font-size:.88rem">Nothing booked.</p>';
+  const reqs = open.filter(o => o.stage === 'requested');
+  $('#b-req').innerHTML = reqs.map(o => `<div class="hrow"><b>WN ${esc(o.wn || '?')} · ${esc(o.masterPo ? 'Master ' + o.masterPo : o.po)}</b><span>${esc([o.qty, o.dest].filter(Boolean).join(' · '))}</span><span class="meta">${esc(o.conf ? o.conf + ' · ' : '')}Requested for ${esc(o.apptDate || '?')}. Check the portal for APPROVED</span></div>`).join('') || '<p class="meta" style="font-size:.88rem">Nothing waiting on approval.</p>';
+  const held = open.filter(o => ['atwh', 'rework', 'ready'].includes(o.stage));
+  $('#b-held').innerHTML = held.map(line).join('') || '<p class="meta" style="font-size:.88rem">Nothing held right now.</p>';
+  const grpMap = {};
+  open.forEach(o => { const k = o.group || (o.masterPo ? 'Master PO ' + o.masterPo : ''); if (k) (grpMap[k] ||= []).push(o); });
+  $('#b-groups').innerHTML = Object.entries(grpMap).map(([k, list]) => {
+    const plts = list.reduce((a, o) => a + (+o.pallets || 0), 0);
+    const whs = [...new Set(list.map(o => o.wh).filter(Boolean))], deps = [...new Set(list.map(o => o.depotCode).filter(Boolean))];
+    const master = list.find(o => o.masterPo)?.masterPo;
+    const notReady = list.filter(o => stageIdx(o.stage) < stageIdx('ready'));
+    const warn = whs.length > 1 ? `These are at different warehouses (${whs.join(', ')}), so they can’t ride one truck without a transfer.` : deps.length > 1 ? 'These go to different depots. One request per truck per delivery location.' : '';
+    const next = !master ? 'Waiting on the master PO number from ADW. Once it arrives, add it to each order’s Master PO field.'
+      : notReady.length ? `Master PO ${master} is in. Still waiting on ${notReady.map(o => 'WN ' + o.wn).join(', ')} to be ready.`
+      : list.every(o => o.stage === 'ready') ? `All ready. Request one appointment for master PO ${master} (${plts} pallets) in the portal.`
+      : list.every(o => o.stage === 'requested') ? `Appointment requested for master PO ${master}. Refresh the portal until APPROVED, then send the confirmation # to the WH and carrier.`
+      : list.every(o => o.stage === 'scheduled') ? `Booked${list[0].apptDate ? ' for ' + list[0].apptDate + ' ' + (list[0].apptTime || '') : ''}. Reconfirm the truck the day before.`
+      : 'These orders are at different stages. Bring them all to Ready before booking one truck.';
+    return `<div class="grp"><b>${esc(k)} · ${list.length} PO${list.length === 1 ? '' : 's'} · ${plts} pallets${whs.length ? ' · ' + esc(whs.join(', ')) : ''}</b>
+      <span class="mono" style="white-space:pre-line;font-size:.82rem">${esc(list.map(o => `${o.po || '?'} – ${o.pallets || '?'} plt${(+o.pallets === 1) ? '' : 's'} // WN-${o.wn || '?'} (${stageOf(o.stage).t})`).join('\n'))}</span>
+      ${warn ? `<span class="note bad" style="font-size:.85rem">${esc(warn)}</span>` : ''}
+      <span><b>Next:</b> ${esc(next)}</span></div>`;
+  }).join('') || '<p class="meta" style="font-size:.88rem">No consolidations yet. Give orders the same Ships with name (or the same Master PO) to group them.</p>';
+
   // ready to book, grouped by depot
   const ready = open.filter(o => o.stage === 'ready');
   const groups = {};
@@ -1479,7 +1525,7 @@ function renderBoard() {
       <div class="ord-top"><span class="wn">WN ${esc(o.wn || '—')}</span><span class="mono">${esc(o.po || '')}</span>
         <span class="meta">${esc([o.depotCode && o.depotCode + ' ' + (o.dest || ''), o.wh, o.qty, o.payer === 'carrier' ? 'carrier pays' : o.payer === 'small' ? '< 5 bags' : ''].filter(Boolean).join(' · '))}</span>
         <span class="pill ${l.late ? 'late' : CLOSED.includes(o.stage) ? 'ok' : 'wait'}">${esc(st.t)}</span>${l.msg ? `<span class="meta">${esc(l.msg)}</span>` : ''}</div>
-      <p class="ord-next"><b>Next:</b> ${esc(nextFor(o))}</p>
+      <p class="ord-next"><b>Next:</b> ${esc(o.nextNote || nextFor(o))}</p>${o.group ? `<p class="meta" style="font-size:.85rem">Ships with: <b>${esc(o.group)}</b></p>` : ''}
       <div class="ord-ctrl">
         ${nxt ? `<button class="btn primary" type="button" data-act="advance" ${dis}>Mark: ${esc(nxt.t)}</button>` : ''}
         ${o.stage === 'closeout' ? `<button class="btn primary" type="button" data-act="invoiced" ${dis} ${coDone < CLOSEOUT.length ? 'title="Finish the checklist first"' : ''}>Mark invoiced</button>` : ''}
@@ -1493,12 +1539,14 @@ function renderBoard() {
           <div class="field"><label>Pallets</label><input type="number" min="0" data-f="pallets" value="${esc(o.pallets ?? '')}" ${dis}></div>
           <div class="field"><label>Rework WH</label><input type="text" data-f="wh" value="${esc(o.wh || '')}" ${dis}></div>
           <div class="field"><label>Master PO</label><input type="text" class="po" data-f="masterPo" value="${esc(o.masterPo || '')}" ${dis}></div>
+          <div class="field"><label>Ships with (group name)</label><input type="text" data-f="group" value="${esc(o.group || '')}" placeholder="e.g. Monroe Twp master – Oct" ${dis}></div>
           <div class="field"><label>Appt date</label><input type="date" data-f="apptDate" value="${esc(o.apptDate || '')}" ${dis}></div>
           <div class="field"><label>Appt time</label><input type="text" data-f="apptTime" value="${esc(o.apptTime || '')}" placeholder="08:00" ${dis}></div>
           <div class="field"><label>Confirmation #</label><input type="text" class="po" data-f="conf" value="${esc(o.conf || '')}" ${dis}></div>
           <div class="field"><label>Customer final ($)</label><input type="number" min="0" data-f="custFinal" value="${esc(o.custFinal ?? '')}" ${dis}></div>
           <div class="field"><label>Warehouse final ($)</label><input type="number" min="0" data-f="whFinal" value="${esc(o.whFinal ?? '')}" ${dis}></div>
         </div>
+        <div class="field" style="margin-top:8px"><label>Next step (leave blank for the default)</label><input type="text" data-f="nextNote" value="${esc(o.nextNote || '')}" ${dis}></div>
         <div class="field" style="margin-top:8px"><label>Notes</label><textarea rows="2" data-f="notes" style="font-family:var(--body);font-size:.9rem" ${dis}>${esc(o.notes || '')}</textarea></div>
         <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="meta">Updated ${esc((o.updated || '').slice(0, 10))}</span>${readOnly ? '' : `<button class="btn" type="button" data-act="delete">Delete</button><span class="meta" data-confirm hidden>Delete WN ${esc(o.wn)}? <button class="btn" type="button" data-act="delete-yes">Yes, delete</button></span>`}</div>
       </details>
