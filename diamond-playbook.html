@@ -176,6 +176,30 @@ textarea { font-family: var(--mono); font-size: .82rem; line-height: 1.5; resize
 .timeline .what p { font-size: .93rem; }
 .timeline .lesson { font-size: .88rem; color: var(--muted); border-left: 3px solid var(--tag); padding-left: 10px; align-self: start; }
 @media (max-width: 760px) { .timeline li { grid-template-columns: 1fr; } }
+.stagebar { display: flex; flex-wrap: wrap; gap: 6px; }
+.stagebar button { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 8px 10px; cursor: pointer; display: grid; gap: 2px; text-align: left; min-width: 104px; }
+.stagebar button b { font: 700 1.4rem/1 var(--display); font-variant-numeric: tabular-nums; }
+.stagebar button span { font-size: .78rem; color: var(--muted); }
+.stagebar button.late { border-color: var(--bad); }
+.stagebar button.late b { color: var(--bad); }
+.stagebar button[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--accent); }
+.ord { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: grid; gap: 10px; }
+.ord.late { border-left: 4px solid var(--bad); }
+.ord-top { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; }
+.ord-top .wn { font: 700 1.2rem/1 var(--display); }
+.ord-top .meta { color: var(--muted); font-size: .88rem; }
+.ord-next { font-size: .93rem; }
+.ord-next b { font-weight: 600; }
+.ord-ctrl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ord-ctrl select { width: auto; }
+.ord details summary { cursor: pointer; font-size: .88rem; color: var(--accent); font-weight: 600; }
+.ord .row2 { margin-top: 8px; }
+.pill { font: 600 .74rem/1 var(--body); padding: 4px 7px; border-radius: 3px; text-transform: uppercase; letter-spacing: .06em; }
+.pill.late { background: var(--bad-soft); color: var(--bad); }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.wait { background: var(--sunken); color: var(--muted); border: 1px solid var(--line); }
+.due-row { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; font-size: .92rem; }
+.book { border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; display: grid; gap: 6px; background: var(--sunken); font-size: .92rem; }
 .mini-head, .mini-line { display: grid; grid-template-columns: minmax(0, 1.6fr) 70px minmax(0, 1fr) minmax(0, 1fr) 34px; gap: 6px; align-items: center; }
 .mini-head span { font-size: .78rem; color: var(--muted); }
 tr.hl td { background: var(--tag-soft); font-weight: 600; }
@@ -239,6 +263,7 @@ td .pre { white-space: pre-line; }
   <div class="wrap">
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button class="tab" role="tab" id="tab-process" aria-controls="process" aria-selected="true">How it works</button>
+      <button class="tab" role="tab" id="tab-board" aria-controls="board" aria-selected="false">Order board</button>
       <button class="tab" role="tab" id="tab-example" aria-controls="example" aria-selected="false">Real order</button>
       <button class="tab" role="tab" id="tab-triage" aria-controls="triage" aria-selected="false">Triage</button>
       <button class="tab" role="tab" id="tab-ticket" aria-controls="ticket" aria-selected="false">Ticket builder</button>
@@ -348,6 +373,59 @@ td .pre { white-space: pre-line; }
   </div>
 </section>
 
+<!-- ORDER BOARD -->
+<section class="panel" id="board" role="tabpanel" aria-labelledby="tab-board" hidden>
+  <div class="stack">
+    <h2>Order board</h2>
+    <p class="lede">Every open Diamond order and where it stands after the ticket goes out. Move an order forward as things happen. The board flags anything sitting too long, tells you when to go to Costco for a delivery, and walks you through closing out.</p>
+    <p id="b-mode" style="font-size:.85rem;color:var(--muted)">Loading saved orders…</p>
+  </div>
+
+  <div class="stagebar" id="b-stages"></div>
+
+  <div class="grid2">
+    <div class="card stack">
+      <h3>Needs action</h3>
+      <div id="b-due" class="stack" style="gap:8px"></div>
+    </div>
+    <div class="card stack">
+      <h3>Ready to book with Costco</h3>
+      <div id="b-book" class="stack" style="gap:8px"></div>
+    </div>
+  </div>
+
+  <details class="card" id="b-addwrap">
+    <summary><b>Add an order</b></summary>
+    <form id="b-add" class="stack" style="margin-top:12px" autocomplete="off">
+      <div class="row2">
+        <div class="field"><label for="b-wn">WN#</label><input id="b-wn" class="po" type="text" inputmode="numeric" required></div>
+        <div class="field"><label for="b-po">Costco PO</label><input id="b-po" class="po" type="text" inputmode="numeric"></div>
+        <div class="field"><label for="b-qty">Qty</label><input id="b-qty" type="text" placeholder="1 pallet"></div>
+        <div class="field"><label for="b-plts">Pallets</label><input id="b-plts" type="number" min="0" value="1"></div>
+        <div class="field"><label for="b-payer">Who pays</label><select id="b-payer"><option value="diamond">Diamond direct</option><option value="carrier">Carrier</option><option value="small">&lt; 5 bags</option></select></div>
+        <div class="field"><label for="b-stage">Stage</label><select id="b-stage"></select></div>
+      </div>
+      <p id="b-decode" style="font-size:.88rem;color:var(--muted)"></p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="submit">Add order</button><button class="btn" type="button" id="b-fromtk">Copy from Ticket builder</button></div>
+    </form>
+  </details>
+
+  <div class="stack">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
+      <h3>All orders</h3>
+      <label class="check-inline"><input type="checkbox" id="b-showdone"> Show closed</label>
+    </div>
+    <div id="b-list" class="stack" style="gap:10px"></div>
+  </div>
+
+  <div class="card stack">
+    <h3>What each stage means</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>Stage</th><th>Do this</th><th>Late after</th><th>Ticket System</th><th>App</th></tr></thead>
+      <tbody id="b-guide"></tbody></table></div>
+  </div>
+</section>
+
 <!-- REAL ORDER -->
 <section class="panel" id="example" role="tabpanel" aria-labelledby="tab-example" hidden>
   <div class="stack">
@@ -412,6 +490,12 @@ td .pre { white-space: pre-line; }
       </fieldset>
       <fieldset>
         <legend>Disposition</legend>
+        <div class="row2">
+          <div class="field"><label for="f-recv">Refused at depot on (sticker date)</label><input id="f-recv" type="date" value="2026-10-02"></div>
+          <div class="field"><label for="f-stage">Pallet status for the ADW email</label>
+            <select id="f-stage"><option value="arriving">on its way to the WH</option><option value="today" selected>offloaded and being reworked today</option><option value="done">offloaded and reworked</option></select></div>
+          <div class="field"><label for="f-whov">Rework WH (leave blank to use the sheet's)</label><input id="f-whov" type="text" placeholder="e.g. JRY Warehouse"></div>
+        </div>
         <div class="row2">
           <div class="field"><label for="f-reason">Reason refused</label>
             <select id="f-reason"><option>Damage</option><option>Overage</option><option>Shortage</option><option>929 Certification Issues</option></select></div>
@@ -478,6 +562,7 @@ td .pre { white-space: pre-line; }
           <tr><td class="mono">ORD 1500 SU · REC 1440 SU</td><td>Ordered vs received. The difference should equal the refused qty</td></tr>
           <tr><td class="mono">FRT REMAINING ON TRAILER</td><td>Still on the carrier's truck, so it needs a WH</td></tr>
         </tbody></table></div>
+      <p style="font-size:.88rem">Partial pallet example (WN-12331): <span class="mono">REFUSED 24 SU OF ITEM 1162890 DUE TO LEAKING BAG. ORDERED 312 SU, RECEIVED 288</span>. Enter it as SKU 1162890, qty <b>1 pallet refused 24 SU</b>, reason <b>Damage</b>.</p>
       <p style="font-size:.85rem;color:var(--muted)">The origin plant and carrier are on the BOL: Ship From Ripon, CA 95366. Carrier T3RA Logistics (Samand Trucking).</p>
     </div>
     </div>
@@ -508,7 +593,7 @@ td .pre { white-space: pre-line; }
             <span class="label">Email draft</span>
             <textarea id="t-email" rows="16" aria-label="Email draft" readonly></textarea>
             <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" data-copy="t-email">Copy email</button></div>
-            <p style="font-size:.82rem;color:var(--muted)">Laid out like the ADW emails you already send. Everyone goes on the To line: the depot's ADW contacts, Diamond OS&amp;D and diamondpet@warehousenow.com.</p>
+            <p style="font-size:.82rem;color:var(--muted)">Modeled on Grant's WN-12331 email: send from requests@, To the depot's ADW contacts, Cc diamondpet@ and Diamond OS&amp;D. The ticket goes as an attachment, and the email asks ADW to refresh the PO.</p>
           </div>
           <div class="stack" style="gap:6px">
             <span class="label">Attach before sending (besides the ticket)</span>
@@ -956,8 +1041,236 @@ const TL = [
 const stageChip = { Intake: '', App: 'on', Ticket: '', WH: '', Count: '', Appt: '', Billing: 'on', Handoff: 'side' };
 $('#timeline').innerHTML = TL.map(([w, st, who, what, les]) => `<li><div class="when">${esc(w)}<span class="chip ${stageChip[st] || ''}">${esc(st)}</span></div><div class="what"><b>${esc(who)}</b><p>${esc(what)}</p></div>${les ? `<p class="lesson">${esc(les)}</p>` : '<span></span>'}</li>`).join('');
 
+/* ---------- order board ---------- */
+// Depots that run on Master POs (Jan's Wednesday process)
+const MASTER_PO_DEPOTS = ['1052', '731', '1053', '1054', '960', '929', '961'];
+const STAGES = [
+  { k: 'new', t: 'New refusal', late: 0, ts: 'NA', app: 'Quote Approved',
+    next: 'Find the WH, send the confirmation to the cx, save WH + Customer quotes in the app, make the ticket, email ADW.' },
+  { k: 'inbound', t: 'Heading to WH', late: 1, ts: 'NA', app: 'ETA Received',
+    next: 'Get driver name, ETA and trailer # from the carrier. Tell the WH it’s coming.' },
+  { k: 'atwh', t: 'At WH, counting', late: 1, ts: 'NA', app: 'ETA Received',
+    next: 'Get arrival photos and the count by SKU / color. If it differs from the ticket, confirm with the WH, then tell ADW.' },
+  { k: 'rework', t: 'Being reworked', late: 2, ts: 'NA', app: 'ETA Received',
+    next: 'Get reworked-pallet photos and how many pallets are ready vs disposed.' },
+  { k: 'ready', t: 'Ready, need PO', late: 2, ts: 'Ready', app: 'ETA Received',
+    next: 'master' },
+  { k: 'requested', t: 'Appt requested', late: 2, ts: 'Requested', app: 'ETA Received',
+    next: 'Refresh the PO in the Costco portal until it says APPROVED or APPT REVISED. The depot can move it 48 hours either way.' },
+  { k: 'scheduled', t: 'Scheduled', late: null, ts: 'Scheduled', app: 'ETA Received',
+    next: 'Send the confirmation #, time and every PO# to the WH and carrier. Reconfirm the truck the day before.' },
+  { k: 'delivered', t: 'Delivered, need POD', late: 1, ts: 'Delivered', app: 'ETA Received',
+    next: 'Get the POD: Costco’s receiving sticker listing every PO#. If the WH or carrier can’t get it, email podrequests@costco.com for the receiving history.' },
+  { k: 'closeout', t: 'Close out', late: 2, ts: 'Delivered', app: 'Complete',
+    next: 'Work through the closeout checklist: final quote, payer, Ticket System charges, hand to Mariah.' },
+  { k: 'done', t: 'Invoiced', late: null, ts: 'Invoiced', app: 'Invoiced', next: 'Closed. Resolve the email thread.' },
+  { k: 'disposed', t: 'Disposed', late: null, ts: 'Disposed', app: 'Complete', next: 'Closed. Disposal confirmed, ticket marked Disposed.' },
+];
+const CLOSEOUT = [
+  ['pod', 'POD received: receiving sticker with every PO#'],
+  ['adw', 'Replied on the ADW thread: delivered, POD attached'],
+  ['payer', 'Payer confirmed (Diamond or carrier) and posted in the Slack channel'],
+  ['quote', 'App: Customer Quote at the right rates, Customer + Warehouse Final Cost entered'],
+  ['ticket', 'Ticket System: Completed Date, charges, Invoice Total, POD status Completed'],
+  ['mariah', 'App status Complete. Mariah told it’s ready to invoice'],
+  ['resolved', 'Email thread resolved'],
+];
+const stageOf = k => STAGES.find(s => s.k === k) || STAGES[0];
+const stageIdx = k => STAGES.findIndex(s => s.k === k);
+const CLOSED = ['done', 'disposed'];
+const todayISO = () => new Date().toISOString().slice(0, 10);
+const daysSince = iso => iso ? Math.floor((new Date(todayISO() + 'T12:00') - new Date(iso.slice(0, 10) + 'T12:00')) / 864e5) : 0;
+function nextWednesday() {
+  const d = new Date(); const add = (3 - d.getDay() + 7) % 7; d.setDate(d.getDate() + add);
+  return add === 0 ? 'today' : d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+}
+function decode(po) {
+  const depot = depotFor(po); const dest = depot?.city || ''; const wh = warehouseFor(dest);
+  return { depotCode: depot?.code || '', depotName: depot?.facility || '', dest, wh: wh ? wh.code : '' };
+}
+function nextFor(o) {
+  const st = stageOf(o.stage);
+  if (st.next !== 'master') return st.next;
+  const contacts = adwwFor(o.depotCode).map(r => r.name.trim()).join(' / ') || 'ADW';
+  return MASTER_PO_DEPOTS.includes(o.depotCode)
+    ? `Master PO depot. Hold it and add it to the Wednesday request (${nextWednesday()}). When Diamond sends the Master PO, request the appointment.`
+    : `Ask ${contacts} to refresh the PO for delivery this week, then request the appointment in the portal.`;
+}
+function lateness(o) {
+  const st = stageOf(o.stage);
+  if (o.stage === 'scheduled' && o.apptDate) {
+    const d = daysSince(o.apptDate);
+    if (d >= 0) return { late: true, msg: 'Appointment date has passed. Was it delivered?' };
+    if (d === -1) return { late: true, msg: 'Delivery is tomorrow. Reconfirm the truck and WH.' };
+    return { late: false, msg: `Delivery in ${-d} days` };
+  }
+  if (st.late == null) return { late: false, msg: '' };
+  const d = daysSince(o.stageSince);
+  return d > st.late ? { late: true, msg: `${d} days at this stage` } : { late: false, msg: d === 0 ? 'Moved here today' : `${d} day${d === 1 ? '' : 's'} at this stage` };
+}
+
+// storage: shared db when the viewer serves it, else this browser only
+let orders = {}, backend = null, readOnly = false, pendingRender = false, stageFilter = null;
+const writeQ = {};
+function save(id, patch) {
+  orders[id] = { ...orders[id], ...patch, updated: new Date().toISOString() };
+  const body = orders[id];
+  renderBoard();
+  writeQ[id] = (writeQ[id] || Promise.resolve()).then(() => backend.put(id, body)).catch(e => {
+    if (e?.code === 'invalid_argument') { readOnly = true; $('#b-mode').textContent = 'You can view this board but not change it.'; renderBoard(); }
+    else toast('Couldn’t save. Try again.');
+  });
+}
+function remove(id) {
+  delete orders[id]; renderBoard();
+  writeQ[id] = (writeQ[id] || Promise.resolve()).then(() => backend.del(id)).catch(() => toast('Couldn’t delete. Try again.'));
+}
+const local = {
+  load() { orders = store.get('dp-orders', {}); renderBoard(); },
+  put() { store.set('dp-orders', orders); return Promise.resolve(); },
+  del() { store.set('dp-orders', orders); return Promise.resolve(); },
+};
+backend = local; local.load();
+$('#b-mode').textContent = 'Connecting to the saved board…';
+(async () => {
+  let db = null;
+  try { db = await (window.claude?.use?.('db') ?? null); } catch { db = null; }
+  if (!db) { $('#b-mode').textContent = 'Saved in this browser only. Open the claude.ai link to use the shared board.'; return; }
+  const col = db.collection('orders');
+  backend = { put: (id, body) => col.doc(id).set(body), del: id => col.doc(id).delete() };
+  $('#b-mode').textContent = 'Saved to the board. Changes show up for anyone you share it with.';
+  col.onSnapshot(snap => {
+    const next = {}; snap.docs.forEach(d => { next[d.id] = d.data(); });
+    orders = next;
+    if ($('#board').contains(document.activeElement) && document.activeElement.matches('input, textarea')) pendingRender = true; else renderBoard();
+  }, () => { $('#b-mode').textContent = 'Lost the connection to the saved board. Reload to reconnect.'; });
+})();
+$('#board').addEventListener('focusout', () => { if (pendingRender) { pendingRender = false; setTimeout(renderBoard, 0); } });
+
+function renderBoard() {
+  const all = Object.entries(orders).map(([id, o]) => ({ id, ...o }));
+  const open = all.filter(o => !CLOSED.includes(o.stage));
+  // stage bar
+  $('#b-stages').innerHTML = STAGES.filter(s => !CLOSED.includes(s.k) || all.some(o => o.stage === s.k)).map(s => {
+    const list = all.filter(o => o.stage === s.k);
+    const late = list.some(o => lateness(o).late);
+    return `<button type="button" data-stage="${s.k}" aria-pressed="${stageFilter === s.k}" class="${late ? 'late' : ''}"><b>${list.length}</b><span>${esc(s.t)}</span></button>`;
+  }).join('');
+  // needs action
+  const due = open.map(o => ({ o, l: lateness(o) })).filter(x => x.l.late).sort((a, b) => stageIdx(b.o.stage) - stageIdx(a.o.stage));
+  $('#b-due').innerHTML = due.length ? due.map(({ o, l }) => `<div class="due-row"><span class="pill late">WN ${esc(o.wn || o.id)}</span><span><b>${esc(stageOf(o.stage).t)}</b>: ${esc(l.msg)}. ${esc(nextFor(o))}</span></div>`).join('')
+    : `<p style="color:var(--muted);font-size:.92rem">${open.length ? 'Nothing overdue. ' + open.length + ' open order' + (open.length === 1 ? '' : 's') + ' on track.' : 'No open orders yet. Add one below.'}</p>`;
+  // ready to book, grouped by depot
+  const ready = open.filter(o => o.stage === 'ready');
+  const groups = {};
+  ready.forEach(o => (groups[o.depotCode || '?'] ||= []).push(o));
+  const booking = Object.entries(groups).map(([code, list]) => {
+    const master = MASTER_PO_DEPOTS.includes(code);
+    const plts = list.reduce((a, o) => a + (+o.pallets || 0), 0);
+    const name = list[0].depotName || list[0].dest || 'Unknown depot';
+    const reps = adwwFor(code).map(r => r.name.trim()).join(' / ') || 'ADW';
+    const lines = list.map(o => `${o.po || '?'} – ${o.qty || (o.pallets + ' pallets')} // WN-${o.wn}`).join('\n');
+    const wedText = `Hi Jan,\n\nPer the weekly process, here are the refused POs we reworked and are holding this week:\n\n${lines}\n\nCan we get a Master PO for these so we can schedule delivery?\n\nThanks,\nJacob`;
+    const id = 'wed-' + code;
+    return `<div class="book"><b>${esc(code)} · ${esc(name)} · ${list.length} order${list.length === 1 ? '' : 's'}, ${plts} pallet${plts === 1 ? '' : 's'}</b>
+      <span>${master ? `Master PO depot. Request one Master PO on Wednesday (${esc(nextWednesday())}), then book one truck for all of them.` : `Ask ${esc(reps)} to refresh ${list.length > 1 ? 'these POs' : 'the PO'}, then request the appointment. One request per truck per delivery location: put POs going on the same truck on one request with the blue +.`}</span>
+      <span class="mono" style="white-space:pre-line;font-size:.82rem">${esc(lines)}</span>
+      ${master ? `<textarea id="${id}" rows="3" readonly hidden>${esc(wedText)}</textarea><div><button class="btn" type="button" data-copy="${id}">Copy Wednesday email</button></div>` : ''}</div>`;
+  }).join('');
+  const reqd = open.filter(o => o.stage === 'requested').length;
+  $('#b-book').innerHTML = (booking || '<p style="color:var(--muted);font-size:.92rem">Nothing is reworked and waiting on a PO right now.</p>')
+    + (reqd ? `<p style="font-size:.88rem;color:var(--muted)">${reqd} appointment${reqd === 1 ? '' : 's'} already requested and waiting on Costco.</p>` : '');
+  // list
+  const show = all.filter(o => ($('#b-showdone').checked || !CLOSED.includes(o.stage)) && (!stageFilter || o.stage === stageFilter))
+    .sort((a, b) => (lateness(b).late - lateness(a).late) || (stageIdx(a.stage) - stageIdx(b.stage)) || String(a.wn).localeCompare(String(b.wn)));
+  const stageOpts = sel => STAGES.map(s => `<option value="${s.k}" ${s.k === sel ? 'selected' : ''}>${esc(s.t)}</option>`).join('');
+  const dis = readOnly ? 'disabled' : '';
+  $('#b-list').innerHTML = show.length ? show.map(o => {
+    const st = stageOf(o.stage), l = lateness(o), i = stageIdx(o.stage);
+    const nxt = STAGES[i + 1] && !CLOSED.includes(o.stage) && o.stage !== 'closeout' ? STAGES[i + 1] : null;
+    const co = o.closeout || {};
+    const coDone = CLOSEOUT.filter(([k]) => co[k]).length;
+    const showCo = ['delivered', 'closeout', 'done'].includes(o.stage);
+    return `<article class="ord ${l.late ? 'late' : ''}" data-id="${esc(o.id)}">
+      <div class="ord-top"><span class="wn">WN ${esc(o.wn || '—')}</span><span class="mono">${esc(o.po || '')}</span>
+        <span class="meta">${esc([o.depotCode && o.depotCode + ' ' + (o.dest || ''), o.wh, o.qty, o.payer === 'carrier' ? 'carrier pays' : o.payer === 'small' ? '< 5 bags' : ''].filter(Boolean).join(' · '))}</span>
+        <span class="pill ${l.late ? 'late' : CLOSED.includes(o.stage) ? 'ok' : 'wait'}">${esc(st.t)}</span>${l.msg ? `<span class="meta">${esc(l.msg)}</span>` : ''}</div>
+      <p class="ord-next"><b>Next:</b> ${esc(nextFor(o))}</p>
+      <div class="ord-ctrl">
+        ${nxt ? `<button class="btn primary" type="button" data-act="advance" ${dis}>Mark: ${esc(nxt.t)}</button>` : ''}
+        ${o.stage === 'closeout' ? `<button class="btn primary" type="button" data-act="invoiced" ${dis} ${coDone < CLOSEOUT.length ? 'title="Finish the checklist first"' : ''}>Mark invoiced</button>` : ''}
+        <label class="meta" style="display:flex;gap:6px;align-items:center">Stage <select data-f="stage" ${dis}>${stageOpts(o.stage)}</select></label>
+      </div>
+      ${showCo ? `<div class="stack" style="gap:2px"><span class="label">Closeout ${coDone}/${CLOSEOUT.length}</span><ol class="check">${CLOSEOUT.map(([k, t]) => `<li class="${co[k] ? 'done' : ''}"><input type="checkbox" id="co-${esc(o.id)}-${k}" data-co="${k}" ${co[k] ? 'checked' : ''} ${dis}><label for="co-${esc(o.id)}-${k}">${esc(t)}</label></li>`).join('')}</ol></div>` : ''}
+      <details><summary>Details</summary>
+        <div class="row2">
+          <div class="field"><label>Costco PO</label><input type="text" class="po" data-f="po" value="${esc(o.po || '')}" ${dis}></div>
+          <div class="field"><label>Qty</label><input type="text" data-f="qty" value="${esc(o.qty || '')}" ${dis}></div>
+          <div class="field"><label>Pallets</label><input type="number" min="0" data-f="pallets" value="${esc(o.pallets ?? '')}" ${dis}></div>
+          <div class="field"><label>Rework WH</label><input type="text" data-f="wh" value="${esc(o.wh || '')}" ${dis}></div>
+          <div class="field"><label>Master PO</label><input type="text" class="po" data-f="masterPo" value="${esc(o.masterPo || '')}" ${dis}></div>
+          <div class="field"><label>Appt date</label><input type="date" data-f="apptDate" value="${esc(o.apptDate || '')}" ${dis}></div>
+          <div class="field"><label>Appt time</label><input type="text" data-f="apptTime" value="${esc(o.apptTime || '')}" placeholder="08:00" ${dis}></div>
+          <div class="field"><label>Confirmation #</label><input type="text" class="po" data-f="conf" value="${esc(o.conf || '')}" ${dis}></div>
+          <div class="field"><label>Customer final ($)</label><input type="number" min="0" data-f="custFinal" value="${esc(o.custFinal ?? '')}" ${dis}></div>
+          <div class="field"><label>Warehouse final ($)</label><input type="number" min="0" data-f="whFinal" value="${esc(o.whFinal ?? '')}" ${dis}></div>
+        </div>
+        <div class="field" style="margin-top:8px"><label>Notes</label><textarea rows="2" data-f="notes" style="font-family:var(--body);font-size:.9rem" ${dis}>${esc(o.notes || '')}</textarea></div>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="meta">Updated ${esc((o.updated || '').slice(0, 10))}</span>${readOnly ? '' : `<button class="btn" type="button" data-act="delete">Delete</button><span class="meta" data-confirm hidden>Delete WN ${esc(o.wn)}? <button class="btn" type="button" data-act="delete-yes">Yes, delete</button></span>`}</div>
+      </details>
+    </article>`;
+  }).join('') : `<p style="color:var(--muted)">${all.length ? 'No orders match this filter.' : 'No orders yet. Add your first one above.'}</p>`;
+  $('#b-addwrap').hidden = readOnly;
+}
+$('#b-guide').innerHTML = STAGES.map(s => `<tr><td><b>${esc(s.t)}</b></td><td>${esc(s.next === 'master' ? 'Master PO depot (Frederick, Mira Loma): add to the Wednesday Master PO request. Other depots: ask ADW to refresh the PO. Then request the appointment.' : s.next)}</td><td class="num">${s.late == null ? (s.k === 'scheduled' ? 'appt day' : '—') : s.late === 0 ? 'same day' : s.late + ' day' + (s.late === 1 ? '' : 's')}</td><td>${esc(s.ts)}</td><td>${esc(s.app)}</td></tr>`).join('');
+$('#b-stage').innerHTML = STAGES.map(s => `<option value="${s.k}">${esc(s.t)}</option>`).join('');
+$('#b-stages').addEventListener('click', e => { const b = e.target.closest('[data-stage]'); if (!b) return; stageFilter = stageFilter === b.dataset.stage ? null : b.dataset.stage; renderBoard(); });
+$('#b-showdone').addEventListener('change', renderBoard);
+const showDecode = () => { const d = decode($('#b-po').value.replace(/\D/g, '')); $('#b-decode').textContent = $('#b-po').value ? (d.depotCode ? `Depot ${d.depotCode} ${d.depotName} · ${d.dest || 'no city'} · WH ${d.wh || 'none on file'}` : 'PO prefix not in the Costco list') : ''; };
+$('#b-po').addEventListener('input', showDecode);
+$('#b-fromtk').addEventListener('click', () => {
+  $('#b-wn').value = $('#f-whn').value; $('#b-po').value = $('#f-po').value;
+  $('#b-qty').value = [...$('#skuLines').querySelectorAll('input')].map(i => i.value.trim()).filter(Boolean).join(' + ');
+  $('#b-plts').value = $('#f-plts').value; $('#b-payer').value = $('#f-payer').value; $('#b-fromtk').dataset.used = '1'; showDecode();
+});
+$('#b-add').addEventListener('submit', e => {
+  e.preventDefault();
+  const wn = $('#b-wn').value.replace(/\D/g, ''); if (!wn) return;
+  const id = 'WN-' + wn;
+  if (orders[id]) { toast(`WN ${wn} is already on the board`); return; }
+  const po = $('#b-po').value.replace(/\D/g, '').replace(/^0+/, '');
+  const d = decode(po);
+  const wh = $('#b-fromtk').dataset.used && $('#f-whov').value.trim();
+  save(id, { wn, po, qty: $('#b-qty').value.trim(), pallets: +$('#b-plts').value || 0, payer: $('#b-payer').value, stage: $('#b-stage').value, stageSince: todayISO(), ...d, wh: wh || d.wh, closeout: {}, created: new Date().toISOString() });
+  e.target.reset(); delete $('#b-fromtk').dataset.used; showDecode(); toast(`Added WN ${wn}`);
+});
+$('#b-list').addEventListener('click', e => {
+  const card = e.target.closest('.ord'); if (!card || readOnly) return;
+  const id = card.dataset.id, o = orders[id], act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'advance') { const i = stageIdx(o.stage); save(id, { stage: STAGES[i + 1].k, stageSince: todayISO() }); }
+  if (act === 'invoiced') {
+    const left = CLOSEOUT.filter(([k]) => !(o.closeout || {})[k]).length;
+    if (left) { toast(`${left} closeout step${left === 1 ? '' : 's'} left`); return; }
+    save(id, { stage: 'done', stageSince: todayISO() });
+  }
+  if (act === 'delete') card.querySelector('[data-confirm]').hidden = false;
+  if (act === 'delete-yes') remove(id);
+});
+$('#b-list').addEventListener('change', e => {
+  const card = e.target.closest('.ord'); if (!card || readOnly) return;
+  const id = card.dataset.id, o = orders[id];
+  if (e.target.dataset.co) { save(id, { closeout: { ...(o.closeout || {}), [e.target.dataset.co]: e.target.checked } }); return; }
+  const f = e.target.dataset.f; if (!f) return;
+  let val = e.target.value.trim();
+  if (['pallets', 'custFinal', 'whFinal'].includes(f)) val = val === '' ? null : +val;
+  if (f === 'po') { val = val.replace(/\D/g, '').replace(/^0+/, ''); save(id, { po: val, ...decode(val), wh: o.wh || decode(val).wh }); return; }
+  if (f === 'stage') { save(id, { stage: val, stageSince: todayISO() }); return; }
+  if ((o[f] ?? '') === (val ?? '')) return;
+  save(id, { [f]: val });
+});
+
 /* ---------- daily checklist ---------- */
-const DAILY = ['Scan #diamond-deliveries for new refusals and updates', 'Every open load has both a Costco PO and a WHNow PO', 'Chase arrival / rework photos from WHs. Set a Slack reminder for each follow-up', 'Check pending appointments in the Costco portal (Manual Appt Follow up)', 'Send confirmation #s for newly approved appointments', 'Chase PODs for yesterday’s deliveries', 'Update statuses in the Ticket System', 'Log anything new in the Live Case Log'];
+const DAILY = ['Open the Order board and clear everything under Needs action', 'Scan #diamond-deliveries for new refusals and updates', 'Every open load has both a Costco PO and a WHNow PO', 'Chase arrival / rework photos from WHs. Set a Slack reminder for each follow-up', 'Check pending appointments in the Costco portal (Manual Appt Follow up)', 'Send confirmation #s for newly approved appointments', 'Chase PODs for yesterday’s deliveries', 'Update statuses in the Ticket System', 'Log anything new in the Live Case Log'];
 const today = new Date().toISOString().slice(0, 10);
 let ticks = store.get('dp-daily', {});
 if (ticks.day !== today) ticks = { day: today, done: [] };
@@ -1012,7 +1325,7 @@ function build() {
   $('#t-auto').innerHTML = [
     cell('Depot code', depot ? `${depot.code} · ${depot.facility}` : '', po ? 'PO prefix not in Costco list' : 'Enter a Costco PO'),
     cell('Destination', dest, depot ? 'Depot has no city in the sheet' : '—'),
-    cell('Go-to WH (Return Origin)', wh ? `${wh.code} · ${wh.name || '(no name)'}` : '', dest ? 'No go-to WH for this city' : '—'),
+    cell('Go-to WH (Return Origin)', v('#f-whov') ? v('#f-whov') + ' (typed in)' : wh ? `${wh.code} · ${wh.name || '(no name)'}` : '', dest ? 'No go-to WH for this city' : '—'),
     cell('Return destination', retDest, disp === 'Donate / Dispose' ? 'None (disposed)' : '—'),
     cell('ADW contact', reps.map(r => r.name).join(', '), depot ? 'No ADW contact mapped' : '—'),
     cell('ADW email', reps.map(r => r.email).join(', '), '—'),
@@ -1045,39 +1358,38 @@ Your Load# or Pro# for billing purposes.
 
 Thank you!` : 'Enter a Costco PO with a go-to warehouse to build the confirmation.';
   const itemLines = lines.length ? lines.map(l => `  • ${l.costco}  ${l.size} ${l.name}  —  ${l.qty || '?'}`).join('\n') : '  • (add SKUs)';
-  // Same order as the ticket image in the ADW email: PO, qty, reason, carrier, disposition, origin, WH code, WN#
-  const card = [po, qtyText, v('#f-reason'), v('#f-carrier'), disp, origin, wh ? wh.code : '', whn].filter(Boolean);
+  // Same order as the ticket image in the ADW email: date, PO, qty, reason, carrier, disposition, origin, WH, WN#
+  const whName = v('#f-whov') || (wh ? wh.code : '');
+  const tDate = v('#f-date') ? new Date(v('#f-date') + 'T12:00').toLocaleDateString('en-US') : '';
+  const card = [tDate, po, qtyText, v('#f-reason'), v('#f-carrier'), disp, origin, whName, whn].filter(Boolean);
   $('#t-card').textContent = card.join('\n') || '—';
+  const recv = v('#f-recv') ? new Date(v('#f-recv') + 'T12:00') : null;
+  const daysAgo = recv ? Math.round((new Date().setHours(12) - recv) / 864e5) : null;
+  const recvWord = !recv ? '[day]' : daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : daysAgo < 7 ? 'on ' + recv.toLocaleDateString('en-US', { weekday: 'long' }) : 'on ' + recv.toLocaleDateString('en-US');
+  const st = (dest.match(/,\s*([A-Z]{2})$/) || [])[1] || 'the';
+  const stage = { arriving: 'the pallet is on its way to our warehouse for rework', today: 'pallet was offloaded and is being reworked today', done: 'pallet was offloaded and has been reworked' }[v('#f-stage')];
+  const hour = new Date().getHours();
   $('#t-email').value =
-`To: ${[...reps.map(r => r.email), team].join(', ')}
+`From: requests@warehousenow.com
+To: ${reps.map(r => r.email).join(', ') || '[ADW contact]'}
+Cc: ${team}
 Subject: ${subject}
 
-Team,
+${hour < 12 ? 'Morning' : 'Afternoon'}
 
-Please see the ticket below for refused Diamond product.
+See attached ticket for this PO we received ${recvWord} at the ${st} depot, ${stage}, can we refresh the PO for delivery this week?
 
-${card.join('\n')}
-${wh ? `
-Rework warehouse:
-${wh.name || wh.code}
-${wh.address}
-Hours: ${wh.hours.split('\n')[0]}
-` : ''}
-Items & quantities refused:
-${itemLines}
-
-Attached: ticket, Costco rejection sticker, BOL, Diamond order confirmation (SKU page) and pallet photos.
-
-Thank you,
-Jacob
-WarehouseNow`;
+Attached: ticket image, Costco sticker, merged PDF (photos, BOL, order confirmation).`;
   const att = [
-    'Ticket card screenshot (the block above)',
-    'Costco receiving / rejection sticker: shows the refused PO, "REFUSED 1 PLT = 60 SU ITM 450195", the reason and ordered vs received',
-    'BOL (Diamond short-form Bill of Lading): BOL #, ship-from plant, carrier, pallets and weight',
-    'Diamond Order Confirmation: the page with the SKU #s (Customer P/N) and qty per item',
-    'Pallet photos of the refused pallet(s), showing the damage',
-    'Tip: the carrier\u2019s ISSUE_REPORTING PDF in the Slack channel usually has all four. Forward the pages from it.',
+    'Ticket image: screenshot of the View Ticket screen or the ticket card above',
+    'Costco receiving / rejection sticker on its own: refused PO, SU count, item #, reason, ordered vs received',
+    'One merged PDF with: trailer photo showing the refused pallet',
+    '…pallet label close-up (Diamond part #, qty, lot, best-by)',
+    '…damaged pallet photo',
+    '…BOL (Diamond short-form Bill of Lading)',
+    '…the sticker again',
+    '…Diamond Order Confirmation (the page with the SKU #s / Customer P/N)',
+    'Tip: the carrier’s ISSUE_REPORTING PDF in Slack usually has the photos, BOL, sticker and order confirmation. Forward it as the merged PDF.',
   ];
   const prevAtt = [...document.querySelectorAll('#t-attach input:checked')].map(i => i.id);
   $('#t-attach').innerHTML = att.map((a, i) => a.startsWith('Tip:') ? `<li style="grid-template-columns:1fr;color:var(--muted);font-size:.88rem">${esc(a)}</li>` : `<li><input type="checkbox" id="att-${i}" ${prevAtt.includes('att-' + i) ? 'checked' : ''}><label for="att-${i}">${esc(a)}</label></li>`).join('');
@@ -1187,6 +1499,7 @@ const ISSUES = [
   ['med', 'Return Origin holds the warehouse code', 'The "Return_Origin" column stores the rework warehouse code (e.g. SKY-ONT-CA), not an origin. "Return_Destination" is the Costco city for rework or the plant for a return. Don’t let the names confuse you.'],
   ['med', 'Check the door type in the portal', 'Grant\u2019s Master PO request used "1052 - Palletized Load". The 10520930206 appointment approved for 10/04 shows "1052 - LTL (Cigs, Clothing, Electronics, Pharm)" with QTY 2 under Cases instead of PLT Count. It went through, but check with Genderson which door type and UOM Costco expects so a later one isn\u2019t refused.'],
   ['med', 'Check the payer before invoicing', 'WN-11823 was quoted to Diamond, but T3RA (the carrier) may be paying. Diamond direct and carrier-paid loads bill differently, and Diamond has its own invoice format that Mariah handles.'],
+  ['med', 'Sumner has used more than one warehouse', 'WN-12331 (Sept 19) was reworked at "JRY Warehouse", which isn\u2019t in Go to Warehouses. WN-13026 and WN-13073 (Oct) used GEF-TAC-WA. Confirm which one is current. Use the "Rework WH" field on the Ticket builder when it isn\u2019t the sheet\u2019s pick.'],
   ['low', 'Free-text in charge columns', 'Redelivery and LTL charge cells hold notes like "Incl 2347" (rides another ticket’s delivery) or "Master PO#9600219395". It’s useful context, but those cells won’t add up as numbers.'],
   ['low', 'Pallet qty is free text', 'Total_Pallets_Rejected mixes "1 pallet", "1 Pallet", "FTL", "1 SU", "1 pallet 1 SU". Counting pallets for billing means reading each one.'],
   ['low', `${(S.status.find(x => x[0] === 'NA') || [0, 0])[1]} tickets still at status NA`, 'More than half the tickets are still at NA, some going back to March. Either nobody updated them or they really are stuck. The status column isn’t a reliable open-items list yet. The Orders Dashboard tab is also marked "Not Updated".'],
