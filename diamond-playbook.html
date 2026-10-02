@@ -88,6 +88,10 @@ section.panel { display: grid; gap: 28px; }
 
 /* Lifecycle */
 .flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0; counter-reset: step; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.flow.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.flow.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 900px) { .flow.c4, .flow.c3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .flow.c4, .flow.c3 { grid-template-columns: 1fr; } }
 .step { padding: 16px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); display: grid; gap: 8px; align-content: start; position: relative; }
 .step::before { counter-increment: step; content: counter(step, decimal-leading-zero); font: 700 1.5rem/1 var(--display); color: var(--tag); }
 .step h3 { font-size: 1.15rem; }
@@ -163,6 +167,8 @@ textarea { font-family: var(--mono); font-size: .82rem; line-height: 1.5; resize
 .copyrow { display: flex; gap: 8px; align-items: start; }
 .copyrow .box { flex: 1; min-width: 0; padding: 8px 10px; background: var(--sunken); border: 1px solid var(--line); border-radius: 4px; font-family: var(--mono); font-size: .84rem; overflow-wrap: anywhere; }
 .tcard { flex: 1; min-width: 0; background: #ffffff; color: #111111; border: 1px solid var(--line); border-radius: 4px; padding: 14px 10px; text-align: center; font: 500 .9rem/1.6 var(--body); white-space: pre-line; }
+.mini-head, .mini-line { display: grid; grid-template-columns: minmax(0, 1.6fr) 70px minmax(0, 1fr) minmax(0, 1fr) 34px; gap: 6px; align-items: center; }
+.mini-head span { font-size: .78rem; color: var(--muted); }
 .money { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; font-variant-numeric: tabular-nums; font-size: .94rem; }
 .money .tot { font: 700 1.5rem/1.2 var(--display); border-top: 1px solid var(--line); padding-top: 6px; }
 .money span:nth-child(even) { text-align: right; font-family: var(--mono); }
@@ -221,6 +227,7 @@ td .pre { white-space: pre-line; }
       <button class="tab" role="tab" id="tab-process" aria-controls="process" aria-selected="true">How it works</button>
       <button class="tab" role="tab" id="tab-triage" aria-controls="triage" aria-selected="false">Triage</button>
       <button class="tab" role="tab" id="tab-ticket" aria-controls="ticket" aria-selected="false">Ticket builder</button>
+      <button class="tab" role="tab" id="tab-appt" aria-controls="appt" aria-selected="false">Appointments</button>
       <button class="tab" role="tab" id="tab-rhythm" aria-controls="rhythm" aria-selected="false">Weekly rhythm</button>
       <button class="tab" role="tab" id="tab-reference" aria-controls="reference" aria-selected="false">Reference</button>
       <button class="tab" role="tab" id="tab-gaps" aria-controls="gaps" aria-selected="false">Sheet watch-outs</button>
@@ -242,7 +249,7 @@ td .pre { white-space: pre-line; }
 
   <div class="stack">
     <h3>The lifecycle of one refused load</h3>
-    <div class="flow">
+    <div class="flow c4">
       <div class="step"><h3>Refusal comes in</h3>
         <ul><li>Carrier reports a load refused at a Costco depot</li><li>#qb-team opens the Slack channel / AT order</li><li>Get the BOL, the <b>receiver rejection sticker</b> (mandatory) and pallet photos</li></ul>
         <p class="who"><b>Carrier → QB team</b></p></div>
@@ -259,7 +266,7 @@ td .pre { white-space: pre-line; }
         <ul><li>Arrival photos + rework timing</li><li>Reworked pallet photos</li><li>Damage count in bags by SKU / Item ID, broken out by color if mixed</li></ul>
         <p class="who"><b>WH → you → Slack</b></p></div>
       <div class="step"><h3>Book the appointment</h3>
-        <ul><li>Pallets ready, WH + carrier available</li><li>Request in the Costco portal, 2+ days out</li><li>Wait for APPROVED or APPT REVISED</li><li>Send confirmation #, date/time and exact PO#s</li></ul>
+        <ul><li>Pallets ready, WH + carrier available</li><li>Master PO depots: book the Master PO, list its mini POs</li><li>Request in the Costco portal, 2+ days out</li><li>Wait for APPROVED or APPT REVISED</li><li>Send confirmation #, date/time and exact PO#s</li></ul>
         <p class="who"><b>You → Costco portal</b></p></div>
       <div class="step"><h3>Deliver + POD</h3>
         <ul><li>Get the POD with the receiving sticker listing <b>every</b> PO# (mandatory)</li><li>podrequests@costco.com for receiving history</li><li>POD status → Completed</li></ul>
@@ -286,8 +293,8 @@ td .pre { white-space: pre-line; }
       <dl class="kv">
         <dt>NA</dt><dd>Ticket created, product at or heading to the WH</dd>
         <dt>Ready</dt><dd>Reworked, waiting on an appointment</dd>
-        <dt>Requested</dt><dd>Appointment requested in the Costco portal</dd>
-        <dt>Scheduled</dt><dd>Approved / revised, confirmation # sent out</dd>
+        <dt>Requested</dt><dd>Portal shows APPT REQUESTED</dd>
+        <dt>Scheduled</dt><dd>Portal shows APPROVED / APPT REVISED, confirmation # sent out</dd>
         <dt>Delivered</dt><dd>Dropped at Costco, chasing POD</dd>
         <dt>Invoiced</dt><dd>Charges entered and billed</dd>
         <dt>Disposed</dt><dd>Donated or disposed, no redelivery</dd>
@@ -419,6 +426,88 @@ td .pre { white-space: pre-line; }
   </div>
 </section>
 
+<!-- APPOINTMENTS -->
+<section class="panel" id="appt" role="tabpanel" aria-labelledby="tab-appt" hidden>
+  <div class="stack">
+    <h2>Delivery appointments</h2>
+    <p class="lede">Reworked pallets go back into Costco on an appointment you book in the <strong>Costco appointment portal</strong>. On Master PO depots like Frederick and Mira Loma you book the Master PO, not each refused PO. You then email ADW the Master PO with the mini POs that roll into it, so they can match pallets to POs. When the portal flips to <strong>APPROVED</strong>, reply on the same thread with the confirmation.</p>
+  </div>
+
+  <div class="flow c3">
+    <div class="step"><h3>Get the Master PO</h3>
+      <ul><li>From Diamond, after the Wednesday request</li><li>List every mini PO it covers with pallets, item # and WN#</li></ul>
+      <p class="who"><b>Diamond → you</b></p></div>
+    <div class="step"><h3>Search first</h3>
+      <ul><li>Search Appointment → PO#</li><li>No spaces, dashes or leading zeroes</li><li>Check that nobody already booked it</li></ul>
+      <p class="who"><b>Costco portal</b></p></div>
+    <div class="step"><h3>Request</h3>
+      <ul><li>Depot, PO# (the Master PO)</li><li>UOM: <b>PLT Count</b> for pallets, total of all mini POs</li><li>Pickup zip = origin plant zip (Gaston = 29053)</li><li>Blue <b>+</b> adds more POs. One request per truck per delivery location</li></ul>
+      <p class="who"><b>Costco portal</b></p></div>
+    <div class="step"><h3>Appointment details</h3>
+      <ul><li>Requested delivery date (2+ days out)</li><li>Carrier: WAREHOUSENOW INC</li><li>Door type: <b>Palletized Load</b></li><li>Unload: LIVE · Commodity: Pet Food</li><li>Save. Status → APPT REQUESTED</li></ul>
+      <p class="who"><b>Costco portal</b></p></div>
+    <div class="step"><h3>"Requesting this" email</h3>
+      <ul><li>To ADW contacts + Diamond OS&amp;D</li><li>Master PO, then each mini PO line</li><li>Portal screenshot</li><li>Ticket System → Requested</li></ul>
+      <p class="who"><b>You → ADW</b></p></div>
+    <div class="step"><h3>Approved / revised</h3>
+      <ul><li>Refresh the portal until APPROVED or APPT REVISED</li><li>Reply on the thread with date/time + confirmation #</li><li>Send confirmation #, time and every PO# to the WH / carrier</li><li>Ticket System → Scheduled</li></ul>
+      <p class="who"><b>You → ADW, WH, carrier</b></p></div>
+  </div>
+
+  <div class="builder">
+    <form class="card stack" id="mform" autocomplete="off">
+      <fieldset>
+        <legend>Master PO</legend>
+        <div class="row2">
+          <div class="field"><label for="m-master">Master PO #</label><input id="m-master" class="po" type="text" inputmode="numeric" value="10520921303"></div>
+          <div class="field"><label for="m-zip">Pickup zip</label><input id="m-zip" class="po" type="text" inputmode="numeric" value="29053"></div>
+          <div class="field"><label for="m-date">Requested delivery date</label><input id="m-date" type="date" value="2026-09-24"></div>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Mini POs it covers</legend>
+        <div class="mini-head"><span>Costco PO</span><span>Pallets</span><span>Item #</span><span>WN#</span><span></span></div>
+        <div id="miniLines" class="stack" style="gap:6px"></div>
+        <div><button type="button" class="btn" id="addMini">Add mini PO</button></div>
+      </fieldset>
+      <fieldset>
+        <legend>Once it's approved</legend>
+        <div class="row2">
+          <div class="field"><label for="m-status">Portal status</label><select id="m-status"><option>APPT REQUESTED</option><option>APPROVED</option><option>APPT REVISED</option></select></div>
+          <div class="field"><label for="m-appt">Appt date / time</label><input id="m-appt" type="text" placeholder="10/04/26 08:00"></div>
+          <div class="field"><label for="m-conf">Confirmation #</label><input id="m-conf" class="po" type="text" placeholder="2370178327429981"></div>
+        </div>
+      </fieldset>
+    </form>
+
+    <div class="stack">
+      <article class="ticket" aria-live="polite">
+        <div class="ticket-head"><h3>Portal + emails</h3><span class="mono" id="m-id"></span></div>
+        <div class="ticket-body">
+          <div class="auto" id="m-auto"></div>
+          <div class="stack" style="gap:6px">
+            <span class="label">"Requesting this" email</span>
+            <textarea id="m-req" rows="12" aria-label="Appointment request email" readonly></textarea>
+            <div><button class="btn primary" type="button" data-copy="m-req">Copy request email</button></div>
+          </div>
+          <div class="stack" style="gap:6px">
+            <span class="label">Approval reply</span>
+            <textarea id="m-ok" rows="10" aria-label="Approval reply email" readonly></textarea>
+            <div><button class="btn" type="button" data-copy="m-ok">Copy approval reply</button></div>
+          </div>
+          <div class="stack" style="gap:6px">
+            <span class="label">Message to the WH / carrier</span>
+            <textarea id="m-wh" rows="7" aria-label="Message to warehouse and carrier" readonly></textarea>
+            <div><button class="btn" type="button" data-copy="m-wh">Copy</button></div>
+          </div>
+          <div id="m-warn" class="stack" style="gap:8px"></div>
+        </div>
+      </article>
+    </div>
+  </div>
+  <p style="font-size:.85rem;color:var(--muted)">The form starts with Grant's real request from 9/23: Master PO 10520921303 covering WN-12298 and WN-12336, 4 pallets to Frederick.</p>
+</section>
+
 <!-- RHYTHM -->
 <section class="panel" id="rhythm" role="tabpanel" aria-labelledby="tab-rhythm" hidden>
   <div class="stack">
@@ -491,6 +580,8 @@ Jacob</div><button class="btn" type="button" data-copy="wed-email">Copy</button>
         <div><dt>OS&amp;D</dt><dd>Over, Short &amp; Damaged</dd></div>
         <div><dt>SU</dt><dd>Single units (loose bags) instead of full pallets, e.g. "3 SU"</dd></div>
         <div><dt>ADW / ADWW</dt><dd>The Costco-side reps for each depot. They receive the ticket</dd></div>
+        <div><dt>Mini PO</dt><dd>One of the original refused Costco POs that rolls up into a Master PO</dd></div>
+        <div><dt>Schell &amp; Kampeter</dt><dd>Diamond's legal name. Shows as the Vendor in the Costco portal</dd></div>
         <div><dt>Master PO</dt><dd>One Costco PO covering several refused POs, so they deliver and invoice together</dd></div>
         <div><dt>POD</dt><dd>Proof of delivery. Must show the receiving sticker with every PO#</dd></div>
         <div><dt>Depot code</dt><dd>First 3–4 digits of a Costco PO, e.g. <code>1052</code>0914317 is Frederick</dd></div>
@@ -635,6 +726,105 @@ function renderCase() {
 $('#caseBtns').addEventListener('click', e => { const b = e.target.closest('[data-case]'); if (!b) return; curCase = b.dataset.case; store.set('dp-case', curCase); renderCase(); });
 $('#caseSteps').addEventListener('change', e => { e.target.closest('li')?.classList.toggle('done', e.target.checked); });
 renderCase();
+
+/* ---------- appointments / master PO ---------- */
+function addMini(po = '', plts = '', item = '', wn = '') {
+  const div = document.createElement('div'); div.className = 'mini-line';
+  const n = $('#miniLines').children.length;
+  div.innerHTML = `<input type="text" class="po" aria-label="Costco PO" id="mp-${n}" value="${esc(po)}"><input type="number" min="0" aria-label="Pallets" id="mq-${n}" value="${esc(plts)}"><input type="text" aria-label="Item number" id="mi-${n}" value="${esc(item)}"><input type="text" aria-label="WN number" id="mw-${n}" value="${esc(wn)}"><button type="button" class="btn icon" aria-label="Remove mini PO">✕</button>`;
+  div.querySelector('button').addEventListener('click', () => { div.remove(); buildAppt(); });
+  $('#miniLines').appendChild(div);
+}
+addMini('10520903173', '1', '430541', '12298');
+addMini('10520904289', '3', '33406', '12336');
+$('#addMini').addEventListener('click', () => { addMini(); buildAppt(); });
+$('#mform').addEventListener('input', buildAppt);
+$('#mform').addEventListener('change', buildAppt);
+
+function buildAppt() {
+  const v = id => $(id).value.trim();
+  const master = v('#m-master').replace(/\D/g, '').replace(/^0+/, '');
+  const depot = depotFor(master);
+  const reps = depot ? adwwFor(depot.code) : [];
+  const minis = [...$('#miniLines').children].map(l => {
+    const [po, q, item, wn] = [...l.querySelectorAll('input')].map(i => i.value.trim());
+    return { po: po.replace(/\D/g, ''), plts: +q || 0, item, wn: wn.replace(/^WN-?/i, '') };
+  }).filter(m => m.po);
+  const total = minis.reduce((a, m) => a + m.plts, 0);
+  const dt = v('#m-date') ? new Date(v('#m-date') + 'T12:00') : null;
+  const mdY = dt ? dt.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) : '';
+  const status = v('#m-status'), appt = v('#m-appt'), conf = v('#m-conf');
+  const apptDay = (() => {
+    const m = appt.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if (!m) return '';
+    const y = m[3].length === 2 ? 2000 + +m[3] : +m[3];
+    return new Date(y, m[1] - 1, m[2]).toLocaleDateString('en-US', { weekday: 'long' });
+  })();
+
+  $('#m-id').textContent = `Master ${master || '—'}`;
+  const cell = (k, val, miss) => `<div><span class="label">${esc(k)}</span><span class="v ${val ? '' : 'miss'}">${val ? esc(val) : esc(miss || '—')}</span></div>`;
+  $('#m-auto').innerHTML = [
+    cell('Depot', depot ? `${depot.code} · ${depot.facility}` : '', 'PO prefix not in Costco list'),
+    cell('PO# to enter', master),
+    cell('UOM / PLT count', total ? `PLT Count · ${total}` : '', 'Add pallets'),
+    cell('Pickup zip', v('#m-zip')),
+    cell('Requested delivery', mdY),
+    cell('Door type', depot ? `${depot.code} - Palletized Load` : ''),
+    cell('Carrier', 'WAREHOUSENOW INC'),
+    cell('Unload · Commodity', 'LIVE · Pet Food'),
+  ].join('');
+
+  const to = [...reps.map(r => r.email), 'diamondosd@diamondpet.com'].join(', ');
+  const miniText = minis.map(m => `${m.po} – ${m.plts} pallet${m.plts === 1 ? '' : 's'} item ${m.item || '?'} // WN-${m.wn || '?'}`).join('\n\n');
+  $('#m-req').value =
+`To: ${to}
+Subject: Master PO ${master} – delivery appointment request
+
+Requesting this
+
+Master PO: ${master}
+
+${miniText}
+
+--
+[paste the portal screenshot showing APPT REQUESTED]`;
+
+  const first = reps[0]?.name.trim().split(/\s+/)[0] || 'Team';
+  $('#m-ok').value = status === 'APPT REQUESTED'
+    ? 'Waiting on Costco. Refresh the PO in the portal. When it shows APPROVED or APPT REVISED, set the status above and fill in the date/time and confirmation #.'
+    : `Reply on the same thread to: ${to}
+
+${first},
+
+${status === 'APPROVED' ? 'This has been approved' : 'Costco revised the appointment'} and we are all set for delivery ${apptDay || '[day]'}.
+
+Appt: ${appt || '[date/time]'}
+Confirmation #: ${conf || '[confirmation #]'}
+Master PO: ${master}
+${minis.map(m => `  ${m.po} // WN-${m.wn}`).join('\n')}
+
+[paste the portal screenshot showing ${status}]`;
+
+  $('#m-wh').value =
+`Costco delivery ${status === 'APPT REQUESTED' ? 'requested (not confirmed yet)' : 'confirmed'}
+Depot: ${depot ? depot.code + ' ' + depot.facility + ' – ' + depot.city : ''}
+Appt: ${appt || mdY + ' (requested)'}
+Confirmation #: ${conf || 'pending'}
+PO#s on the load: ${[master, ...minis.map(m => m.po)].filter(Boolean).join(', ')}
+Pallets: ${total}  ·  WN#s: ${minis.map(m => m.wn).filter(Boolean).join(', ')}`;
+
+  const warns = [];
+  if (minis.some(m => !m.wn)) warns.push(['bad', 'Every mini PO needs its WN#, or ADW and our side can’t match pallets to orders.']);
+  if (depot && depot.code !== master.slice(0, depot.code.length)) warns.push(['bad', 'Master PO prefix doesn’t match the depot.']);
+  const off = minis.filter(m => depot && !m.po.startsWith(depot.code));
+  if (off.length) warns.push(['bad', `${off.map(m => m.po).join(', ')} ${off.length > 1 ? 'are' : 'is'} for a different depot. One request per truck per delivery location.`]);
+  if (dt) { const days = Math.round((dt - new Date()) / 864e5); if (days < 2 && status === 'APPT REQUESTED') warns.push(['', 'Requested date is less than 2 days out. The SOP prefers 2+ days.']); }
+  if (apptDay === 'Saturday' || apptDay === 'Sunday') warns.push(['', `Weekend delivery (${apptDay}). Check whether the WH charges OT/weekend. Diamond is billed $200.`]);
+  if (status !== 'APPT REQUESTED' && !conf) warns.push(['bad', 'Add the confirmation # before telling the WH or carrier.']);
+  warns.push(['', 'Portal error or missed appointment? Ask ADW for a PO refresh, then request again.']);
+  $('#m-warn').innerHTML = warns.map(([k, t]) => `<div class="note ${k}">${esc(t)}</div>`).join('');
+}
+buildAppt();
 
 /* ---------- daily checklist ---------- */
 const DAILY = ['Scan #diamond-deliveries for new refusals and updates', 'Every open load has both a Costco PO and a WHNow PO', 'Chase arrival / rework photos from WHs', 'Check pending appointments in the Costco portal (Manual Appt Follow up)', 'Send confirmation #s for newly approved appointments', 'Chase PODs for yesterday’s deliveries', 'Update statuses in the Ticket System', 'Log anything new in the Live Case Log'];
@@ -791,6 +981,7 @@ const ISSUES = [
   ['med', 'Go-to WH match is "first city that fits"', 'The Return Origin formula picks the first Go to Warehouses row whose city appears in the destination. Monrovia, Dallas and College Park each have two rows, and the second (Monrovia2 / Dallas2 / College Park1) can never be picked automatically. Many tickets list RUN-FRE-MD and SPE-DUL-VA for the same depot, so people are overriding it by hand.'],
   ['med', 'Update Ticket has a shorter carrier list', 'New Ticket validates carriers against Aux!A2:A24 but Update Ticket uses Aux!A2:A22, so "WarehouseNow" and "Sunstate Carriers Inc" can’t be picked when updating. Fulmer is also listed twice.'],
   ['med', 'Return Origin holds the warehouse code', 'The "Return_Origin" column stores the rework warehouse code (e.g. SKY-ONT-CA), not an origin. "Return_Destination" is the Costco city for rework or the plant for a return. Don’t let the names confuse you.'],
+  ['med', 'Check the door type in the portal', 'Grant\u2019s Master PO request used "1052 - Palletized Load". The 10520930206 appointment approved for 10/04 shows "1052 - LTL (Cigs, Clothing, Electronics, Pharm)" with QTY 2 under Cases instead of PLT Count. It went through, but check with Genderson which door type and UOM Costco expects so a later one isn\u2019t refused.'],
   ['low', 'Free-text in charge columns', 'Redelivery and LTL charge cells hold notes like "Incl 2347" (rides another ticket’s delivery) or "Master PO#9600219395". It’s useful context, but those cells won’t add up as numbers.'],
   ['low', 'Pallet qty is free text', 'Total_Pallets_Rejected mixes "1 pallet", "1 Pallet", "FTL", "1 SU", "1 pallet 1 SU". Counting pallets for billing means reading each one.'],
   ['low', `${(S.status.find(x => x[0] === 'NA') || [0, 0])[1]} tickets still at status NA`, 'More than half the tickets are still at NA, some going back to March. Either nobody updated them or they really are stuck. The status column isn’t a reliable open-items list yet. The Orders Dashboard tab is also marked "Not Updated".'],
