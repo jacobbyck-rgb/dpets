@@ -483,7 +483,7 @@ td .pre { white-space: pre-line; }
     <form class="card stack" id="tform" autocomplete="off">
       <fieldset>
         <div class="field"><label for="f-preset">Load a real order</label>
-          <select id="f-preset"><option value="13073">WN-13073 · Sumner · 1 pallet cat food · T3RA</option><option value="13026">WN-13026 · Sumner · 2 pallets · Cheema</option></select></div>
+          <select id="f-preset"><option value="13073">WN-13073 · Sumner · 1 pallet cat food · T3RA</option><option value="13026">WN-13026 · Sumner · 2 pallets · Cheema</option><option value="13087">WN-13087 · Monroe Twp NJ · 31 pallets · T3RA</option></select></div>
         <legend>Identity</legend>
         <div class="row2">
           <div class="field"><label for="f-whn">WarehouseNow PO#</label><input id="f-whn" class="po" type="text" value="13073"></div>
@@ -1132,7 +1132,7 @@ function drawTicket(t) {
   let x = pad;
   ['SKU', 'Product Name', 'Qty'].forEach((h, i) => { text(h, x, y + skuH / 2, skuCols[i], 'center', 15, 'bold', '#ffffff'); x += skuCols[i]; });
   y += skuH;
-  (t.skus.length ? t.skus : [['', 'No SKUs added', '']]).forEach(r => {
+  (t.skus.length ? t.skus : [['—', 'SKU breakdown pending warehouse count', `${t.rows[2][1] || ''}`]]).forEach(r => {
     x = pad; r.forEach((cell, i) => { text(cell, x, y + skuH / 2, skuCols[i], 'center'); x += skuCols[i]; });
     g.fillStyle = '#e3e5ea'; g.fillRect(pad, y + skuH - 1, W - pad * 2, 1); y += skuH;
   });
@@ -1524,6 +1524,7 @@ function addSkuLine(sku = '', qty = '') {
 }
 const PRESETS = {
   '13073': { whn: '13073', date: '2026-10-02', po: '1710918504', carrier: 'T3RA', origin: 'Ripon CA 95366', skus: [['450195', '1 pallet refused 60 SU']], recv: '2026-10-02', stage: 'arriving', plts: 1, rw: 1 },
+  '13087': { whn: '13087', date: '2026-10-02', po: '1750917236', carrier: 'T3RA', origin: 'Rushville IN 46173', skus: [], recv: '2026-10-02', stage: 'arriving', plts: 31, rw: 31 },
   '13026': { whn: '13026', date: '2026-10-01', po: '1710917341', carrier: 'Cheema', origin: 'Lathrop CA 95330', skus: [['1101794', '1 pallet refused 60 SU'], ['25350', '1 pallet refused 28 SU']], recv: '2026-10-01', stage: 'arriving', plts: 2, rw: 2 },
 };
 function loadPreset(k) {
@@ -1543,6 +1544,8 @@ $('#tform').addEventListener('change', build);
 // Warehouse Quotes already saved in the app on real orders
 const KNOWN_WH_QUOTES = {
   'GEF-TAC-WA': { un: 5, re: 5, rw: 55, src: 'the WN-13073 Warehouse Quote (Syndicate Trucking)' },
+  'CHE-MIL-NJ': { un: 8, re: 8, rw: 50, del: 400, src: 'Go to Warehouses (8 in / 8 out, $50/pallet, delivery brokered $400-450)' },
+  'BET-PIS-NJ': { un: 7.5, re: 7.5, rw: 45, del: 400, src: 'Go to Warehouses ($15 handling split in/out, $45 rework, $400 delivery)' },
 };
 let lastWh = null;
 function build() {
@@ -1560,7 +1563,7 @@ function build() {
   // Diamond's sheet puts the total on the ticket ("2 pallets"); per-SKU detail lives in the SKU rows
   const totPl = Math.max(0, +$('#f-plts').value || 0);
   const anyPallet = lines.some(l => /pallet|plt/i.test(l.qty));
-  const ticketQty = lines.length > 1 || anyPallet ? `${totPl} pallet${totPl === 1 ? '' : 's'}` : qtyText;
+  const ticketQty = lines.length !== 1 || anyPallet ? `${totPl} pallet${totPl === 1 ? '' : 's'}` : qtyText;
   const retDest = disp === 'Rework' ? dest : disp === 'Return' ? origin : '';
 
   $('#t-id').textContent = `WN ${whn || '—'} · PO ${po || '—'}`;
@@ -1616,7 +1619,7 @@ Thank you!` : 'Enter a Costco PO with a go-to warehouse to build the confirmatio
     row('Date', tDate), row('Costco PO number', po), row('Item & Quantities', ticketQty), row('Reason refused', v('#f-reason')),
     row('Carrier', v('#f-carrier')), row('Disposition', disp), row('Origin & Destination', origin, dest),
     row('Return Origin & Return Destination', disp === 'Donate / Dispose' ? '' : whName, retDest), row('WarehouseNow PO', whn),
-  ].join('')}</table><table class="sk"><tr><th>SKU</th><th>Product Name</th><th>Qty</th></tr>${lines.map(l => `<tr><td>${esc(l.costco)}</td><td>${esc(l.size + ' ' + l.name)}</td><td>${esc(l.qty)}</td></tr>`).join('') || '<tr><td colspan="3">Add SKUs</td></tr>'}</table>`;
+  ].join('')}</table><table class="sk"><tr><th>SKU</th><th>Product Name</th><th>Qty</th></tr>${lines.map(l => `<tr><td>${esc(l.costco)}</td><td>${esc(l.size + ' ' + l.name)}</td><td>${esc(l.qty)}</td></tr>`).join('') || `<tr><td>—</td><td>SKU breakdown pending warehouse count</td><td>${esc(ticketQty)}</td></tr>`}</table>`;
   const recv = v('#f-recv') ? new Date(v('#f-recv') + 'T12:00') : null;
   const daysAgo = recv ? Math.round((new Date().setHours(12) - recv) / 864e5) : null;
   const recvWord = !recv ? '[day]' : daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : daysAgo < 7 ? 'on ' + recv.toLocaleDateString('en-US', { weekday: 'long' }) : 'on ' + recv.toLocaleDateString('en-US');
@@ -1681,7 +1684,8 @@ Attached: ticket image, Costco sticker, merged PDF (photos, BOL, order confirmat
     lastWh = wh.code;
     const k = KNOWN_WH_QUOTES[wh.code];
     const sheetDel = +(String(wh.delivery || '').match(/\$?\s*(\d{3})/) || [])[1] || 0;
-    if (k) { $('#w-un').value = k.un; $('#w-re').value = k.re; $('#w-rw').value = k.rw; }
+    // a WH with no saved quote starts at 0 so the last warehouse's rates don't carry over
+    $('#w-un').value = k ? k.un : 0; $('#w-re').value = k ? k.re : 0; $('#w-rw').value = k ? k.rw : 0;
     $('#w-del').value = k?.del ?? sheetDel;
     $('#w-src').textContent = k ? `Prefilled from ${k.src}. Rates on file in Go to Warehouses: ${(wh.rates || '—').replace(/\n/g, ' · ')}` : `No saved quote for ${wh.code}. Rates on file in Go to Warehouses: ${(wh.rates || '—').replace(/\n/g, ' · ')}${wh.delivery ? ' · Delivery: ' + wh.delivery.replace(/\n/g, ' ') : ''}`;
   }
