@@ -1478,6 +1478,9 @@ function renderBoard() {
     const whs = [...new Set(list.map(o => o.wh).filter(Boolean))], deps = [...new Set(list.map(o => o.depotCode).filter(Boolean))];
     const master = list.find(o => o.masterPo)?.masterPo;
     const notReady = list.filter(o => stageIdx(o.stage) < stageIdx('ready'));
+    // Grant's format: "PO – N pallets item SKU // WN-####"
+    const gid = 'grp-' + k.replace(/[^A-Za-z0-9]/g, '');
+    const poList = `${master ? 'Master PO: ' + master : 'Master PO: (pending)'}\n\n` + list.map(o => `${o.po || '?'} – ${o.qty || (o.pallets + ' pallets')} // WN-${o.wn || '?'}`).join('\n') + `\n\nTotal: ${plts} pallets${whs.length ? ' at ' + whs.join(', ') : ''}`;
     const warn = whs.length > 1 ? `These are at different warehouses (${whs.join(', ')}), so they can’t ride one truck without a transfer.` : deps.length > 1 ? 'These go to different depots. One request per truck per delivery location.' : '';
     const next = !master ? 'Waiting on the master PO number from ADW. Once it arrives, add it to each order’s Master PO field.'
       : notReady.length ? `Master PO ${master} is in. Still waiting on ${notReady.map(o => 'WN ' + o.wn).join(', ')} to be ready.`
@@ -1488,7 +1491,9 @@ function renderBoard() {
     return `<div class="grp"><b>${esc(k)} · ${list.length} PO${list.length === 1 ? '' : 's'} · ${plts} pallets${whs.length ? ' · ' + esc(whs.join(', ')) : ''}</b>
       <span class="mono" style="white-space:pre-line;font-size:.82rem">${esc(list.map(o => `${o.po || '?'} – ${o.pallets || '?'} plt${(+o.pallets === 1) ? '' : 's'} // WN-${o.wn || '?'} (${stageOf(o.stage).t})`).join('\n'))}</span>
       ${warn ? `<span class="note bad" style="font-size:.85rem">${esc(warn)}</span>` : ''}
-      <span><b>Next:</b> ${esc(next)}</span></div>`;
+      <span><b>Next:</b> ${esc(next)}</span>
+      <textarea id="${esc(gid)}" rows="${list.length + 3}" readonly hidden>${esc(poList)}</textarea>
+      <div><button class="btn" type="button" data-copy="${esc(gid)}">Copy PO list for ADW / WH</button></div></div>`;
   }).join('') || '<p class="meta" style="font-size:.88rem">No consolidations yet. Give orders the same Ships with name (or the same Master PO) to group them.</p>';
 
   // ready to book, grouped by depot
