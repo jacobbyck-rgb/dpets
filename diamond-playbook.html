@@ -613,7 +613,8 @@ td .pre { white-space: pre-line; }
           <div class="stack" style="gap:10px">
             <span class="label">Email attachments: download them here</span>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <button class="btn primary" type="button" id="dl-ticket">Download ticket (PNG)</button>
+              <button class="btn primary" type="button" id="dl-ticket-pdf">Download ticket (PDF)</button>
+              <button class="btn" type="button" id="dl-ticket">PNG</button>
               <button class="btn" type="button" id="cp-ticket">Copy ticket image</button>
             </div>
             <div class="field">
@@ -622,6 +623,7 @@ td .pre { white-space: pre-line; }
             </div>
             <p id="att-status" style="font-size:.85rem;color:var(--muted)">Tag each page below. Pages for other POs on the truck should be set to Skip.</p>
             <div class="thumbs" id="att-thumbs"></div>
+            <label class="check-inline"><input type="checkbox" id="att-withticket" checked> Put the ticket on page 1 of the merged PDF (one file to attach)</label>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button class="btn primary" type="button" id="dl-merged" disabled>Download merged PDF</button>
               <button class="btn" type="button" id="dl-sticker" disabled>Download sticker (PNG)</button>
@@ -1140,6 +1142,23 @@ $('#dl-ticket').addEventListener('click', async () => {
   if (!lastTicket) return;
   await saveFile(`WN-${lastTicket.whn || 'ticket'}-ticket.png`, await canvasBlob(drawTicket(lastTicket)));
 });
+async function ticketPage(out, L) {
+  const png = await out.embedPng(new Uint8Array(await (await canvasBlob(drawTicket(lastTicket))).arrayBuffer()));
+  const w = 612, m = 36, iw = w - m * 2, ih = iw * png.height / png.width;
+  const h = 792; // US letter, ticket at the top
+  out.addPage([w, h]).drawImage(png, { x: m, y: h - m - ih, width: iw, height: ih });
+}
+$('#dl-ticket-pdf').addEventListener('click', async () => {
+  if (!lastTicket) return;
+  const btn = $('#dl-ticket-pdf'); btn.disabled = true;
+  try {
+    const L = await pdflib(); const out = await L.PDFDocument.create();
+    out.setTitle(`WN-${lastTicket.whn} ticket`);
+    await ticketPage(out, L);
+    await saveFile(`WN-${lastTicket.whn || 'order'}-ticket.pdf`, new Blob([await out.save()], { type: 'application/pdf' }));
+  } catch { toast('Couldn\u2019t build the PDF. Check your connection and try again.'); }
+  btn.disabled = false;
+});
 $('#cp-ticket').addEventListener('click', () => {
   if (!lastTicket) return;
   const blobP = canvasBlob(drawTicket(lastTicket));
@@ -1165,10 +1184,10 @@ function renderThumbs() {
 }
 function updateAttButtons() {
   const used = att.items.filter(i => i.role !== 'skip');
-  $('#dl-merged').disabled = !used.length;
+  $('#dl-merged').disabled = !used.length && !$('#att-withticket').checked;
   $('#dl-sticker').disabled = !att.items.some(i => i.role === 'sticker');
   $('#att-clear').hidden = !att.items.length;
-  if (att.items.length) $('#att-status').textContent = `${att.items.length} page${att.items.length === 1 ? '' : 's'} loaded, ${used.length} going into the PDF. Merged order: photos, BOL, sticker, order confirmation.`;
+  if (att.items.length) $('#att-status').textContent = `${att.items.length} page${att.items.length === 1 ? '' : 's'} loaded, ${used.length} going into the PDF. Merged order: ${$('#att-withticket').checked ? 'ticket, ' : ''}photos, BOL, sticker, order confirmation.`;
 }
 function imgFromFile(file) {
   return new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = URL.createObjectURL(file); });
@@ -1202,6 +1221,8 @@ $('#att-files').addEventListener('change', async e => {
     $('#att-status').textContent = 'Couldn’t read one of those files. Check it’s a PDF or an image and try again.';
   }
 });
+$('#att-withticket').addEventListener('change', updateAttButtons);
+updateAttButtons();
 $('#att-clear').addEventListener('click', () => { att = { pdfs: [], items: [] }; renderThumbs(); $('#att-status').textContent = 'Tag each page below. Pages for other POs on the truck should be set to Skip.'; });
 
 async function imageToJpegBytes(img) {
@@ -1215,6 +1236,7 @@ $('#dl-merged').addEventListener('click', async () => {
     const L = await pdflib();
     const out = await L.PDFDocument.create();
     const srcs = {};
+    if ($('#att-withticket').checked && lastTicket) await ticketPage(out, L);
     for (const role of ['photo', 'bol', 'sticker', 'order']) {
       for (const it of att.items.filter(i => i.role === role)) {
         if (it.kind === 'pdf') {
@@ -1613,7 +1635,7 @@ See attached ticket for this PO we received ${recvWord} at the ${st} depot, ${st
 
 Attached: ticket image, Costco sticker, merged PDF (photos, BOL, order confirmation).`;
   const att = [
-    'Ticket image: use Download ticket above',
+    'Ticket: Download ticket (PDF) above, or tick "Put the ticket on page 1" so it\u2019s in the merged PDF',
     'Costco receiving / rejection sticker on its own: refused PO, SU count, item #, reason, ordered vs received',
     'One merged PDF with: trailer photo showing the refused pallet',
     '…pallet label close-up (Diamond part #, qty, lot, best-by)',
