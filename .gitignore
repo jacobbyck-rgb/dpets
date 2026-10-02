@@ -1,3 +1,4 @@
 # Order paperwork (BOLs, stickers, photos) stays out of the repo
 tickets/*-sticker.png
 tickets/*-ADW-attachments.pdf
+tickets/*.pdf
