@@ -166,7 +166,12 @@ textarea { font-family: var(--mono); font-size: .82rem; line-height: 1.5; resize
 .auto .v.miss { color: var(--bad); font-weight: 500; }
 .copyrow { display: flex; gap: 8px; align-items: start; }
 .copyrow .box { flex: 1; min-width: 0; padding: 8px 10px; background: var(--sunken); border: 1px solid var(--line); border-radius: 4px; font-family: var(--mono); font-size: .84rem; overflow-wrap: anywhere; }
-.tcard { flex: 1; min-width: 0; background: #ffffff; color: #111111; border: 1px solid var(--line); border-radius: 4px; padding: 14px 10px; text-align: center; font: 500 .9rem/1.6 var(--body); white-space: pre-line; }
+.tcard { flex: 1; min-width: 0; background: #ffffff; color: #111111; border: 1px solid var(--line); border-radius: 4px; padding: 12px; font: 400 .86rem/1.3 Arial, Helvetica, sans-serif; overflow-x: auto; }
+.tcard table { width: 100%; border-collapse: collapse; font-size: inherit; }
+.tcard td, .tcard th { border-bottom: 1px solid #e3e5ea; padding: 5px 8px; text-align: center; vertical-align: middle; color: #111111; background: #ffffff; position: static; text-transform: none; letter-spacing: 0; font: inherit; }
+.tcard td.k { background: #e6e8ec; text-align: right; color: #333333; width: 34%; }
+.tcard .sk { margin-top: 12px; }
+.tcard .sk th { background: #111827; color: #ffffff; font-weight: 700; }
 .timeline { list-style: none; margin: 0; padding: 0; display: grid; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
 .timeline li { display: grid; grid-template-columns: 120px minmax(0, 1fr) minmax(0, .9fr); gap: 6px 18px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
 .timeline li:last-child { border-bottom: 0; }
@@ -580,7 +585,7 @@ td .pre { white-space: pre-line; }
             <div><button class="btn" type="button" data-copy="t-cx">Copy confirmation</button></div>
           </div>
           <div class="stack" style="gap:6px">
-            <span class="label">Ticket card (screenshot it and attach it to the ADW email)</span>
+            <span class="label">Ticket (screenshot it and attach it to the ADW email)</span>
             <div class="copyrow"><div class="tcard" id="t-card"></div><button class="btn" type="button" data-copy="t-card">Copy</button></div>
           </div>
           <div class="stack" style="gap:6px">
@@ -1381,7 +1386,12 @@ Thank you!` : 'Enter a Costco PO with a go-to warehouse to build the confirmatio
   const whName = v('#f-whov') || (wh ? wh.code : '');
   const tDate = v('#f-date') ? new Date(v('#f-date') + 'T12:00').toLocaleDateString('en-US') : '';
   const card = [tDate, po, ticketQty, v('#f-reason'), v('#f-carrier'), disp, origin, whName, whn].filter(Boolean);
-  $('#t-card').textContent = card.join('\n') || '—';
+  const row = (k, a, b = '') => `<tr><td class="k">${esc(k)}</td><td>${esc(a)}</td><td>${esc(b)}</td></tr>`;
+  $('#t-card').innerHTML = `<table>${[
+    row('Date', tDate), row('Costco PO number', po), row('Item & Quantities', ticketQty), row('Reason refused', v('#f-reason')),
+    row('Carrier', v('#f-carrier')), row('Disposition', disp), row('Origin & Destination', origin, dest),
+    row('Return Origin & Return Destination', disp === 'Donate / Dispose' ? '' : whName, retDest), row('WarehouseNow PO', whn),
+  ].join('')}</table><table class="sk"><tr><th>SKU</th><th>Product Name</th><th>Qty</th></tr>${lines.map(l => `<tr><td>${esc(l.costco)}</td><td>${esc(l.size + ' ' + l.name)}</td><td>${esc(l.qty)}</td></tr>`).join('') || '<tr><td colspan="3">Add SKUs</td></tr>'}</table>`;
   const recv = v('#f-recv') ? new Date(v('#f-recv') + 'T12:00') : null;
   const daysAgo = recv ? Math.round((new Date().setHours(12) - recv) / 864e5) : null;
   const recvWord = !recv ? '[day]' : daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : daysAgo < 7 ? 'on ' + recv.toLocaleDateString('en-US', { weekday: 'long' }) : 'on ' + recv.toLocaleDateString('en-US');
