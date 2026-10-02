@@ -1,0 +1,788 @@
+<title>Diamond Rework Playbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a dispatcher's desk. Sticky tab rail on top, one working surface per tab,
+   PO numbers and codes always in mono like they appear on a BOL. */
+:root {
+  --bg: #eceff3;
+  --surface: #ffffff;
+  --sunken: #f5f7f9;
+  --ink: #15202b;
+  --muted: #5a6876;
+  --line: #d3dae2;
+  --accent: #1d4e89;
+  --accent-ink: #ffffff;
+  --tag: #e8a317;
+  --tag-soft: #fdf3dc;
+  --ok: #2e7d4f;
+  --ok-soft: #e3f2e9;
+  --warn: #9a6200;
+  --warn-soft: #fbf0d9;
+  --bad: #b42318;
+  --bad-soft: #fbe6e4;
+  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --body: "Barlow", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --radius: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e141a; --surface: #161f28; --sunken: #121a22; --ink: #e5ebf0; --muted: #94a2af;
+    --line: #2a3742; --accent: #7fb0e8; --accent-ink: #0e141a; --tag: #f2b84b; --tag-soft: #3a2e14;
+    --ok: #6cc795; --ok-soft: #173326; --warn: #f0c062; --warn-soft: #3a2e14; --bad: #f08a80; --bad-soft: #3d1c19;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e141a; --surface: #161f28; --sunken: #121a22; --ink: #e5ebf0; --muted: #94a2af;
+  --line: #2a3742; --accent: #7fb0e8; --accent-ink: #0e141a; --tag: #f2b84b; --tag-soft: #3a2e14;
+  --ok: #6cc795; --ok-soft: #173326; --warn: #f0c062; --warn-soft: #3a2e14; --bad: #f08a80; --bad-soft: #3d1c19;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font: 400 15px/1.55 var(--body); }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.1; margin: 0; }
+h2 { font-size: 1.9rem; font-weight: 700; letter-spacing: .01em; }
+h3 { font-size: 1.25rem; font-weight: 600; letter-spacing: .02em; }
+p { margin: 0; }
+a { color: var(--accent); }
+code, .mono { font-family: var(--mono); font-size: .9em; font-variant-numeric: tabular-nums; }
+.label { font: 600 .72rem/1.2 var(--body); text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; }
+
+/* Header */
+header.top { background: var(--surface); border-bottom: 1px solid var(--line); }
+header.top .wrap { padding-block: 22px 0; display: grid; gap: 14px; }
+.brand { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+.brand h1 { font-size: 2.4rem; font-weight: 700; letter-spacing: .01em; }
+.brand h1 span { color: var(--tag); }
+.brand p { color: var(--muted); max-width: 60ch; }
+nav.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; position: sticky; top: env(safe-area-inset-top, 0px); }
+nav.tabs::-webkit-scrollbar { display: none; }
+.stick { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.tab { flex: none; border: 0; background: none; padding: 10px 14px 11px; cursor: pointer; font: 600 1.02rem/1 var(--display); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); border-bottom: 3px solid transparent; }
+.tab:hover { color: var(--ink); }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--tag); }
+
+main .wrap { padding-block: 28px 64px; }
+section.panel { display: grid; gap: 28px; }
+.lede { max-width: 68ch; color: var(--muted); font-size: 1.02rem; }
+.lede strong { color: var(--ink); }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; min-width: 0; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.stack { display: grid; gap: 12px; align-content: start; }
+
+/* Stats strip */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.stat { padding: 14px 16px; border-right: 1px solid var(--line); display: grid; gap: 4px; }
+.stat:last-child { border-right: 0; }
+.stat b { font: 700 2rem/1 var(--display); font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: .88rem; }
+
+/* Lifecycle */
+.flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0; counter-reset: step; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.step { padding: 16px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); display: grid; gap: 8px; align-content: start; position: relative; }
+.step::before { counter-increment: step; content: counter(step, decimal-leading-zero); font: 700 1.5rem/1 var(--display); color: var(--tag); }
+.step h3 { font-size: 1.15rem; }
+.step ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: .92rem; display: grid; gap: 3px; }
+.step .who { font-size: .8rem; color: var(--muted); }
+.step .who b { color: var(--ink); font-weight: 600; }
+
+.status-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; font: 600 .8rem/1.4 var(--body); border: 1px solid var(--line); background: var(--sunken); white-space: nowrap; }
+.chip.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.chip.side { border-style: dashed; }
+.arrow { color: var(--muted); }
+
+/* Branch comparison */
+table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 .72rem/1.2 var(--body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); background: var(--sunken); position: sticky; top: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.scroll.tall { max-height: 520px; overflow-y: auto; }
+
+/* Triage */
+.cases { display: flex; flex-wrap: wrap; gap: 8px; }
+.case-btn { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 9px 12px; cursor: pointer; text-align: left; display: grid; gap: 2px; min-width: 0; }
+.case-btn small { color: var(--muted); font-size: .8rem; }
+.case-btn[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.case-btn b { font-weight: 600; }
+.playbook { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 760px) { .playbook { grid-template-columns: 1fr; } }
+ol.check { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: c; }
+ol.check li { display: grid; grid-template-columns: 26px 1fr; gap: 8px; padding: 8px 6px; border-radius: 4px; }
+ol.check li:hover { background: var(--sunken); }
+ol.check input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--accent); }
+ol.check label { cursor: pointer; }
+ol.check li.done label { color: var(--muted); text-decoration: line-through; }
+.note { border-left: 3px solid var(--tag); background: var(--tag-soft); padding: 10px 12px; border-radius: 0 4px 4px 0; font-size: .92rem; }
+.note.bad { border-color: var(--bad); background: var(--bad-soft); }
+.note.ok { border-color: var(--ok); background: var(--ok-soft); }
+dl.kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; font-size: .92rem; }
+dl.kv dt { color: var(--muted); }
+dl.kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+
+/* Ticket builder */
+.builder { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 16px; align-items: start; }
+@media (max-width: 860px) { .builder { grid-template-columns: 1fr; } }
+fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 10px; }
+legend { font: 600 1.05rem/1 var(--display); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; padding: 0; }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field label { font-size: .82rem; color: var(--muted); font-weight: 500; }
+.row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+input[type=text], input[type=number], input[type=date], select, textarea {
+  width: 100%; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--sunken);
+}
+input.po { font-family: var(--mono); font-size: 1rem; letter-spacing: .02em; }
+textarea { font-family: var(--mono); font-size: .82rem; line-height: 1.5; resize: vertical; }
+.sku-line { display: grid; grid-template-columns: minmax(0, 1fr) 110px 34px; gap: 6px; align-items: center; }
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 7px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: .88rem; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.icon { padding: 6px 0; text-align: center; }
+.check-inline { display: flex; align-items: center; gap: 8px; font-size: .92rem; }
+.check-inline input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+.ticket { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.ticket-head { padding: 14px 18px; background: var(--accent); color: var(--accent-ink); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; align-items: baseline; }
+.ticket-head h3 { font-size: 1.35rem; }
+.ticket-head .mono { font-size: .95rem; }
+.ticket-body { padding: 16px 18px; display: grid; gap: 16px; }
+.auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px 18px; }
+.auto > div { display: grid; gap: 3px; min-width: 0; }
+.auto .v { font-weight: 600; overflow-wrap: anywhere; }
+.auto .v.miss { color: var(--bad); font-weight: 500; }
+.copyrow { display: flex; gap: 8px; align-items: start; }
+.copyrow .box { flex: 1; min-width: 0; padding: 8px 10px; background: var(--sunken); border: 1px solid var(--line); border-radius: 4px; font-family: var(--mono); font-size: .84rem; overflow-wrap: anywhere; }
+.money { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; font-variant-numeric: tabular-nums; font-size: .94rem; }
+.money .tot { font: 700 1.5rem/1.2 var(--display); border-top: 1px solid var(--line); padding-top: 6px; }
+.money span:nth-child(even) { text-align: right; font-family: var(--mono); }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 4px; font-weight: 600; font-size: .88rem; }
+
+/* Weekly */
+.week { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+@media (max-width: 760px) { .week { grid-template-columns: 1fr; } }
+.day { padding: 14px; border-right: 1px solid var(--line); display: grid; gap: 8px; align-content: start; }
+.day:last-child { border-right: 0; }
+.day.hl { background: var(--tag-soft); }
+.day h3 { font-size: 1.1rem; }
+.day ul { margin: 0; padding-left: 16px; font-size: .9rem; display: grid; gap: 4px; }
+
+/* Reference */
+.search { max-width: 360px; }
+.subtabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.subtab { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px; cursor: pointer; font-weight: 600; font-size: .86rem; }
+.subtab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+td .pre { white-space: pre-line; }
+.gloss { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.gloss div { padding: 12px 14px; border-bottom: 1px solid var(--line); display: grid; gap: 3px; }
+.gloss dt { font: 700 1.1rem/1.1 var(--display); letter-spacing: .03em; }
+.gloss dd { margin: 0; color: var(--muted); font-size: .92rem; }
+
+.issues { display: grid; gap: 10px; }
+.issue { display: grid; grid-template-columns: 92px 1fr; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
+@media (max-width: 520px) { .issue { grid-template-columns: 1fr; } }
+.sev { align-self: start; justify-self: start; font: 600 .74rem/1 var(--body); text-transform: uppercase; letter-spacing: .08em; padding: 5px 8px; border-radius: 3px; }
+.sev.high { background: var(--bad-soft); color: var(--bad); }
+.sev.med { background: var(--warn-soft); color: var(--warn); }
+.sev.low { background: var(--sunken); color: var(--muted); border: 1px solid var(--line); }
+.issue h3 { font-size: 1.08rem; margin-bottom: 3px; }
+.issue p { color: var(--muted); font-size: .92rem; }
+
+.bars { display: grid; gap: 6px; }
+.bar { display: grid; grid-template-columns: minmax(110px, 160px) 1fr 40px; gap: 10px; align-items: center; font-size: .88rem; }
+.bar .track { height: 10px; background: var(--sunken); border-radius: 2px; overflow: hidden; border: 1px solid var(--line); }
+.bar .fill { height: 100%; background: var(--accent); }
+.bar .n { text-align: right; font-family: var(--mono); font-size: .82rem; color: var(--muted); }
+
+@media (prefers-reduced-motion: no-preference) { .tab, .btn, .case-btn { transition: border-color .15s, color .15s, background .15s; } }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <h1>Diamond <span>◆</span> Rework Playbook</h1>
+      <p>Refused Costco loads from Diamond Pet Foods, from first call to invoice. Built from Diamond's ticket workbook and Jacob's account notes.</p>
+    </div>
+  </div>
+</header>
+<div class="stick">
+  <div class="wrap">
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" id="tab-process" aria-controls="process" aria-selected="true">How it works</button>
+      <button class="tab" role="tab" id="tab-triage" aria-controls="triage" aria-selected="false">Triage</button>
+      <button class="tab" role="tab" id="tab-ticket" aria-controls="ticket" aria-selected="false">Ticket builder</button>
+      <button class="tab" role="tab" id="tab-rhythm" aria-controls="rhythm" aria-selected="false">Weekly rhythm</button>
+      <button class="tab" role="tab" id="tab-reference" aria-controls="reference" aria-selected="false">Reference</button>
+      <button class="tab" role="tab" id="tab-gaps" aria-controls="gaps" aria-selected="false">Sheet watch-outs</button>
+    </nav>
+  </div>
+</div>
+
+<main>
+<div class="wrap">
+
+<!-- HOW IT WORKS -->
+<section class="panel" id="process" role="tabpanel" aria-labelledby="tab-process">
+  <div class="stack">
+    <h2>Why this account feels different</h2>
+    <p class="lede">On a normal account a customer books space and we store or move their freight. On Diamond, <strong>nothing is planned in advance</strong>. A Costco depot refuses part of a Diamond load at the dock, usually for damaged bags, and the carrier gets stuck holding it. WarehouseNow finds a crossdock near that depot, the crossdock reworks the pallets, and we book a new delivery back into Costco through the Costco portal. Then we bill Diamond per pallet. <strong>The Costco PO is the main key</strong>, because Diamond, ADW and Costco all track the order by it. Keep the WarehouseNow PO next to it for our own systems.</p>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="stack">
+    <h3>The lifecycle of one refused load</h3>
+    <div class="flow">
+      <div class="step"><h3>Refusal comes in</h3>
+        <ul><li>Carrier reports a load refused at a Costco depot</li><li>#qb-team opens the Slack channel / AT order</li><li>Get the BOL, the <b>receiver rejection sticker</b> (mandatory) and pallet photos</li></ul>
+        <p class="who"><b>Carrier → QB team</b></p></div>
+      <div class="step"><h3>Decide disposition</h3>
+        <ul><li>Rework (most loads)</li><li>Donate / Dispose (small qty)</li><li>Return to the Diamond plant (overage)</li></ul>
+        <p class="who"><b>Diamond SOP</b>, Thomas Stone on exceptions</p></div>
+      <div class="step"><h3>Line up the warehouse</h3>
+        <ul><li>Look up the go-to crossdock for that depot</li><li>Send the carrier WH name, address, hours, check-in #</li><li>Ask for driver info + ETA</li><li>Email the WH with paperwork + photos, pin the subject in Slack</li></ul>
+        <p class="who"><b>You → carrier + WH</b></p></div>
+      <div class="step"><h3>Ticket to ADW</h3>
+        <ul><li>New Ticket in Diamond's sheet</li><li>Depot code, contact and subject line fill in from the Costco PO</li><li>Send the email draft to the ADW contact for that depot</li></ul>
+        <p class="who"><b>You → ADW + diamondosd@</b></p></div>
+      <div class="step"><h3>Rework at the WH</h3>
+        <ul><li>Arrival photos + rework timing</li><li>Reworked pallet photos</li><li>Damage count in bags by SKU / Item ID, broken out by color if mixed</li></ul>
+        <p class="who"><b>WH → you → Slack</b></p></div>
+      <div class="step"><h3>Book the appointment</h3>
+        <ul><li>Pallets ready, WH + carrier available</li><li>Request in the Costco portal, 2+ days out</li><li>Wait for APPROVED or APPT REVISED</li><li>Send confirmation #, date/time and exact PO#s</li></ul>
+        <p class="who"><b>You → Costco portal</b></p></div>
+      <div class="step"><h3>Deliver + POD</h3>
+        <ul><li>Get the POD with the receiving sticker listing <b>every</b> PO# (mandatory)</li><li>podrequests@costco.com for receiving history</li><li>POD status → Completed</li></ul>
+        <p class="who"><b>Carrier/WH → Costco</b></p></div>
+      <div class="step"><h3>Invoice Diamond</h3>
+        <ul><li>Handling $25/plt, rework $65/plt</li><li>Redelivery $400, OT/weekend $200</li><li>Status → Invoiced</li></ul>
+        <p class="who"><b>You → Ticket System</b></p></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card stack">
+      <h3>Delivery status in the Ticket System</h3>
+      <p class="lede" style="font-size:.94rem">Each ticket moves left to right. Dashed statuses are side exits.</p>
+      <div class="status-row">
+        <span class="chip on">NA</span><span class="arrow">→</span>
+        <span class="chip">Ready</span><span class="arrow">→</span>
+        <span class="chip">Requested</span><span class="arrow">→</span>
+        <span class="chip">Scheduled</span><span class="arrow">→</span>
+        <span class="chip">Delivered</span><span class="arrow">→</span>
+        <span class="chip">Invoiced</span>
+      </div>
+      <div class="status-row"><span class="chip side">Disposed</span><span class="chip side">Notification</span></div>
+      <dl class="kv">
+        <dt>NA</dt><dd>Ticket created, product at or heading to the WH</dd>
+        <dt>Ready</dt><dd>Reworked, waiting on an appointment</dd>
+        <dt>Requested</dt><dd>Appointment requested in the Costco portal</dd>
+        <dt>Scheduled</dt><dd>Approved / revised, confirmation # sent out</dd>
+        <dt>Delivered</dt><dd>Dropped at Costco, chasing POD</dd>
+        <dt>Invoiced</dt><dd>Charges entered and billed</dd>
+        <dt>Disposed</dt><dd>Donated or disposed, no redelivery</dd>
+        <dt>Notification</dt><dd>FYI only, no action from us</dd>
+      </dl>
+    </div>
+    <div class="card stack">
+      <h3>Who's who</h3>
+      <dl class="kv">
+        <dt>Thomas Stone</dt><dd>Diamond. Approves returns, deliveries and anything off-SOP</dd>
+        <dt>Jan Tappel</dt><dd>Diamond Key Account Coordinator. Owns the Master PO process (jtappel@diamondpet.com, 866-214-6945 x1126)</dd>
+        <dt>ADW contacts</dt><dd>Costco-side reps, one set per depot. They get the ticket email</dd>
+        <dt>diamondosd@</dt><dd>Diamond's OS&amp;D inbox, CC'd on every ticket</dd>
+        <dt>#qb-team</dt><dd>Opens Slack channels / AT orders, handles small OS&amp;D messages</dd>
+        <dt>Genderson</dt><dd>Current account owner. Handing off to Jacob by Oct 31</dd>
+        <dt>Go-to WHs</dt><dd>Crossdocks near each Costco depot that do the rework</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card stack">
+      <h3>Busiest destinations</h3>
+      <div class="bars" id="destBars"></div>
+    </div>
+    <div class="card stack">
+      <h3>Where refused loads ship from</h3>
+      <div class="bars" id="originBars"></div>
+    </div>
+  </div>
+</section>
+
+<!-- TRIAGE -->
+<section class="panel" id="triage" role="tabpanel" aria-labelledby="tab-triage" hidden>
+  <div class="stack">
+    <h2>What kind of case is this?</h2>
+    <p class="lede">Pick the situation to get its steps. Checkboxes are a scratchpad for the case in front of you and reset when you switch cases.</p>
+  </div>
+  <div class="cases" id="caseBtns"></div>
+  <div class="playbook">
+    <div class="card stack" id="caseSteps"></div>
+    <div class="stack" id="caseSide"></div>
+  </div>
+</section>
+
+<!-- TICKET BUILDER -->
+<section class="panel" id="ticket" role="tabpanel" aria-labelledby="tab-ticket" hidden>
+  <div class="stack">
+    <h2>Ticket builder</h2>
+    <p class="lede">Runs the same lookups as Diamond's <em>New Ticket</em> and <em>View Engine</em> tabs. Type the Costco PO and it fills in the depot code, destination, go-to warehouse, ADW contact and subject line. Use it to check a ticket before you save it in the real sheet. <strong>The form is filled with the example from the New Ticket tab.</strong></p>
+  </div>
+  <div class="builder">
+    <form class="card stack" id="tform" autocomplete="off">
+      <fieldset>
+        <legend>Identity</legend>
+        <div class="row2">
+          <div class="field"><label for="f-whn">WarehouseNow PO#</label><input id="f-whn" class="po" type="text" value="13073"></div>
+          <div class="field"><label for="f-date">Date</label><input id="f-date" type="date" value="2026-10-02"></div>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Shipping</legend>
+        <div class="field"><label for="f-po">Costco PO #</label><input id="f-po" class="po" type="text" inputmode="numeric" value="1710918504"></div>
+        <div class="row2">
+          <div class="field"><label for="f-carrier">Carrier</label><select id="f-carrier"></select></div>
+          <div class="field"><label for="f-origin">Origin (Diamond plant)</label><select id="f-origin"></select></div>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Refused product</legend>
+        <div id="skuLines" class="stack" style="gap:6px"></div>
+        <div><button type="button" class="btn" id="addSku">Add SKU</button></div>
+      </fieldset>
+      <fieldset>
+        <legend>Disposition</legend>
+        <div class="row2">
+          <div class="field"><label for="f-reason">Reason refused</label>
+            <select id="f-reason"><option>Damage</option><option>Overage</option><option>Shortage</option><option>929 Certification Issues</option></select></div>
+          <div class="field"><label for="f-disp">Disposition</label>
+            <select id="f-disp"><option>Rework</option><option>Donate / Dispose</option><option>Return</option></select></div>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Charges</legend>
+        <div class="row2">
+          <div class="field"><label for="f-payer">Who pays</label>
+            <select id="f-payer"><option value="diamond">Diamond direct (default)</option><option value="carrier">Carrier pays</option></select></div>
+          <div class="field"><label for="f-plts">Pallets handled</label><input id="f-plts" type="number" min="0" value="1"></div>
+          <div class="field"><label for="f-rw">Pallets reworked</label><input id="f-rw" type="number" min="0" value="1"></div>
+          <div class="field"><label for="f-ltl">LTL charge ($)</label><input id="f-ltl" type="number" min="0" value="0"></div>
+        </div>
+        <label class="check-inline"><input type="checkbox" id="f-redel" checked> Redelivery to Costco on its own appointment (uncheck if it rides a Master PO)</label>
+        <label class="check-inline"><input type="checkbox" id="f-ot"> OT / weekend call</label>
+      </fieldset>
+    </form>
+
+    <div class="stack">
+      <article class="ticket" aria-live="polite">
+        <div class="ticket-head"><h3>Ticket preview</h3><span class="mono" id="t-id"></span></div>
+        <div class="ticket-body">
+          <div class="auto" id="t-auto"></div>
+          <div class="stack" style="gap:6px">
+            <span class="label">Subject line</span>
+            <div class="copyrow"><div class="box" id="t-subject"></div><button class="btn" type="button" data-copy="t-subject">Copy</button></div>
+          </div>
+          <div class="stack" style="gap:6px">
+            <span class="label">Email draft</span>
+            <textarea id="t-email" rows="16" aria-label="Email draft" readonly></textarea>
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" data-copy="t-email">Copy email</button></div>
+            <p style="font-size:.82rem;color:var(--muted)">This draft uses the fields from View Ticket. The sheet's own <em>Create Email Draft</em> button may lay it out differently.</p>
+          </div>
+          <div class="stack" style="gap:6px">
+            <span class="label" id="t-money-label">Invoice to Diamond</span>
+            <div class="money" id="t-money"></div>
+          </div>
+          <div id="t-warn" class="stack" style="gap:8px"></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- RHYTHM -->
+<section class="panel" id="rhythm" role="tabpanel" aria-labelledby="tab-rhythm" hidden>
+  <div class="stack">
+    <h2>Weekly rhythm</h2>
+    <p class="lede">New refusals show up any day. On top of that, Jan Tappel set a fixed weekly cycle for depots that run on Master POs: <strong>rework and hold for up to a week, then request one Master PO every Wednesday.</strong></p>
+  </div>
+  <div class="week">
+    <div class="day"><span class="label">Mon</span><h3>Intake</h3><ul><li>Refused product arrives at WHs</li><li>Unload + rework</li><li>Log every WN# and Costco PO</li></ul></div>
+    <div class="day"><span class="label">Tue</span><h3>Intake</h3><ul><li>Same as Monday</li><li>Chase reworked-pallet photos</li><li>Confirm bag counts by SKU</li></ul></div>
+    <div class="day hl"><span class="label">Wed</span><h3>Master PO day</h3><ul><li>List the refused pallets held this week</li><li>Email Diamond the WN#/PO pairs</li><li>Ask for a Master PO covering them</li><li>Then book the delivery</li></ul></div>
+    <div class="day"><span class="label">Thu</span><h3>Appointments</h3><ul><li>Request the Master PO appointment in the portal</li><li>Follow up on pending approvals</li></ul></div>
+    <div class="day"><span class="label">Fri</span><h3>Close out</h3><ul><li>Chase PODs</li><li>Move Delivered → Invoiced</li><li>Update the takeover tracker</li></ul></div>
+  </div>
+  <div class="grid2">
+    <div class="card stack">
+      <h3>Wednesday email</h3>
+      <div class="copyrow"><div class="box" id="wed-email" style="white-space:pre-line">Subject: Master PO request – refused Diamond pallets week of [date]
+
+Hi Jan,
+
+Per the weekly process, here are the refused POs we reworked and are holding this week:
+
+WN-123 – Costco PO XXXXXXXXXX – [pallets]
+WN-456 – Costco PO XXXXXXXXXX – [pallets]
+
+Can we get a Master PO for these so we can schedule delivery?
+
+Thanks,
+Jacob</div><button class="btn" type="button" data-copy="wed-email">Copy</button></div>
+    </div>
+    <div class="card stack">
+      <h3>Daily checklist</h3>
+      <ol class="check" id="daily"></ol>
+      <p style="font-size:.82rem;color:var(--muted)">Ticks are saved in this browser only.</p>
+    </div>
+  </div>
+  <div class="note"><b>Jan's rule, in her words:</b> "Rework and hold the refused product for one week and once a week on Wednesday, review the refused pallets and po numbers and request master po's for whatever was refused during the one week period." Mira Loma, CA uses Master POs. New Jersey and Texas don't always.</div>
+</section>
+
+<!-- REFERENCE -->
+<section class="panel" id="reference" role="tabpanel" aria-labelledby="tab-reference" hidden>
+  <div class="stack">
+    <h2>Reference</h2>
+    <p class="lede">The lookup tables behind Diamond's sheet, pulled from the workbook as of Oct 2, 2026.</p>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
+    <div class="subtabs" id="refTabs"></div>
+    <input type="text" id="refSearch" class="search" placeholder="Filter rows…" aria-label="Filter rows">
+  </div>
+  <div class="scroll tall" id="refTable"></div>
+
+  <div class="grid2">
+    <div class="card stack">
+      <h3>Pricing</h3>
+      <div class="scroll"><table>
+        <thead><tr><th>Charge</th><th class="num">Diamond direct</th><th class="num">Carrier pays</th></tr></thead>
+        <tbody>
+          <tr><td>Handling (unload + reload), per pallet</td><td class="num">$25</td><td class="num">$15 + $15</td></tr>
+          <tr><td>Rework, per pallet</td><td class="num">$65</td><td class="num">$65</td></tr>
+          <tr><td>Redelivery to Costco</td><td class="num">$400</td><td class="num">avoid*</td></tr>
+          <tr><td>OT / weekend call</td><td class="num">$200</td><td class="num">—</td></tr>
+          <tr><td>Storage</td><td class="num">none</td><td class="num">—</td></tr>
+        </tbody></table></div>
+      <p style="font-size:.85rem;color:var(--muted)">Assume Diamond pays direct unless Thomas or Jan says otherwise. *Only deliver on a carrier-paid load if Thomas asks for it directly. Never change SKUs on a ticket. Escalate to management instead.</p>
+    </div>
+    <div class="card stack">
+      <h3>Glossary</h3>
+      <dl class="gloss" style="border:0">
+        <div><dt>OS&amp;D</dt><dd>Over, Short &amp; Damaged</dd></div>
+        <div><dt>SU</dt><dd>Single units (loose bags) instead of full pallets, e.g. "3 SU"</dd></div>
+        <div><dt>ADW / ADWW</dt><dd>The Costco-side reps for each depot. They receive the ticket</dd></div>
+        <div><dt>Master PO</dt><dd>One Costco PO covering several refused POs, so they deliver and invoice together</dd></div>
+        <div><dt>POD</dt><dd>Proof of delivery. Must show the receiving sticker with every PO#</dd></div>
+        <div><dt>Depot code</dt><dd>First 3–4 digits of a Costco PO, e.g. <code>1052</code>0914317 is Frederick</dd></div>
+        <div><dt>Rejection sticker</dt><dd>Costco's receiver sticker on refused freight. Mandatory from the carrier</dd></div>
+        <div><dt>PO refresh</dt><dd>Ask ADW to reissue a PO after a portal error or a missed appointment</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<!-- GAPS -->
+<section class="panel" id="gaps" role="tabpanel" aria-labelledby="tab-gaps" hidden>
+  <div class="stack">
+    <h2>Sheet watch-outs</h2>
+    <p class="lede">Problems found while reading the formulas in <em>Diamond Pet foods – Revised</em>. Any of these can give you a blank or wrong auto field on a ticket. Worth raising with Genderson before the handoff.</p>
+  </div>
+  <div class="issues" id="issues"></div>
+</section>
+
+</div>
+</main>
+
+<script id="data" type="application/json">/*DATA*/</script>
+<script>
+(() => {
+const D = JSON.parse(document.getElementById('data').textContent);
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+const fmt$ = n => '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+
+/* ---------- tabs ---------- */
+const tabs = [...document.querySelectorAll('.tab')];
+function show(id) {
+  tabs.forEach(t => {
+    const on = t.getAttribute('aria-controls') === id;
+    t.setAttribute('aria-selected', on);
+    document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+  });
+  store.set('dp-tab', id);
+}
+tabs.forEach(t => t.addEventListener('click', () => { show(t.getAttribute('aria-controls')); history.replaceState(null, '', '#' + t.getAttribute('aria-controls')); }));
+const startTab = (location.hash || '').slice(1);
+show(tabs.some(t => t.getAttribute('aria-controls') === startTab) ? startTab : store.get('dp-tab', 'process'));
+
+/* ---------- toast + copy ---------- */
+function toast(msg) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t);
+  setTimeout(() => t.remove(), 1600);
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-copy]'); if (!b) return;
+  const el = document.getElementById(b.dataset.copy);
+  const text = 'value' in el ? el.value : el.innerText;
+  const fallback = () => {
+    if ('select' in el) { el.select(); } else { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+    toast('Selected. Press Ctrl+C / ⌘C to copy');
+  };
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(() => toast('Copied'), fallback); else fallback();
+});
+
+/* ---------- stats ---------- */
+const S = D.stats;
+const pct = (n) => Math.round(n / S.tickets * 100);
+const dmg = (S.reason.find(r => r[0] === 'Damage') || [0, 0])[1];
+const rw = (S.disposition.find(r => r[0] === 'Rework') || [0, 0])[1];
+const open = S.status.filter(s => !['Invoiced', 'Disposed', 'Notification'].includes(s[0])).reduce((a, s) => a + s[1], 0);
+$('#stats').innerHTML = [
+  [S.tickets, 'tickets logged since ' + new Date(S.firstDate + 'T12:00').toLocaleDateString('en-US', {month: 'short', day: 'numeric'})],
+  [pct(dmg) + '%', 'refused for damage'],
+  [pct(rw) + '%', 'go to rework'],
+  [fmt$(Math.round(S.invoiceAvg)), 'average invoice (' + S.invoiced + ' invoiced)'],
+  [open, 'tickets not yet invoiced or closed']
+].map(([b, s]) => `<div class="stat"><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join('');
+function bars(el, rows) {
+  const max = Math.max(...rows.map(r => r[1]));
+  el.innerHTML = rows.map(([k, n]) => `<div class="bar"><span>${esc(k)}</span><div class="track"><div class="fill" style="width:${n / max * 100}%"></div></div><span class="n">${n}</span></div>`).join('');
+}
+bars($('#destBars'), S.destination.slice(0, 8));
+bars($('#originBars'), S.origin);
+
+/* ---------- lookups (mirror the sheet formulas) ---------- */
+function depotFor(po) {
+  po = String(po || '').replace(/\D/g, '');
+  if (!po) return null;
+  // New Ticket B13: XLOOKUP on LEFT(PO,4), then LEFT(PO,3)
+  return D.depots.find(d => d.code === po.slice(0, 4)) || D.depots.find(d => d.code === po.slice(0, 3)) || null;
+}
+function warehouseFor(dest) {
+  // New Ticket B27: first Go-to row whose City1 appears inside the destination text
+  if (!dest) return null;
+  const d = dest.toLowerCase();
+  return D.warehouses.find(w => w.city && d.includes(w.city.toLowerCase())) || null;
+}
+function adwwFor(code) {
+  const ids = [...new Set(D.adwwMap.filter(m => m.code === code).map(m => m.contact))];
+  return ids.map(id => D.contacts[id]).filter(Boolean);
+}
+const skuBy = c => D.skus.find(s => s.costco === String(c));
+
+/* ---------- triage ---------- */
+const CASES = [
+  { id: 'rework', t: 'Damaged pallets', s: 'Standard rework, ~87% of tickets',
+    steps: ['Confirm #qb-team opened the Slack channel / AT order', 'Collect BOL, receiver rejection sticker and pallet photos from the carrier', 'Decode the depot from the Costco PO and pick the go-to WH (Ticket builder)', 'Send carrier WH name, address, hours, check-in #; ask for driver info + ETA', 'Email the WH: Diamond load inbound, attach paperwork + photos. Pin the subject in Slack', 'Create the ticket and send it to the ADW contact(s), CC diamondpet@ and diamondosd@', 'Get arrival photos + rework timing from the WH and post them in Slack', 'Get the damage count in bags by SKU / Item ID (by color if mixed)', 'Get reworked pallet photos. Status → Ready', 'Book the appointment in the Costco portal (2+ days out). Status → Requested', 'On APPROVED / APPT REVISED, send confirmation #, time and exact PO#s. Status → Scheduled', 'After delivery get the POD with the sticker listing all PO#s. Status → Delivered', 'Enter charges. Status → Invoiced'],
+    side: [['ok', 'Bill: $25/plt handling + $65/plt rework + $400 redelivery.'], ['', 'If the depot is on Master POs (Mira Loma), hold the pallets and use the Wednesday cycle instead of booking right away.']] },
+  { id: 'small', t: '≤5 damaged bags', s: 'Driver handles it at the next stop',
+    steps: ['No WH needed. The driver can donate or dispose at the next stop', '#qb-team sends the OS&D note: "Per SOP, driver is okay to donate or dispose of the N damaged bags."', 'Create the ticket. Disposition: Donate / Dispose, Qty in SU', 'Send the ticket to ADW via #qb-team', 'Status → Disposed'],
+    side: [['', 'No new Slack channel or AT order for this.']] },
+  { id: 'su10', t: 'Dispose ≤10 SU', s: 'Loose bags, no new channel',
+    steps: ['No new Slack channel / AT order', 'Confirm donate vs dispose with the WH or driver', 'Create the ticket with Qty in SU and Disposition Donate / Dispose', 'Send the ticket to ADW via #qb-team', 'Status → Disposed'],
+    side: [['', 'Per the Diamond SOP: always dispose/donate the S/U at the next stop.']] },
+  { id: 'big', t: 'Dispose >10 SU / full pallet', s: 'Needs its own channel',
+    steps: ['Create a new Slack channel for it', 'Source a WH near the depot if the carrier can’t dispose en route', 'Collect photos + bag count by SKU', 'Create the ticket. Disposition: Donate / Dispose', 'Send the ticket to ADW', 'Confirm disposal / donation is done. Status → Disposed'],
+    side: [] },
+  { id: 'over', t: 'Overage', s: 'Extra pallet, return to plant',
+    steps: ['Confirm the depot received the full ordered qty (that makes it an overage, not a refusal)', 'Get Diamond (Thomas Stone) to approve the return before booking anything', 'New Slack channel. Confirm the WarehouseNow PO', 'Have a WH near the last stop receive the pallet', 'Book an LTL return to the origin plant', 'Ticket: Reason Overage, Disposition Return. Return destination = origin plant', 'Track it until the plant receives it. Enter the LTL charge'],
+    side: [['', 'Training case 9/23: Costco PO 004290902278 / 004540902281, 1 pallet back to Ripon, CA. Thomas Stone authorized the LTL return.'], ['bad', 'That thread had no WHNow PO. Add it as soon as you find it.']] },
+  { id: 'short', t: 'Shortage', s: 'Notify only',
+    steps: ['Acknowledge the carrier', 'Notify ADW with the Costco PO#', 'No Slack channel needed'],
+    side: [] },
+  { id: 'cert', t: '929 certification issue', s: 'Mira Loma / Mexico',
+    steps: ['Code 929 is the Mira Loma depot, Mexico region (ADW contact: Juan "Chino" Rivera)', 'Ticket: Reason "929 Certification Issues"', 'Confirm the disposition with Genderson / Diamond before acting. Only 3 of these so far'],
+    side: [['bad', 'The SOP doesn’t define this case. Log what happens in your Live Case Log.']] },
+  { id: 'portal', t: 'Portal error / missed appt', s: 'PO refresh',
+    steps: ['Request a PO refresh from ADW (the ADW contact for the depot)', 'Re-request the appointment in the Costco portal once refreshed', 'Tell the WH and carrier the new date and PO#s'],
+    side: [] },
+  { id: 'nowh', t: 'Depot not in the list', s: 'No go-to WH',
+    steps: ['Source a warehouse as a normal WHNow load', 'Confirm with the customer whether they need redelivery at all', 'Once it works, add the WH to "Go to Warehouses" so the next ticket finds it'],
+    side: [['', 'Texas redeliveries go LTL through Ibarra Logistics (Omar, 682-559-1517, ~$325 FTL).']] },
+];
+let curCase = store.get('dp-case', 'rework');
+function renderCase() {
+  const c = CASES.find(x => x.id === curCase) || CASES[0];
+  $('#caseBtns').innerHTML = CASES.map(x => `<button type="button" class="case-btn" data-case="${x.id}" aria-pressed="${x.id === c.id}"><b>${esc(x.t)}</b><small>${esc(x.s)}</small></button>`).join('');
+  $('#caseSteps').innerHTML = `<h3>${esc(c.t)}</h3><ol class="check">${c.steps.map((s, i) => `<li><input type="checkbox" id="cs-${c.id}-${i}"><label for="cs-${c.id}-${i}">${esc(s)}</label></li>`).join('')}</ol>`;
+  $('#caseSide').innerHTML = (c.side.length ? c.side : [['', 'Required from the carrier on every new order: BOL, receiver rejection sticker, pallet photos.']]).map(([k, t]) => `<div class="note ${k}">${esc(t)}</div>`).join('')
+    + `<div class="card stack"><span class="label">Always</span><p style="font-size:.92rem">Track both POs: Costco/Diamond PO for Diamond's workflow and WHNow PO for ours. If a thread is missing the WHNow PO, flag it.</p></div>`;
+}
+$('#caseBtns').addEventListener('click', e => { const b = e.target.closest('[data-case]'); if (!b) return; curCase = b.dataset.case; store.set('dp-case', curCase); renderCase(); });
+$('#caseSteps').addEventListener('change', e => { e.target.closest('li')?.classList.toggle('done', e.target.checked); });
+renderCase();
+
+/* ---------- daily checklist ---------- */
+const DAILY = ['Scan #diamond-deliveries for new refusals and updates', 'Every open load has both a Costco PO and a WHNow PO', 'Chase arrival / rework photos from WHs', 'Check pending appointments in the Costco portal (Manual Appt Follow up)', 'Send confirmation #s for newly approved appointments', 'Chase PODs for yesterday’s deliveries', 'Update statuses in the Ticket System', 'Log anything new in the Live Case Log'];
+const today = new Date().toISOString().slice(0, 10);
+let ticks = store.get('dp-daily', {});
+if (ticks.day !== today) ticks = { day: today, done: [] };
+function renderDaily() {
+  $('#daily').innerHTML = DAILY.map((s, i) => `<li class="${ticks.done.includes(i) ? 'done' : ''}"><input type="checkbox" id="dd-${i}" data-i="${i}" ${ticks.done.includes(i) ? 'checked' : ''}><label for="dd-${i}">${esc(s)}</label></li>`).join('');
+}
+$('#daily').addEventListener('change', e => {
+  const i = +e.target.dataset.i;
+  ticks.done = e.target.checked ? [...new Set([...ticks.done, i])] : ticks.done.filter(x => x !== i);
+  store.set('dp-daily', ticks); renderDaily();
+});
+renderDaily();
+
+/* ---------- ticket builder ---------- */
+const opt = (v, sel) => `<option ${v === sel ? 'selected' : ''}>${esc(v)}</option>`;
+$('#f-carrier').innerHTML = D.carriers.map(c => opt(c, 'T3RA')).join('');
+$('#f-origin').innerHTML = D.origins.map(o => opt(o, 'Ripon CA 95366')).join('');
+const skuOpts = sel => '<option value="">Choose SKU…</option>' + D.skus.map(s => `<option value="${esc(s.costco)}" ${s.costco === sel ? 'selected' : ''}>${esc(s.costco)} · ${esc(s.size)} ${esc(s.name)}</option>`).join('');
+function addSkuLine(sku = '', qty = '') {
+  const div = document.createElement('div'); div.className = 'sku-line';
+  const n = $('#skuLines').children.length;
+  div.innerHTML = `<select aria-label="SKU" id="sku-${n}">${skuOpts(sku)}</select><input type="text" aria-label="Quantity" id="qty-${n}" placeholder="1 pallet" value="${esc(qty)}"><button type="button" class="btn icon" aria-label="Remove SKU">✕</button>`;
+  div.querySelector('button').addEventListener('click', () => { div.remove(); build(); });
+  $('#skuLines').appendChild(div);
+}
+addSkuLine('450195', '1 pallet');
+$('#addSku').addEventListener('click', () => { addSkuLine(); build(); });
+$('#tform').addEventListener('input', build);
+$('#tform').addEventListener('change', build);
+
+function build() {
+  const v = id => $(id).value.trim();
+  const po = v('#f-po').replace(/\D/g, ''), whn = v('#f-whn'), disp = v('#f-disp'), origin = v('#f-origin');
+  const depot = depotFor(po);
+  const dest = depot?.city || '';
+  const wh = warehouseFor(dest);
+  const reps = depot ? adwwFor(depot.code) : [];
+  const lines = [...$('#skuLines').children].map(l => {
+    const s = skuBy(l.querySelector('select').value);
+    return s ? { ...s, qty: l.querySelector('input').value.trim() } : null;
+  }).filter(Boolean);
+  const qtyText = lines.map(l => l.qty).filter(Boolean).join(' + ');
+  const retDest = disp === 'Rework' ? dest : disp === 'Return' ? origin : '';
+
+  $('#t-id').textContent = `WN ${whn || '—'} · PO ${po || '—'}`;
+  const cell = (k, val, missMsg) => `<div><span class="label">${esc(k)}</span><span class="v ${val ? '' : 'miss'}">${val ? esc(val) : esc(missMsg || 'Not found')}</span></div>`;
+  $('#t-auto').innerHTML = [
+    cell('Depot code', depot ? `${depot.code} · ${depot.facility}` : '', po ? 'PO prefix not in Costco list' : 'Enter a Costco PO'),
+    cell('Destination', dest, depot ? 'Depot has no city in the sheet' : '—'),
+    cell('Go-to WH (Return Origin)', wh ? `${wh.code} · ${wh.name || '(no name)'}` : '', dest ? 'No go-to WH for this city' : '—'),
+    cell('Return destination', retDest, disp === 'Donate / Dispose' ? 'None (disposed)' : '—'),
+    cell('ADW contact', reps.map(r => r.name).join(', '), depot ? 'No ADW contact mapped' : '—'),
+    cell('ADW email', reps.map(r => r.email).join(', '), '—'),
+  ].join('') + (wh ? `<div style="grid-column:1/-1"><span class="label">WH details for the carrier</span><span class="v" style="font-weight:400;white-space:pre-line">${esc(wh.address)}\nHours: ${esc(wh.hours)}\n${esc(wh.contact)}</span></div>` : '');
+
+  // View Engine B32: TEXTJOIN(", ", Costco PO, Qty, Disposition, Origin, Destination - WHNow PO)
+  const subject = [po, qtyText, disp, origin, dest ? `${dest} - ${whn}` : ''].filter(Boolean).join(', ');
+  $('#t-subject').textContent = subject || '—';
+
+  const cc = 'diamondpet@warehousenow.com, diamondosd@diamondpet.com';
+  const first = reps.map(r => r.name.trim().split(/\s+/)[0]).join(' / ') || 'team';
+  const itemLines = lines.length ? lines.map(l => `  • ${l.costco}  ${l.size} ${l.name}  —  ${l.qty || '?'}`).join('\n') : '  • (add SKUs)';
+  $('#t-email').value =
+`To: ${reps.map(r => r.email).join(', ') || '[ADW contact]'}
+Cc: ${cc}
+Subject: ${subject}
+
+Hello ${first},
+
+Please see the ticket below for refused Diamond product.
+
+Date:              ${v('#f-date')}
+Costco PO:         ${po}
+WarehouseNow PO:   ${whn}
+Carrier:           ${v('#f-carrier')}
+Origin:            ${origin}
+Destination:       ${dest}${depot ? ' (' + depot.code + ')' : ''}
+Reason refused:    ${v('#f-reason')}
+Disposition:       ${disp}
+Rework WH:         ${wh ? wh.code : ''}
+Return destination:${retDest ? ' ' + retDest : ''}
+
+Items & quantities refused:
+${itemLines}
+
+Thank you,
+Jacob
+WarehouseNow`;
+
+  // charges
+  const n = id => Math.max(0, +$(id).value || 0);
+  const plts = n('#f-plts'), rwp = n('#f-rw'), ltl = n('#f-ltl'), redel = $('#f-redel').checked, ot = $('#f-ot').checked;
+  const carrier = $('#f-payer').value === 'carrier';
+  let rows;
+  if (carrier) {
+    rows = [[`Unload ${plts} × $15`, plts * 15], [`Reload ${plts} × $15`, plts * 15], [`Rework ${rwp} × $65`, rwp * 65]];
+    if (ltl) rows.push(['LTL', ltl]);
+    $('#t-money-label').textContent = 'Carrier charges';
+  } else {
+    rows = [[`Handling ${plts} × $25`, plts * 25], [`Rework ${rwp} × $65`, rwp * 65]];
+    if (redel) rows.push(['Redelivery', 400]);
+    if (ltl) rows.push(['LTL', ltl]);
+    if (ot) rows.push(['OT / weekend call', 200]);
+    $('#t-money-label').textContent = 'Invoice to Diamond';
+  }
+  const total = rows.reduce((a, r) => a + r[1], 0);
+  $('#t-money').innerHTML = rows.map(([k, x]) => `<span>${esc(k)}</span><span>${fmt$(x)}</span>`).join('') + `<span class="tot">Invoice total</span><span class="tot">${fmt$(total)}</span>`;
+
+  const warns = [];
+  if (!whn) warns.push(['bad', 'No WarehouseNow PO. Add it before the ticket goes out.']);
+  if (depot && !depot.city) warns.push(['bad', `Depot ${depot.code} (${depot.facility}) has no city in the sheet, so Destination and Go-to WH come up blank. Fill them in by hand.`]);
+  if (depot && !reps.length) warns.push(['bad', `No ADW contact mapped for code ${depot.code}. Ask Genderson who gets these.`]);
+  if (dest && /mira loma/i.test(dest)) warns.push(['', 'Mira Loma runs on Master POs. Hold the reworked pallets for the Wednesday request instead of booking right away. Uncheck Redelivery if it rides a Master PO.']);
+  if (/TX/.test(dest)) warns.push(['', 'Texas: redelivery goes LTL through Ibarra Logistics (Omar).']);
+  if (disp === 'Return' && v('#f-reason') === 'Overage') warns.push(['', 'Overage return: get Thomas Stone’s OK first, then book LTL back to the plant and enter it as the LTL charge.']);
+  if (carrier && redel) warns.push(['', 'Carrier-paid load: avoid redelivery unless Thomas asks for it directly.']);
+  if (lines.length > 1 && lines.some(l => !l.qty)) warns.push(['', 'Each SKU line needs its own quantity.']);
+  $('#t-warn').innerHTML = warns.map(([k, t]) => `<div class="note ${k}">${esc(t)}</div>`).join('');
+}
+build();
+
+/* ---------- reference tables ---------- */
+const REF = {
+  'Costco depots': { rows: D.depots, cols: [['code', 'Code', 'mono'], ['facility', 'Facility'], ['city', 'Destination (go-to city)'], ['contact', 'Appt email']] },
+  'Go-to warehouses': { rows: D.warehouses, cols: [['city', 'Depot city'], ['state', 'St'], ['code', 'WH code', 'mono'], ['name', 'Warehouse'], ['hours', 'Hours', 'pre'], ['address', 'Address', 'pre'], ['contact', 'Contact', 'pre'], ['delivery', 'Delivery', 'pre'], ['rates', 'Rates', 'pre'], ['storage', 'Storage', 'pre'], ['notes', 'Notes', 'pre']] },
+  'ADW contacts': { rows: D.adwwMap.map(m => ({ ...m, name: D.contacts[m.contact]?.name, email: D.contacts[m.contact]?.email })), cols: [['code', 'Code', 'mono'], ['facility', 'Facility'], ['region', 'Region'], ['name', 'Contact'], ['email', 'Email', 'mono'], ['notes', 'Notes']] },
+  'SKUs': { rows: D.skus, cols: [['costco', 'Costco #', 'mono'], ['diamond', 'Diamond #', 'mono'], ['size', 'Size'], ['name', 'Item'], ['pltQty', 'Bags / plt'], ['pltWeight', 'Plt lbs']] },
+};
+let refCur = store.get('dp-ref', 'Costco depots');
+if (!REF[refCur]) refCur = 'Costco depots';
+function renderRef() {
+  $('#refTabs').innerHTML = Object.keys(REF).map(k => `<button type="button" class="subtab" aria-selected="${k === refCur}" data-ref="${esc(k)}">${esc(k)} <span style="opacity:.6">${REF[k].rows.length}</span></button>`).join('');
+  const q = $('#refSearch').value.trim().toLowerCase();
+  const { rows, cols } = REF[refCur];
+  const hit = rows.filter(r => !q || cols.some(([k]) => String(r[k] ?? '').toLowerCase().includes(q)));
+  $('#refTable').innerHTML = `<table><thead><tr>${cols.map(c => `<th>${esc(c[1])}</th>`).join('')}</tr></thead><tbody>${hit.map(r => `<tr>${cols.map(([k, , cls]) => `<td>${cls === 'pre' ? `<span class="pre">${esc(r[k])}</span>` : cls === 'mono' ? `<span class="mono">${esc(r[k])}</span>` : esc(r[k])}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${cols.length}">No rows match "${esc(q)}".</td></tr>`}</tbody></table>`;
+}
+$('#refTabs').addEventListener('click', e => { const b = e.target.closest('[data-ref]'); if (!b) return; refCur = b.dataset.ref; store.set('dp-ref', refCur); renderRef(); });
+$('#refSearch').addEventListener('input', renderRef);
+renderRef();
+
+/* ---------- watch-outs ---------- */
+const noCity = D.depots.filter(d => !d.city).map(d => d.code);
+const ISSUES = [
+  ['high', 'Katy depot has no destination city', `Codes ${noCity.join(', ')} (Katy Depot) have a blank "City Go to WHS". Any PO starting with these gives a blank Destination, no go-to WH and no subject-line destination.`],
+  ['high', 'Code 1354 has an ADW contact but no facility', 'In ADWW Code Map, code 1354 (Texas) maps to Lisa Vogt / Tasha Nowacki with no facility name. Costco Locations calls 1354 Katy Depot. Confirm which is right.'],
+  ['high', 'Save / Update / Email buttons are Apps Script', 'The buttons on New Ticket, Update Ticket and View Ticket (Save Ticket, Load SKU, Update SKU, Create Email Draft) run Google Apps Script. That code does not come through in an Excel export, so nobody can see what it does from this file. Ask for a copy (Extensions → Apps Script) before Genderson rolls off.'],
+  ['med', 'Some depot cities are wrong', 'Atlanta Depot is listed as "Atlanta, CA". The Vaughan Depot rows point to "Varennes". Tracy, Varennes and Airdrie have no go-to warehouse, so they always come up blank.'],
+  ['med', 'Go-to WH match is "first city that fits"', 'The Return Origin formula picks the first Go to Warehouses row whose city appears in the destination. Monrovia, Dallas and College Park each have two rows, and the second (Monrovia2 / Dallas2 / College Park1) can never be picked automatically. Many tickets list RUN-FRE-MD and SPE-DUL-VA for the same depot, so people are overriding it by hand.'],
+  ['med', 'Update Ticket has a shorter carrier list', 'New Ticket validates carriers against Aux!A2:A24 but Update Ticket uses Aux!A2:A22, so "WarehouseNow" and "Sunstate Carriers Inc" can’t be picked when updating. Fulmer is also listed twice.'],
+  ['med', 'Return Origin holds the warehouse code', 'The "Return_Origin" column stores the rework warehouse code (e.g. SKY-ONT-CA), not an origin. "Return_Destination" is the Costco city for rework or the plant for a return. Don’t let the names confuse you.'],
+  ['low', 'Free-text in charge columns', 'Redelivery and LTL charge cells hold notes like "Incl 2347" (rides another ticket’s delivery) or "Master PO#9600219395". It’s useful context, but those cells won’t add up as numbers.'],
+  ['low', 'Pallet qty is free text', 'Total_Pallets_Rejected mixes "1 pallet", "1 Pallet", "FTL", "1 SU", "1 pallet 1 SU". Counting pallets for billing means reading each one.'],
+  ['low', `${(S.status.find(x => x[0] === 'NA') || [0, 0])[1]} tickets still at status NA`, 'More than half the tickets are still at NA, some going back to March. Either nobody updated them or they really are stuck. The status column isn’t a reliable open-items list yet. The Orders Dashboard tab is also marked "Not Updated".'],
+  ['low', 'Two pricing notes don’t match', 'Your notes say "less than 5 bags → Delivery $500; $85 per TL storage per day", while the SOP says Diamond pays no storage and $400 redelivery. Confirm which applies to small-bag cases.'],
+];
+$('#issues').innerHTML = ISSUES.map(([s, h, p]) => `<div class="issue"><span class="sev ${s}">${s === 'high' ? 'Fix first' : s === 'med' ? 'Watch' : 'Minor'}</span><div><h3>${esc(h)}</h3><p>${esc(p)}</p></div></div>`).join('');
+})();
+</script>
