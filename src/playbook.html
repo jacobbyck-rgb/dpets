@@ -212,6 +212,14 @@ tr.hl td { background: var(--tag-soft); font-weight: 600; }
 .whopt b { font-size: .95rem; }
 .whopt.first { border-color: var(--accent); }
 .whopt .pre { white-space: pre-line; color: var(--muted); }
+.thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.thumb { border: 1px solid var(--line); border-radius: 4px; background: var(--sunken); padding: 6px; display: grid; gap: 6px; }
+.thumb .img { height: 140px; display: grid; place-items: center; background: #ffffff; border-radius: 2px; overflow: hidden; }
+.thumb img, .thumb canvas { max-width: 100%; max-height: 140px; display: block; }
+.thumb select { padding: 4px 6px; font-size: .8rem; }
+.thumb small { font-size: .72rem; color: var(--muted); overflow-wrap: anywhere; }
+.thumb.skip .img { opacity: .35; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
 .money { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; font-variant-numeric: tabular-nums; font-size: .94rem; }
 .money .tot { font: 700 1.5rem/1.2 var(--display); border-top: 1px solid var(--line); padding-top: 6px; }
 .money span:nth-child(even) { text-align: right; font-family: var(--mono); }
@@ -601,6 +609,24 @@ td .pre { white-space: pre-line; }
             <textarea id="t-email" rows="16" aria-label="Email draft" readonly></textarea>
             <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" data-copy="t-email">Copy email</button></div>
             <p style="font-size:.82rem;color:var(--muted)">Modeled on Grant's WN-12331 email: send from requests@, To the depot's ADW contacts, Cc diamondpet@ and Diamond OS&amp;D. The ticket goes as an attachment, and the email asks ADW to refresh the PO.</p>
+          </div>
+          <div class="stack" style="gap:10px">
+            <span class="label">Email attachments: download them here</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn primary" type="button" id="dl-ticket">Download ticket (PNG)</button>
+              <button class="btn" type="button" id="cp-ticket">Copy ticket image</button>
+            </div>
+            <div class="field">
+              <label for="att-files">Add the carrier's paperwork: their ISSUE_REPORTING PDF and/or photos and sticker images</label>
+              <input type="file" id="att-files" accept="application/pdf,image/*" multiple>
+            </div>
+            <p id="att-status" style="font-size:.85rem;color:var(--muted)">Tag each page below. Pages for other POs on the truck should be set to Skip.</p>
+            <div class="thumbs" id="att-thumbs"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn primary" type="button" id="dl-merged" disabled>Download merged PDF</button>
+              <button class="btn" type="button" id="dl-sticker" disabled>Download sticker (PNG)</button>
+              <button class="btn" type="button" id="att-clear" hidden>Clear files</button>
+            </div>
           </div>
           <div class="stack" style="gap:6px">
             <span class="label">Attach before sending (besides the ticket)</span>
@@ -1048,6 +1074,177 @@ const TL = [
 const stageChip = { Intake: '', App: 'on', Ticket: '', WH: '', Count: '', Appt: '', Billing: 'on', Handoff: 'side' };
 $('#timeline').innerHTML = TL.map(([w, st, who, what, les]) => `<li><div class="when">${esc(w)}<span class="chip ${stageChip[st] || ''}">${esc(st)}</span></div><div class="what"><b>${esc(who)}</b><p>${esc(what)}</p></div>${les ? `<p class="lesson">${esc(les)}</p>` : '<span></span>'}</li>`).join('');
 
+/* ---------- email attachments: ticket PNG, merged PDF, sticker ---------- */
+let lastTicket = null;
+const CDN = 'https://cdnjs.cloudflare.com/ajax/libs/';
+const loaded = {};
+const loadScript = src => loaded[src] ||= new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = () => { delete loaded[src]; rej(new Error('load')); }; document.head.appendChild(el); });
+async function pdfjs() {
+  await loadScript(CDN + 'pdf.js/3.11.174/pdf.min.js');
+  await loadScript(CDN + 'pdf.js/3.11.174/pdf.worker.min.js'); // runs on the main thread; workers can't load from the CDN here
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = CDN + 'pdf.js/3.11.174/pdf.worker.min.js';
+  return window.pdfjsLib;
+}
+const pdflib = () => loadScript(CDN + 'pdf-lib/1.17.1/pdf-lib.min.js').then(() => window.PDFLib);
+
+async function saveFile(name, blob) {
+  let dl = null;
+  try { dl = await (window.claude?.use?.('downloads') ?? null); } catch { dl = null; }
+  if (dl) {
+    try { await dl.save({ filename: name, data: blob }); toast(`Saved ${name}`); return; }
+    catch (e) {
+      if (e?.code === 'declined') return;
+      if (e?.code === 'rate_limited') { toast('A save is already waiting for you. Answer it first.'); return; }
+      if (!['unavailable', 'not_granted', 'capability_disabled', 'capability_removed'].includes(e?.code)) { toast('Couldn’t save the file. Try again.'); return; }
+    }
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  toast(`Downloading ${name}`);
+}
+const canvasBlob = (c, type = 'image/png', q) => new Promise(r => c.toBlob(r, type, q));
+
+function drawTicket(t) {
+  const S = 2, W = 900, pad = 20, rowH = 34, kW = 300, cW = (W - pad * 2 - kW) / 2;
+  const skuCols = [150, 430, W - pad * 2 - 580], skuH = 32;
+  const H = pad * 2 + t.rows.length * rowH + 20 + skuH * (1 + Math.max(1, t.skus.length));
+  const c = document.createElement('canvas'); c.width = W * S; c.height = H * S;
+  const g = c.getContext('2d'); g.scale(S, S);
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
+  const fit = (txt, w, size, weight = '') => { let f = size; do { g.font = `${weight} ${f}px Arial, Helvetica, sans-serif`; f -= 0.5; } while (g.measureText(txt).width > w - 12 && f > 9); };
+  const text = (txt, x, y, w, align, size = 15, weight = '', color = '#111111') => {
+    txt = String(txt ?? ''); fit(txt, w, size, weight); g.fillStyle = color; g.textBaseline = 'middle';
+    g.textAlign = align; g.fillText(txt, align === 'right' ? x + w - 8 : align === 'center' ? x + w / 2 : x + 8, y);
+  };
+  let y = pad;
+  t.rows.forEach(([k, a, b]) => {
+    g.fillStyle = '#e6e8ec'; g.fillRect(pad, y, kW, rowH);
+    g.fillStyle = '#e3e5ea'; g.fillRect(pad, y + rowH - 1, W - pad * 2, 1);
+    text(k, pad, y + rowH / 2, kW, 'right', 15, '', '#333333');
+    text(a, pad + kW, y + rowH / 2, cW, 'center');
+    text(b || '', pad + kW + cW, y + rowH / 2, cW, 'center');
+    y += rowH;
+  });
+  y += 20;
+  g.fillStyle = '#111827'; g.fillRect(pad, y, W - pad * 2, skuH);
+  let x = pad;
+  ['SKU', 'Product Name', 'Qty'].forEach((h, i) => { text(h, x, y + skuH / 2, skuCols[i], 'center', 15, 'bold', '#ffffff'); x += skuCols[i]; });
+  y += skuH;
+  (t.skus.length ? t.skus : [['', 'No SKUs added', '']]).forEach(r => {
+    x = pad; r.forEach((cell, i) => { text(cell, x, y + skuH / 2, skuCols[i], 'center'); x += skuCols[i]; });
+    g.fillStyle = '#e3e5ea'; g.fillRect(pad, y + skuH - 1, W - pad * 2, 1); y += skuH;
+  });
+  return c;
+}
+$('#dl-ticket').addEventListener('click', async () => {
+  if (!lastTicket) return;
+  await saveFile(`WN-${lastTicket.whn || 'ticket'}-ticket.png`, await canvasBlob(drawTicket(lastTicket)));
+});
+$('#cp-ticket').addEventListener('click', () => {
+  if (!lastTicket) return;
+  const blobP = canvasBlob(drawTicket(lastTicket));
+  try {
+    navigator.clipboard.write([new ClipboardItem({ 'image/png': blobP })])
+      .then(() => toast('Ticket image copied. Paste it into the email'), () => toast('This browser won’t copy images. Use Download ticket instead.'));
+  } catch { toast('This browser won’t copy images. Use Download ticket instead.'); }
+});
+
+// carrier paperwork
+const ROLES = [['skip', 'Skip'], ['photo', 'Photo'], ['bol', 'BOL'], ['sticker', 'Sticker'], ['order', 'Order confirmation']];
+let att = { pdfs: [], items: [] };
+function renderThumbs() {
+  $('#att-thumbs').innerHTML = '';
+  att.items.forEach((it, i) => {
+    const d = document.createElement('div'); d.className = 'thumb' + (it.role === 'skip' ? ' skip' : '');
+    d.innerHTML = `<div class="img"></div><small>${esc(it.label)}</small><select aria-label="What is ${esc(it.label)}">${ROLES.map(([k, t]) => `<option value="${k}" ${k === it.role ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
+    d.querySelector('.img').appendChild(it.thumb);
+    d.querySelector('select').addEventListener('change', e => { it.role = e.target.value; d.classList.toggle('skip', it.role === 'skip'); updateAttButtons(); });
+    $('#att-thumbs').appendChild(d);
+  });
+  updateAttButtons();
+}
+function updateAttButtons() {
+  const used = att.items.filter(i => i.role !== 'skip');
+  $('#dl-merged').disabled = !used.length;
+  $('#dl-sticker').disabled = !att.items.some(i => i.role === 'sticker');
+  $('#att-clear').hidden = !att.items.length;
+  if (att.items.length) $('#att-status').textContent = `${att.items.length} page${att.items.length === 1 ? '' : 's'} loaded, ${used.length} going into the PDF. Merged order: photos, BOL, sticker, order confirmation.`;
+}
+function imgFromFile(file) {
+  return new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = URL.createObjectURL(file); });
+}
+$('#att-files').addEventListener('change', async e => {
+  const files = [...e.target.files]; e.target.value = '';
+  if (!files.length) return;
+  $('#att-status').textContent = 'Reading files…';
+  try {
+    for (const f of files) {
+      if (f.type === 'application/pdf' || /\.pdf$/i.test(f.name)) {
+        const lib = await pdfjs();
+        const bytes = await f.arrayBuffer();
+        const doc = await lib.getDocument({ data: bytes.slice(0) }).promise;
+        const pi = att.pdfs.push({ bytes, doc, name: f.name }) - 1;
+        for (let n = 1; n <= doc.numPages; n++) {
+          const page = await doc.getPage(n);
+          const vp = page.getViewport({ scale: 1 }); const sc = 150 / Math.max(vp.width, vp.height);
+          const cv = document.createElement('canvas'); const v2 = page.getViewport({ scale: sc * 2 });
+          cv.width = v2.width; cv.height = v2.height;
+          await page.render({ canvasContext: cv.getContext('2d'), viewport: v2 }).promise;
+          att.items.push({ kind: 'pdf', pi, page: n - 1, label: `${f.name.replace(/\.pdf$/i, '').slice(0, 24)} p${n}`, role: 'skip', thumb: cv });
+        }
+      } else if (f.type.startsWith('image/')) {
+        const im = await imgFromFile(f);
+        att.items.push({ kind: 'img', img: im, label: f.name, role: /stick/i.test(f.name) ? 'sticker' : 'photo', thumb: im });
+      }
+    }
+    renderThumbs();
+  } catch {
+    $('#att-status').textContent = 'Couldn’t read one of those files. Check it’s a PDF or an image and try again.';
+  }
+});
+$('#att-clear').addEventListener('click', () => { att = { pdfs: [], items: [] }; renderThumbs(); $('#att-status').textContent = 'Tag each page below. Pages for other POs on the truck should be set to Skip.'; });
+
+async function imageToJpegBytes(img) {
+  const cv = document.createElement('canvas'); cv.width = img.naturalWidth; cv.height = img.naturalHeight;
+  const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(img, 0, 0);
+  return new Uint8Array(await (await canvasBlob(cv, 'image/jpeg', 0.88)).arrayBuffer());
+}
+$('#dl-merged').addEventListener('click', async () => {
+  const btn = $('#dl-merged'); btn.disabled = true; const label = btn.textContent; btn.textContent = 'Building PDF…';
+  try {
+    const L = await pdflib();
+    const out = await L.PDFDocument.create();
+    const srcs = {};
+    for (const role of ['photo', 'bol', 'sticker', 'order']) {
+      for (const it of att.items.filter(i => i.role === role)) {
+        if (it.kind === 'pdf') {
+          srcs[it.pi] ||= await L.PDFDocument.load(att.pdfs[it.pi].bytes.slice(0), { ignoreEncryption: true });
+          const [pg] = await out.copyPages(srcs[it.pi], [it.page]); out.addPage(pg);
+        } else {
+          const jpg = await out.embedJpg(await imageToJpegBytes(it.img));
+          const w = 612, h = w * jpg.height / jpg.width;
+          out.addPage([w, h]).drawImage(jpg, { x: 0, y: 0, width: w, height: h });
+        }
+      }
+    }
+    const bytes = await out.save();
+    await saveFile(`WN-${lastTicket?.whn || 'order'}-attachments.pdf`, new Blob([bytes], { type: 'application/pdf' }));
+  } catch { toast('Couldn’t build the PDF. Check your connection and try again.'); }
+  btn.textContent = label; updateAttButtons();
+});
+$('#dl-sticker').addEventListener('click', async () => {
+  const it = att.items.find(i => i.role === 'sticker'); if (!it) return;
+  let cv;
+  if (it.kind === 'pdf') {
+    const page = await att.pdfs[it.pi].doc.getPage(it.page + 1);
+    const vp = page.getViewport({ scale: 2 }); cv = document.createElement('canvas'); cv.width = vp.width; cv.height = vp.height;
+    await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+  } else {
+    cv = document.createElement('canvas'); cv.width = it.img.naturalWidth; cv.height = it.img.naturalHeight; cv.getContext('2d').drawImage(it.img, 0, 0);
+  }
+  await saveFile(`WN-${lastTicket?.whn || 'order'}-sticker.png`, await canvasBlob(cv));
+});
+
 /* ---------- order board ---------- */
 // Depots that run on Master POs (Jan's Wednesday process)
 const MASTER_PO_DEPOTS = ['1052', '731', '1053', '1054', '960', '929', '961'];
@@ -1386,6 +1583,12 @@ Thank you!` : 'Enter a Costco PO with a go-to warehouse to build the confirmatio
   const whName = v('#f-whov') || (wh ? wh.code : '');
   const tDate = v('#f-date') ? new Date(v('#f-date') + 'T12:00').toLocaleDateString('en-US') : '';
   const card = [tDate, po, ticketQty, v('#f-reason'), v('#f-carrier'), disp, origin, whName, whn].filter(Boolean);
+  lastTicket = {
+    whn, rows: [['Date', tDate], ['Costco PO number', po], ['Item & Quantities', ticketQty], ['Reason refused', v('#f-reason')],
+      ['Carrier', v('#f-carrier')], ['Disposition', disp], ['Origin & Destination', origin, dest],
+      ['Return Origin & Return Destination', disp === 'Donate / Dispose' ? '' : whName, retDest], ['WarehouseNow PO', whn]],
+    skus: lines.map(l => [l.costco, l.size + ' ' + l.name, l.qty]),
+  };
   const row = (k, a, b = '') => `<tr><td class="k">${esc(k)}</td><td>${esc(a)}</td><td>${esc(b)}</td></tr>`;
   $('#t-card').innerHTML = `<table>${[
     row('Date', tDate), row('Costco PO number', po), row('Item & Quantities', ticketQty), row('Reason refused', v('#f-reason')),
@@ -1410,7 +1613,7 @@ See attached ticket for this PO we received ${recvWord} at the ${st} depot, ${st
 
 Attached: ticket image, Costco sticker, merged PDF (photos, BOL, order confirmation).`;
   const att = [
-    'Ticket image: screenshot of the View Ticket screen or the ticket card above',
+    'Ticket image: use Download ticket above',
     'Costco receiving / rejection sticker on its own: refused PO, SU count, item #, reason, ordered vs received',
     'One merged PDF with: trailer photo showing the refused pallet',
     '…pallet label close-up (Diamond part #, qty, lot, best-by)',
