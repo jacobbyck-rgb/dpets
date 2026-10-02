@@ -509,6 +509,7 @@ td .pre { white-space: pre-line; }
           <div class="field"><label for="f-recv">Refused at depot on (sticker date)</label><input id="f-recv" type="date" value="2026-10-02"></div>
           <div class="field"><label for="f-stage">Pallet status for the ADW email</label>
             <select id="f-stage"><option value="arriving">on its way to the WH</option><option value="today">offloaded and being reworked today</option><option value="done">offloaded and reworked</option></select></div>
+          <div class="field"><label for="f-why">What happened (for the WH email)</label><input id="f-why" type="text" placeholder="damaged product"></div>
           <div class="field"><label for="f-whov">Rework WH (leave blank to use the sheet's)</label><input id="f-whov" type="text" placeholder="e.g. JRY Warehouse"></div>
         </div>
         <div class="row2">
@@ -587,6 +588,11 @@ td .pre { white-space: pre-line; }
         <div class="ticket-head"><h3>Ticket preview</h3><span class="mono" id="t-id"></span></div>
         <div class="ticket-body">
           <div class="auto" id="t-auto"></div>
+          <div class="stack" style="gap:6px">
+            <span class="label">Warehouse email (send first, pin the subject in Slack)</span>
+            <textarea id="t-wh" rows="16" aria-label="Warehouse email" readonly></textarea>
+            <div><button class="btn primary" type="button" data-copy="t-wh">Copy warehouse email</button></div>
+          </div>
           <div class="stack" style="gap:6px">
             <span class="label">Confirmation to the cx (carrier)</span>
             <textarea id="t-cx" rows="12" aria-label="Carrier confirmation email" readonly></textarea>
@@ -1524,14 +1530,14 @@ function addSkuLine(sku = '', qty = '') {
 }
 const PRESETS = {
   '13073': { whn: '13073', date: '2026-10-02', po: '1710918504', carrier: 'T3RA', origin: 'Ripon CA 95366', skus: [['450195', '1 pallet refused 60 SU']], recv: '2026-10-02', stage: 'arriving', plts: 1, rw: 1 },
-  '13087': { whn: '13087', date: '2026-10-02', po: '1750917236', carrier: 'T3RA', origin: 'Rushville IN 46173', skus: [], recv: '2026-10-02', stage: 'arriving', plts: 31, rw: 31 },
+  '13087': { whn: '13087', date: '2026-10-02', po: '1750917236', carrier: 'T3RA', origin: 'Rushville IN 46173', skus: [], why: 'the load shifting in transit (they kept 6 pallets of 52296)', recv: '2026-10-02', stage: 'arriving', plts: 31, rw: 31 },
   '13026': { whn: '13026', date: '2026-10-01', po: '1710917341', carrier: 'Cheema', origin: 'Lathrop CA 95330', skus: [['1101794', '1 pallet refused 60 SU'], ['25350', '1 pallet refused 28 SU']], recv: '2026-10-01', stage: 'arriving', plts: 2, rw: 2 },
 };
 function loadPreset(k) {
   const pr = PRESETS[k]; if (!pr) return;
   $('#f-whn').value = pr.whn; $('#f-date').value = pr.date; $('#f-po').value = pr.po;
   $('#f-carrier').value = pr.carrier; $('#f-origin').value = pr.origin; $('#f-recv').value = pr.recv; $('#f-stage').value = pr.stage;
-  $('#f-reason').value = 'Damage'; $('#f-disp').value = 'Rework'; $('#f-whov').value = ''; $('#f-payer').value = 'diamond';
+  $('#f-reason').value = 'Damage'; $('#f-disp').value = 'Rework'; $('#f-whov').value = ''; $('#f-why').value = pr.why || ''; $('#f-payer').value = 'diamond';
   $('#f-plts').value = pr.plts; $('#f-rw').value = pr.rw; $('#f-redel').checked = true; $('#f-ot').checked = false; $('#f-ltl').value = 0;
   $('#skuLines').innerHTML = ''; pr.skus.forEach(([sku, q]) => addSkuLine(sku, q));
 }
@@ -1583,6 +1589,30 @@ function build() {
   $('#t-whsub').textContent = `WN-${whn} Rework Diamond pet food ${ticketQty}`.trim();
 
   const team = 'diamondosd@diamondpet.com, diamondpet@warehousenow.com';
+  if (wh) {
+    const whEmails = [...new Set((wh.contact.match(/[\w.+-]+@[\w.-]+\.\w+/g) || []).map(e => e.toLowerCase()))];
+    const whFirst = (wh.contact.trim().split(/[\s,\/]+/)[0] || '').replace(/[^A-Za-z]/g, '') || 'Team';
+    const reasonTxt = v('#f-why') || { Damage: 'damaged product', Overage: 'an overage', Shortage: 'a shortage', '929 Certification Issues': 'certification issues' }[v('#f-reason')] || v('#f-reason').toLowerCase();
+    const skuList = lines.length ? '\nItems refused:\n' + lines.map(l => `  • ${l.costco}  ${l.size} ${l.name}  —  ${l.qty || '?'}`).join('\n') + '\n' : '';
+    $('#t-wh').value =
+`To: ${whEmails.join(', ') || '[warehouse email]'}
+Subject: WN-${whn} Rework Diamond pet food ${ticketQty}
+
+Hi ${whFirst},
+
+We have a Diamond Pet Foods load coming to you: ${ticketQty} refused at the Costco ${depot ? depot.facility.trim() : ''} (${dest}) for ${reasonTxt}. Carrier is ${v('#f-carrier')}, WarehouseNow #${whn}, Costco PO ${po}. Paperwork attached.
+${skuList}
+When it arrives, please send us:
+1. Photos of each pallet on arrival
+2. A count by SKU#: how many pallets (and bags) of each item
+3. How many pallets of each item need rework, and how many are fine as is
+4. Any bags damaged beyond rework, by SKU
+
+Please hold the rework until we confirm the counts. Thank you!
+
+Jacob Byck
+WarehouseNow · 630-277-9687`;
+  } else $('#t-wh').value = 'Enter a Costco PO with a go-to warehouse to build the warehouse email.';
   $('#t-cx').value = wh ? `Team
 
 Confirmation Details
