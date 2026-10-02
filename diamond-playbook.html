@@ -383,6 +383,7 @@ td .pre { white-space: pre-line; }
     <p class="lede">Runs the same lookups as Diamond's <em>New Ticket</em> and <em>View Engine</em> tabs. Type the Costco PO and it fills in the depot code, destination, go-to warehouse, ADW contact and subject line. Use it to check a ticket before you save it in the real sheet. <strong>The form is filled with the example from the New Ticket tab.</strong></p>
   </div>
   <div class="builder">
+    <div class="stack">
     <form class="card stack" id="tform" autocomplete="off">
       <fieldset>
         <legend>Identity</legend>
@@ -426,12 +427,33 @@ td .pre { white-space: pre-line; }
         <label class="check-inline"><input type="checkbox" id="f-ot"> OT / weekend call</label>
       </fieldset>
     </form>
+    <div class="card stack">
+      <h3>Reading the rejection sticker</h3>
+      <p style="font-size:.9rem;color:var(--muted)">Most of the ticket comes off Costco's receiving sticker. This one is from WN-13073.</p>
+      <div class="scroll"><table>
+        <tbody>
+          <tr><td class="mono">SUMNER DRY · DOOR 266 · 10/02/26</td><td>Depot and delivery date</td></tr>
+          <tr><td class="mono">1710918504 &nbsp;1710918505</td><td>Every PO on the truck. Only the one with a comment was refused</td></tr>
+          <tr><td class="mono">001710918504 COMMENTS:</td><td>The refused PO. Drop the leading zeros: <b>1710918504</b></td></tr>
+          <tr><td class="mono">REFUSED 1 PLT = 60 SU ITM 450195</td><td>Qty <b>1 pallet</b> (60 bags), SKU <b>450195</b></td></tr>
+          <tr><td class="mono">DUE TO DAMAGE</td><td>Reason refused: <b>Damage</b></td></tr>
+          <tr><td class="mono">ORD 1500 SU · REC 1440 SU</td><td>Ordered vs received. The difference should equal the refused qty</td></tr>
+          <tr><td class="mono">FRT REMAINING ON TRAILER</td><td>Still on the carrier's truck, so it needs a WH</td></tr>
+        </tbody></table></div>
+      <p style="font-size:.85rem;color:var(--muted)">The origin plant and carrier are on the BOL: Ship From Ripon, CA 95366. Carrier T3RA Logistics (Samand Trucking).</p>
+    </div>
+    </div>
 
     <div class="stack">
       <article class="ticket" aria-live="polite">
         <div class="ticket-head"><h3>Ticket preview</h3><span class="mono" id="t-id"></span></div>
         <div class="ticket-body">
           <div class="auto" id="t-auto"></div>
+          <div class="stack" style="gap:6px">
+            <span class="label">Confirmation to the cx (carrier)</span>
+            <textarea id="t-cx" rows="12" aria-label="Carrier confirmation email" readonly></textarea>
+            <div><button class="btn" type="button" data-copy="t-cx">Copy confirmation</button></div>
+          </div>
           <div class="stack" style="gap:6px">
             <span class="label">Ticket card (screenshot it and attach it to the ADW email)</span>
             <div class="copyrow"><div class="tcard" id="t-card"></div><button class="btn" type="button" data-copy="t-card">Copy</button></div>
@@ -473,6 +495,7 @@ td .pre { white-space: pre-line; }
     <p class="lede">Reworked pallets go back into Costco on an appointment you book in the <strong>Costco appointment portal</strong>. On Master PO depots like Frederick and Mira Loma you book the Master PO, not each refused PO. You then email ADW the Master PO with the mini POs that roll into it, so they can match pallets to POs. When the portal flips to <strong>APPROVED</strong>, reply on the same thread with the confirmation.</p>
   </div>
 
+  <div class="note"><b>From ADW (Grey Secord, NW):</b> request appointments as soon as the POs are received, because depot slots fill up fast. If the requested date isn't open, the depot can set the appointment up to 48 hours either side of it.</div>
   <div class="flow c3">
     <div class="step"><h3>Get the Master PO</h3>
       <ul><li>From Diamond, after the Wednesday request</li><li>List every mini PO it covers with pallets, item # and WN#</li></ul>
@@ -656,7 +679,7 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
 };
-const fmt$ = n => '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+const fmt$ = n => '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits: Number.isInteger(+n) ? 0 : 2, maximumFractionDigits: 2});
 
 /* ---------- tabs ---------- */
 const tabs = [...document.querySelectorAll('.tab')];
@@ -721,16 +744,21 @@ function warehouseFor(dest) {
   const d = dest.toLowerCase();
   return D.warehouses.find(w => w.city && d.includes(w.city.toLowerCase())) || null;
 }
+// People seen on real ADW threads who aren't in Diamond's contact sheet yet
+const EXTRA_ADW = {
+  '171': [{ name: 'Grey Secord', email: 'Gsecord@acosta.com', note: 'NW Sales Support (Acosta), on the WN-13073 thread' }],
+  '584': [{ name: 'Grey Secord', email: 'Gsecord@acosta.com', note: 'NW Sales Support (Acosta)' }],
+};
 function adwwFor(code) {
   const ids = [...new Set(D.adwwMap.filter(m => m.code === code).map(m => m.contact))];
-  return ids.map(id => D.contacts[id]).filter(Boolean);
+  return [...ids.map(id => D.contacts[id]).filter(Boolean), ...(EXTRA_ADW[code] || [])];
 }
 const skuBy = c => D.skus.find(s => s.costco === String(c));
 
 /* ---------- triage ---------- */
 const CASES = [
   { id: 'rework', t: 'Damaged pallets', s: 'Standard rework, ~87% of tickets',
-    steps: ['Confirm #qb-team opened the Slack channel / AT order', 'Collect BOL, receiver rejection sticker and pallet photos from the carrier', 'Decode the depot from the Costco PO and find the go-to WH (e.g. Frederick MD → Runners Inc)', 'Send the order to that WH', 'Send the WH address to the cx, the customer (usually the carrier): name, address, hours, check-in #. Ask for driver info + ETA', 'Email the WH with the WN#, paperwork + photos. Pin the subject in Slack', 'Make the ticket in Diamond\u2019s sheet', 'Report to ADW: email the ticket card, WH address, BOL, SKU page and photos to the depot\u2019s ADW contacts + Diamond OS&D + diamondpet@', 'In the WarehouseNow app save the Customer Quote (unload $12.50 + reload $12.50 + rework $65 per pallet, redelivery $400) and the Warehouse Quote. That marks the order approved', 'Watch the ADW email thread for replies', 'Get arrival photos + rework timing from the WH and post them in Slack', 'Get the count by SKU / Item ID (color) and check it against the ticket. Tell ADW if it changes', 'Get reworked pallet photos. Status → Ready', 'Book the appointment in the Costco portal (2+ days out). Status → Requested', 'On APPROVED / APPT REVISED, send confirmation #, time and exact PO#s. Status → Scheduled', 'After delivery get the POD with the sticker listing all PO#s. Status → Delivered', 'Confirm who pays (Diamond or the carrier) from the email chain and post it in the channel for Mariah', 'Set Customer + Warehouse Final Cost in the app. App: Complete → Invoiced', 'Enter charges in the Ticket System. Status → Invoiced'],
+    steps: ['The carrier usually emails Diamond OS&D + WarehouseNow "Kindly advise disposition". Requests@ replies "We are looking into this now and will advise shortly"', 'Confirm #qb-team opened the Slack channel / AT order', 'Collect BOL, receiver rejection sticker and pallet photos from the carrier', 'Decode the depot from the Costco PO and find the go-to WH (e.g. Frederick MD → Runners Inc)', 'Send the order to that WH and save the Warehouse Quote in the app (e.g. GEF: $5 unload, $5 reload, $55 rework)', 'Send the WH address to the cx, the customer (usually the carrier): name, address, hours, check-in #. Ask for driver info + ETA', 'Email the WH with the WN#, paperwork + photos. Pin the subject in Slack', 'Make the ticket in Diamond\u2019s sheet', 'Report to ADW: email the ticket card, WH address, BOL, SKU page and photos to the depot\u2019s ADW contacts + Diamond OS&D + diamondpet@', 'In the WarehouseNow app save the Customer Quote (unload $12.50 + reload $12.50 + rework $65 per pallet, redelivery $400) and the Warehouse Quote. That marks the order approved', 'Watch the ADW email thread for replies', 'Get arrival photos + rework timing from the WH and post them in Slack', 'Get the count by SKU / Item ID (color) and check it against the ticket. Tell ADW if it changes', 'Get reworked pallet photos. Status → Ready', 'Book the appointment in the Costco portal (2+ days out). Status → Requested', 'On APPROVED / APPT REVISED, send confirmation #, time and exact PO#s. Status → Scheduled', 'After delivery get the POD with the sticker listing all PO#s. Status → Delivered', 'Confirm who pays (Diamond or the carrier) from the email chain and post it in the channel for Mariah', 'Set Customer + Warehouse Final Cost in the app. App: Complete → Invoiced', 'Enter charges in the Ticket System. Status → Invoiced'],
     side: [['ok', 'Bill: $25/plt handling + $65/plt rework + $400 redelivery.'], ['', 'Real example: Costco PO 10520914317, 2 pallets damaged, Pace Logistics from Gaston SC → Frederick depot (1052) → Runners Inc (RUN-FRE-MD), WN# 12840. Ticket went to Krista Davidson + Jenniffer Vasiento.'], ['', 'If the depot is on Master POs (Mira Loma), hold the pallets and use the Wednesday cycle instead of booking right away.']] },
   { id: 'small', t: '≤5 damaged bags', s: 'Driver handles it at the next stop',
     steps: ['No WH needed. The driver can donate or dispose at the next stop', '#qb-team sends the OS&D note: "Per SOP, driver is okay to donate or dispose of the N damaged bags."', 'Create the ticket. Disposition: Donate / Dispose, Qty in SU', 'Send the ticket to ADW via #qb-team', 'Status → Disposed'],
@@ -952,6 +980,26 @@ function build() {
   $('#t-whsub').textContent = `WN-${whn} Rework Diamond pet food ${qtyText}`.trim();
 
   const team = 'diamondosd@diamondpet.com, diamondpet@warehousenow.com';
+  $('#t-cx').value = wh ? `Team
+
+Confirmation Details
+
+Warehouse Name: ${wh.name || wh.code}
+Warehouse Address: ${wh.address.replace(/\n/g, ' ').trim()}
+Hours of Operation: ${wh.hours.split('\n')[0]}
+
+Driver Check-In Identification: WarehouseNow #${whn}
+Driver issues during check-in or pickup, please call: 630-277-9687
+
+Information Required
+
+Driver Name:
+Contact number:
+Truck/Trailer #:
+ETA:
+Your Load# or Pro# for billing purposes.
+
+Thank you!` : 'Enter a Costco PO with a go-to warehouse to build the confirmation.';
   const itemLines = lines.length ? lines.map(l => `  • ${l.costco}  ${l.size} ${l.name}  —  ${l.qty || '?'}`).join('\n') : '  • (add SKUs)';
   // Same order as the ticket image in the ADW email: PO, qty, reason, carrier, disposition, origin, WH code, WN#
   const card = [po, qtyText, v('#f-reason'), v('#f-carrier'), disp, origin, wh ? wh.code : '', whn].filter(Boolean);
@@ -969,7 +1017,7 @@ ${wh ? `
 Rework warehouse:
 ${wh.name || wh.code}
 ${wh.address}
-Hours: ${wh.hours}
+Hours: ${wh.hours.split('\n')[0]}
 ` : ''}
 Items & quantities refused:
 ${itemLines}
@@ -1005,6 +1053,8 @@ WarehouseNow`;
 
   const warns = [];
   if (!whn) warns.push(['bad', 'No WarehouseNow PO. Add it before the ticket goes out.']);
+  if (whn) warns.push(['', `Reusing an older email as a template? Check that every WN# says ${whn}. On WN-13073 the first carrier confirmation still said #13026 from the last Sumner order.`]);
+  if (wh && wh.code === 'GEF-TAC-WA') warns.push(['', 'GEF Logistics also goes by Syndicate Trucking. The sheet lists hours as 0800-1400 M-F, but 0800-1530 M-F went out on WN-13073. Confirm with Gloria which is right.']);
   if (depot && !depot.city) warns.push(['bad', `Depot ${depot.code} (${depot.facility}) has no city in the sheet, so Destination and Go-to WH come up blank. Fill them in by hand.`]);
   if (depot && !reps.length) warns.push(['bad', `No ADW contact mapped for code ${depot.code}. Ask Genderson who gets these.`]);
   if (dest && /mira loma/i.test(dest)) warns.push(['', 'Mira Loma runs on Master POs. Hold the reworked pallets for the Wednesday request instead of booking right away. Uncheck Redelivery if it rides a Master PO.']);
@@ -1020,7 +1070,7 @@ build();
 const REF = {
   'Costco depots': { rows: D.depots, cols: [['code', 'Code', 'mono'], ['facility', 'Facility'], ['city', 'Destination (go-to city)'], ['contact', 'Appt email']] },
   'Go-to warehouses': { rows: D.warehouses, cols: [['city', 'Depot city'], ['state', 'St'], ['code', 'WH code', 'mono'], ['name', 'Warehouse'], ['hours', 'Hours', 'pre'], ['address', 'Address', 'pre'], ['contact', 'Contact', 'pre'], ['delivery', 'Delivery', 'pre'], ['rates', 'Rates', 'pre'], ['storage', 'Storage', 'pre'], ['notes', 'Notes', 'pre']] },
-  'ADW contacts': { rows: D.adwwMap.map(m => ({ ...m, name: D.contacts[m.contact]?.name, email: D.contacts[m.contact]?.email })), cols: [['code', 'Code', 'mono'], ['facility', 'Facility'], ['region', 'Region'], ['name', 'Contact'], ['email', 'Email', 'mono'], ['notes', 'Notes']] },
+  'ADW contacts': { rows: [...D.adwwMap.map(m => ({ ...m, name: D.contacts[m.contact]?.name, email: D.contacts[m.contact]?.email })), ...Object.entries(EXTRA_ADW).flatMap(([code, list]) => list.map(c => ({ code, facility: D.depots.find(d => d.code === code)?.facility || '', region: 'Northwest', name: c.name, email: c.email, notes: c.note + ' (not in Diamond\u2019s sheet)' })))], cols: [['code', 'Code', 'mono'], ['facility', 'Facility'], ['region', 'Region'], ['name', 'Contact'], ['email', 'Email', 'mono'], ['notes', 'Notes']] },
   'SKUs': { rows: D.skus, cols: [['costco', 'Costco #', 'mono'], ['diamond', 'Diamond #', 'mono'], ['size', 'Size'], ['name', 'Item'], ['pltQty', 'Bags / plt'], ['pltWeight', 'Plt lbs']] },
 };
 let refCur = store.get('dp-ref', 'Costco depots');
