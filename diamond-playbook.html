@@ -232,6 +232,25 @@ table.trk .upd { color: var(--muted); font-size: .76rem; white-space: nowrap; }
 .trk-add { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .trk-add input { width: auto; min-width: 120px; flex: 0 1 200px; }
 .qbox { border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; margin-top: 10px; display: grid; gap: 8px; background: var(--sunken); }
+.pipe { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(210px, 1fr); gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+.pcol { background: var(--sunken); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px; display: grid; gap: 8px; align-content: start; min-height: 120px; }
+.pcol h4 { margin: 0; font: 600 .8rem/1.2 var(--body); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); display: flex; justify-content: space-between; }
+.pcard { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 8px 9px; display: grid; gap: 4px; font-size: .82rem; }
+.pcard.late { border-left: 4px solid var(--bad); }
+.pcard .wn { font: 700 1rem/1 var(--display); background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-align: left; }
+.pcard .meta { color: var(--muted); }
+.qchip { justify-self: start; font: 600 .7rem/1 var(--body); text-transform: uppercase; letter-spacing: .06em; padding: 3px 6px; border-radius: 3px; }
+.qchip.est { background: var(--sunken); color: var(--muted); border: 1px solid var(--line); }
+.qchip.due { background: var(--warn-soft); color: var(--warn); }
+.qchip.upd { background: var(--tag-soft); color: var(--ink); }
+.qchip.fin { background: var(--ok-soft); color: var(--ok); }
+.dday { display: grid; gap: 6px; }
+.dday h4 { margin: 0; font: 700 1.05rem/1.2 var(--display); letter-spacing: .03em; }
+.truck { border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 4px; padding: 9px 11px; background: var(--surface); display: grid; gap: 3px; font-size: .88rem; }
+.truck.late { border-left-color: var(--bad); }
+.truck b { font-weight: 600; }
+.truck .meta { color: var(--muted); font-size: .82rem; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font: inherit; text-decoration: underline; }
 .mini-head, .mini-line { display: grid; grid-template-columns: minmax(0, 1.6fr) 70px minmax(0, 1fr) minmax(0, 1fr) 34px; gap: 6px; align-items: center; }
 .mini-head span { font-size: .78rem; color: var(--muted); }
 tr.hl td { background: var(--tag-soft); font-weight: 600; }
@@ -459,6 +478,11 @@ td .pre { white-space: pre-line; }
     <p class="lede">Every open Diamond order in one table: its POs and SKUs, <strong>where it is now</strong>, <strong>where it goes next</strong>, and whether a delivery is booked. Click any cell to edit it. Changes save for everyone you share this page with, and the Order board uses the same data.</p>
     <p id="t-mode" style="font-size:.85rem;color:var(--muted)">Loading…</p>
   </div>
+  <div class="subtabs" id="trk-views" role="tablist" aria-label="Tracker views">
+    <button type="button" class="subtab" data-view="table" aria-selected="true">Table</button>
+    <button type="button" class="subtab" data-view="pipe" aria-selected="false">Pipeline</button>
+    <button type="button" class="subtab" data-view="del" aria-selected="false">Deliveries</button>
+  </div>
   <div class="trk-bar">
     <input type="text" id="trk-q" placeholder="Search WN#, PO, SKU, warehouse…" aria-label="Search tracker">
     <select id="trk-f" aria-label="Show">
@@ -469,6 +493,9 @@ td .pre { white-space: pre-line; }
     </select>
     <button class="btn" type="button" id="trk-csv">Download CSV</button>
   </div>
+  <div id="trk-view-pipe" hidden><div class="pipe" id="trk-pipe"></div><p class="meta" style="font-size:.82rem;margin-top:6px">Click a WN# to open it on the Order board. Quote status follows the stage: <b>Estimate</b> before rework, <b>Quote due</b> once it’s reworked or delivered and not updated yet, <b>Updated</b> after you update it in the app, <b>Final</b> when the Customer final cost is set at closeout.</p></div>
+  <div id="trk-view-del" hidden><div id="trk-del" class="stack" style="gap:16px"></div></div>
+  <div id="trk-view-table">
   <div class="scroll trk-wrap"><table class="trk" id="trk-table">
     <thead><tr>
       <th>WN#</th><th>Costco PO</th><th>SKUs <small>(sku x plts)</small></th><th class="num">Plts</th><th>Now at</th><th>Next stop</th><th>Stage</th><th>Delivery date</th><th>Time</th><th>Conf #</th><th>Master PO</th><th>Ships with</th><th>Next step</th><th class="num">Quote</th><th>Updated</th>
@@ -483,6 +510,7 @@ td .pre { white-space: pre-line; }
     <button class="btn primary" type="submit">Add</button>
   </form>
   <p style="font-size:.85rem;color:var(--muted)">Blank <b>Now at</b> and <b>Next stop</b> cells fill in from the stage, warehouse and depot (shown in grey). Type over them when the real answer differs. Write SKUs as <code>25350 x19, 25347 x4</code> and the master PO list on the Order board picks them up.</p>
+  </div>
 </section>
 
 <!-- ORDER BOARD -->
@@ -1737,6 +1765,65 @@ function trackerRows() {
     return true;
   }).sort((a, b) => (stageIdx(b.stage) - stageIdx(a.stage)) || String(a.wn).localeCompare(String(b.wn)));
 }
+function quoteState(o) {
+  if (o.custFinal != null && ['closeout', 'done'].includes(o.stage)) return ['fin', 'Quote final ' + fmt$(o.custFinal)];
+  if (o.quoteUpdated) return ['upd', 'Quote updated'];
+  if (stageIdx(o.stage) >= stageIdx('ready') && !CLOSED.includes(o.stage)) return ['due', 'Quote due'];
+  if (CLOSED.includes(o.stage)) return ['est', 'Closed'];
+  const t = calcQuote(o).total; return ['est', 'Estimate' + (t != null ? ' ' + fmt$(t) : '')];
+}
+let trkView = store.get('dp-trkview', 'table');
+function showTrkView(v) {
+  trkView = v; store.set('dp-trkview', v);
+  document.querySelectorAll('#trk-views [data-view]').forEach(b => b.setAttribute('aria-selected', b.dataset.view === v));
+  $('#trk-view-table').hidden = v !== 'table'; $('#trk-view-pipe').hidden = v !== 'pipe'; $('#trk-view-del').hidden = v !== 'del';
+}
+function dayLabel(iso) {
+  const d = daysSince(iso);
+  if (d === 0) return 'Today'; if (d === -1) return 'Tomorrow'; if (d === 1) return 'Yesterday';
+  return new Date(iso + 'T12:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+}
+function renderPipeline(rows) {
+  const stages = STAGES.filter(st => $('#trk-f').value === 'all' || !CLOSED.includes(st.k));
+  $('#trk-pipe').innerHTML = stages.map(st => {
+    const list = rows.filter(o => o.stage === st.k);
+    return `<div class="pcol"><h4><span>${esc(st.t)}</span><span>${list.length}</span></h4>${list.map(o => {
+      const l = lateness(o), [qc, qt] = quoteState(o);
+      return `<div class="pcard ${l.late ? 'late' : ''}"><button type="button" class="wn" data-open="${esc(o.id)}">WN ${esc(o.wn || '?')}</button>
+        <span>${esc([o.po, o.pallets ? o.pallets + ' plt' + (+o.pallets === 1 ? '' : 's') : ''].filter(Boolean).join(' · '))}</span>
+        <span class="meta">${esc([o.loc || nowAt(o), '→ ' + (o.nextStop || nextStop(o))].join(' '))}</span>
+        ${o.apptDate && ['requested', 'scheduled'].includes(o.stage) ? `<span><b>${o.stage === 'scheduled' ? 'Delivery' : 'Requested'}:</b> ${esc(dayLabel(o.apptDate))} ${esc(o.apptTime || '')}</span>` : ''}
+        ${l.msg ? `<span class="meta">${esc(l.msg)}</span>` : ''}
+        <span class="qchip ${qc}">${esc(qt)}</span></div>`;
+    }).join('') || '<span class="meta" style="font-size:.8rem">—</span>'}</div>`;
+  }).join('');
+}
+function renderDeliveries(all) {
+  const open = all.filter(o => !CLOSED.includes(o.stage));
+  // one truck = same master PO / ships-with group + same appointment date, else one order
+  const trucks = list => { const m = {}; list.forEach(o => { const k = (o.masterPo || o.group || o.id) + '|' + (o.apptDate || ''); (m[k] ||= []).push(o); }); return Object.values(m); };
+  const truckCard = (grp, extra = '') => {
+    const o = grp[0], plts = grp.reduce((a, x) => a + (+x.pallets || 0), 0), l = lateness(o);
+    return `<div class="truck ${l.late ? 'late' : ''}"><b>${esc([o.apptTime, o.depotCode ? o.depotCode + ' ' + (o.depotName || '') : o.dest, plts ? plts + (plts === 1 ? ' pallet' : ' pallets') : ''].filter(Boolean).join(' · '))}</b>
+      <span>${esc(o.masterPo ? 'Master PO ' + o.masterPo : 'PO ' + (o.po || '?'))}${o.conf ? ' · Conf ' + esc(o.conf) : ''}${o.wh ? ' · from ' + esc(o.wh) : ''}</span>
+      <span class="meta">${grp.map(x => `<button type="button" class="linkbtn" data-open="${esc(x.id)}">WN ${esc(x.wn || '?')}</button> (${esc(x.po || '?')})`).join(', ')}</span>
+      ${extra || (l.msg ? `<span class="meta">${esc(l.msg)}</span>` : '')}</div>`;
+  };
+  const sched = open.filter(o => o.stage === 'scheduled').sort((a, b) => String(a.apptDate).localeCompare(String(b.apptDate)) || String(a.apptTime).localeCompare(String(b.apptTime)));
+  const byDay = {}; sched.forEach(o => (byDay[o.apptDate || 'No date'] ||= []).push(o));
+  const schedHtml = Object.entries(byDay).map(([d, list]) => `<div class="dday"><h4>${esc(d === 'No date' ? 'Date missing' : dayLabel(d))}</h4>${trucks(list).map(g => truckCard(g)).join('')}</div>`).join('') || '<p class="meta">No deliveries booked.</p>';
+  const req = trucks(open.filter(o => o.stage === 'requested')).map(g => truckCard(g, `<span class="meta">Requested for ${esc(g[0].apptDate ? dayLabel(g[0].apptDate) : '?')}${g[0].conf ? ' · ' + esc(g[0].conf) : ''}. Check the portal for APPROVED</span>`)).join('') || '<p class="meta">Nothing waiting on approval.</p>';
+  const readyGroups = {}; open.filter(o => o.stage === 'ready').forEach(o => (readyGroups[(o.depotCode || '?') + '|' + (o.masterPo || o.group || '')] ||= []).push(o));
+  const ready = Object.values(readyGroups).map(g => truckCard(g, `<span class="meta">${esc(nextFor(g[0]))}</span>`)).join('') || '<p class="meta">Nothing ready to book.</p>';
+  const pod = open.filter(o => o.stage === 'delivered').map(o => truckCard([o], `<span class="meta">Delivered${o.apptDate ? ' ' + esc(dayLabel(o.apptDate)) : ''}. Get the POD with every PO#</span>`)).join('') || '<p class="meta">No PODs outstanding.</p>';
+  $('#trk-del').innerHTML = `<div class="grid2">
+    <div class="card stack"><h3>Booked deliveries</h3>${schedHtml}</div>
+    <div class="stack" style="gap:16px">
+      <div class="card stack"><h3>Waiting on approval</h3>${req}</div>
+      <div class="card stack"><h3>Ready to book</h3>${ready}</div>
+      <div class="card stack"><h3>Delivered, need POD</h3>${pod}</div>
+    </div></div>`;
+}
 function renderTracker() {
   if (!$('#trk-body')) return;
   const dis = readOnly ? 'disabled' : '';
@@ -1754,14 +1841,26 @@ function renderTracker() {
       <td>${stageSel}</td><td>${inp(o, 'apptDate', 'w-d', '', 'date')}</td><td>${inp(o, 'apptTime', 'w-t', '08:00')}</td><td>${inp(o, 'conf', 'w-c po')}</td>
       <td>${inp(o, 'masterPo', 'w-m po')}</td><td>${inp(o, 'group', 'w-g')}</td>
       <td>${inp(o, 'nextNote', 'w-nx', nextFor(o))}</td>
-      <td class="num" style="white-space:nowrap;font-size:.8rem">${o.custFinal != null ? fmt$(o.custFinal) + ' final' : (calcQuote(o).total != null ? fmt$(calcQuote(o).total) + ' est' : '—')}${o.quoteUpdated ? ' ✓' : ''}</td>
+      <td style="white-space:nowrap"><span class="qchip ${quoteState(o)[0]}">${esc(quoteState(o)[1])}</span></td>
       <td class="upd" ${o.updatedBy ? `data-uid="${esc(o.updatedBy)}" data-when="${esc(when)}"` : ''}>${esc(when + (who ? ' · ' + who : ''))}</td></tr>`;
   }).join('') || `<tr><td colspan="15" style="color:var(--muted);padding:12px">${Object.keys(orders).length ? 'No orders match.' : 'No orders yet. Add the first one below.'}</td></tr>`;
   $('#trk-add').hidden = readOnly;
   $('#t-mode').textContent = $('#b-mode').textContent;
   resolveNames(rows.map(o => o.updatedBy));
+  renderPipeline(rows);
+  renderDeliveries(Object.entries(orders).map(([id, o]) => ({ id, ...o })));
 }
 $('#trk-q').addEventListener('input', renderTracker);
+$('#trk-views').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (b) showTrkView(b.dataset.view); });
+showTrkView(trkView);
+// open an order on the Order board
+$('#tracker').addEventListener('click', e => {
+  const b = e.target.closest('[data-open]'); if (!b) return;
+  openCards.add(b.dataset.open); stageFilter = null; $('#b-showdone').checked = true;
+  show('board'); renderBoard();
+  const el = document.querySelector(`.ord[data-id="${CSS.escape(b.dataset.open)}"]`);
+  if (el) { el.scrollIntoView({ block: 'start', behavior: 'smooth' }); el.style.outline = '2px solid var(--accent)'; setTimeout(() => { el.style.outline = ''; }, 1600); }
+});
 $('#trk-f').addEventListener('change', renderTracker);
 $('#trk-body').addEventListener('change', e => {
   const tr = e.target.closest('tr[data-id]'); if (!tr || readOnly) return;
