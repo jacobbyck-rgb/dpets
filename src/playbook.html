@@ -565,6 +565,7 @@ td .pre { white-space: pre-line; }
     <button type="button" class="subtab" data-view="table" aria-selected="true">Table</button>
     <button type="button" class="subtab" data-view="pipe" aria-selected="false">Pipeline</button>
     <button type="button" class="subtab" data-view="del" aria-selected="false">Deliveries</button>
+    <button type="button" class="subtab" data-view="po" aria-selected="false">PO map</button>
   </div>
   <div class="trk-bar">
     <input type="text" id="trk-q" placeholder="Search WN#, PO, SKU, warehouse…" aria-label="Search tracker">
@@ -578,6 +579,14 @@ td .pre { white-space: pre-line; }
   </div>
   <div id="trk-view-pipe" hidden><div class="pipe" id="trk-pipe"></div><p class="meta" style="font-size:.82rem;margin-top:6px">Click a WN# to open it on the Order board. Quote status follows the stage: <b>Estimate</b> before rework, <b>Quote due</b> once it’s reworked or delivered and not updated yet, <b>Updated</b> after you update it in the app, <b>Final</b> when the Customer final cost is set at closeout.</p></div>
   <div id="trk-view-del" hidden><div id="trk-del" class="stack" style="gap:16px"></div></div>
+  <div id="trk-view-po" hidden class="stack" style="gap:14px">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <input type="search" id="pm-q" class="search" style="flex:1;min-width:220px" placeholder="Find any number: Costco PO, master PO, WN#, Diamond order, BOL, SKU…" aria-label="Find a PO">
+      <label class="check-inline"><input type="checkbox" id="pm-closed"> Include closed</label>
+    </div>
+    <p class="meta" style="font-size:.85rem">Every Costco PO and where it sits: which WarehouseNow order it's on, which master PO or consolidation it rides, and the SKUs on it. Click a WN# to open it.</p>
+    <div id="pm-out" class="stack" style="gap:14px"></div>
+  </div>
   <div id="trk-view-table">
   <div class="scroll trk-wrap"><table class="trk" id="trk-table">
     <thead><tr>
@@ -1839,7 +1848,7 @@ function renderEditor() {
       ${fld('Appt date', 'apptDate', 'date')}${fld('Appt time', 'apptTime', 'text', 'placeholder="08:00"')}${fld('Confirmation #', 'conf', 'text', 'class="po"')}</div></div>`;
   const order = `<div class="bsec"><span class="label">Order</span><div class="row2">
       ${fld('Costco PO', 'po', 'text', 'class="po"')}${fld('Qty / SKUs', 'qty')}${fld('Pallets', 'pallets', 'number', 'min="0"')}${fld('Rework WH', 'wh')}
-      ${fld('Came in (refusal date)', 'inDate', 'date')}${fld('Reason', 'reason', 'text', 'placeholder="Damage"')}${fld('Carrier', 'carrier')}${fld('Origin (plant)', 'origin', 'text', 'placeholder="Gaston SC"')}</div></div>`;
+      ${fld('Diamond order / SO #', 'so')}${fld('BOL #', 'bol')}${fld('Refreshed PO (new Costco PO)', 'refreshPo', 'text', 'class="po"')}${fld('Came in (refusal date)', 'inDate', 'date')}${fld('Reason', 'reason', 'text', 'placeholder="Damage"')}${fld('Carrier', 'carrier')}${fld('Origin (plant)', 'origin', 'text', 'placeholder="Gaston SC"')}</div></div>`;
   const closeout = showCo ? `<div class="bsec"><span class="label">Closeout ${coDone}/${CLOSEOUT.length}</span><ol class="check">${CLOSEOUT.map(([k, t]) => `<li class="${co[k] ? 'done' : ''}"><input type="checkbox" id="co-${esc(o.id)}-${k}" data-co="${k}" ${co[k] ? 'checked' : ''} ${dis}><label for="co-${esc(o.id)}-${k}">${esc(t)}</label></li>`).join('')}</ol></div>` : '';
   // put what this stage needs first
   const early = ['ready', 'requested', 'scheduled'].includes(o.stage) ? delivery : ['new', 'inbound', 'atwh'].includes(o.stage) ? order : '';
@@ -1957,7 +1966,7 @@ function renderBoard() {
   // list (left) + editor (right)
   const q = ($('#b-q').value || '').trim().toLowerCase();
   const show = all.filter(o => ($('#b-showdone').checked || !CLOSED.includes(o.stage)) && (!stageFilter || o.stage === stageFilter)
-      && (!q || [o.wn, o.po, o.skus, o.qty, o.wh, o.dest, o.depotName, o.masterPo, o.group, o.conf].join(' ').toLowerCase().includes(q)))
+      && (!q || [o.wn, o.po, o.skus, o.qty, o.wh, o.dest, o.depotName, o.masterPo, o.refreshPo, o.so, o.bol, o.group, o.conf].join(' ').toLowerCase().includes(q)))
     .sort((a, b) => (lateness(b).late - lateness(a).late) || (stageIdx(a.stage) - stageIdx(b.stage)) || String(a.wn).localeCompare(String(b.wn)));
   boardList = show.map(o => o.id);
   if (!selId || !orders[selId]) selId = show[0]?.id || null;
@@ -2002,7 +2011,7 @@ let trkView = store.get('dp-trkview', 'table');
 function showTrkView(v) {
   trkView = v; store.set('dp-trkview', v);
   document.querySelectorAll('#trk-views [data-view]').forEach(b => b.setAttribute('aria-selected', b.dataset.view === v));
-  $('#trk-view-table').hidden = v !== 'table'; $('#trk-view-pipe').hidden = v !== 'pipe'; $('#trk-view-del').hidden = v !== 'del';
+  $('#trk-view-table').hidden = v !== 'table'; $('#trk-view-pipe').hidden = v !== 'pipe'; $('#trk-view-del').hidden = v !== 'del'; $('#trk-view-po').hidden = v !== 'po';
 }
 function dayLabel(iso) {
   const d = daysSince(iso);
@@ -2023,6 +2032,48 @@ function renderPipeline(rows) {
         <span class="qchip ${qc}">${esc(qt)}</span></div>`;
     }).join('') || '<span class="meta" style="font-size:.8rem">—</span>'}</div>`;
   }).join('');
+}
+// PO map: master POs → consolidations → own (refreshed) POs, each with WN#, original Costco PO and SKUs
+function skuRows(o) {
+  const m = [...String(o.skus || '').matchAll(/\b(\d{4,9})\s*x\s*(\d+)/gi)];
+  if (!m.length) return [{ sku: '', name: o.qty || 'SKUs pending', plts: o.pallets }];
+  return m.map(x => { const k = skuBy(x[1]); return { sku: x[1], name: k ? `${k.size} lb ${k.name}` : '', plts: +x[2] }; });
+}
+function renderPoMap() {
+  const pmPlural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+  if (!$('#pm-out')) return;
+  const q = ($('#pm-q').value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  const all = Object.entries(orders).map(([id, o]) => ({ id, ...o })).filter(o => $('#pm-closed').checked || !CLOSED.includes(o.stage));
+  const hay = o => [o.wn, o.po, o.masterPo, o.refreshPo, o.so, o.bol, o.group, o.skus, o.qty, o.conf].join(' ').toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/ /g, '|');
+  const list = q ? all.filter(o => hay(o).split('|').some(t => t.includes(q)) || hay(o).replace(/\|/g, '').includes(q)) : all;
+  const row = o => {
+    const sk = skuRows(o);
+    return sk.map((r, i) => `<tr>${i === 0 ? `<td rowspan="${sk.length}"><button type="button" class="linkbtn" data-open="${esc(o.id)}">${esc(o.wn && o.wn !== '?' ? 'WN-' + o.wn : o.id)}</button></td>
+      <td rowspan="${sk.length}" class="mono">${esc(o.po || '—')}${o.refreshPo ? `<br><span class="meta">refreshed → ${esc(o.refreshPo)}</span>` : ''}</td>
+      <td rowspan="${sk.length}" class="mono" style="font-size:.8rem">${esc([o.so, o.bol].filter(Boolean).join(' · ') || '—')}</td>` : ''}
+      <td class="mono">${esc(r.sku || '—')}</td><td style="font-size:.85rem">${esc(r.name)}</td><td class="num">${esc(r.plts ?? '')}</td>
+      ${i === 0 ? `<td rowspan="${sk.length}" style="font-size:.85rem">${esc(o.wh || '')}</td><td rowspan="${sk.length}" style="font-size:.85rem">${esc(stageOf(o.stage).t)}</td><td rowspan="${sk.length}" class="meta" style="white-space:nowrap">${esc(inTag(o))}</td>` : ''}</tr>`).join('');
+  };
+  const table = arr => `<div class="scroll"><table><thead><tr><th>WarehouseNow</th><th>Costco PO (original)</th><th>Diamond order · BOL</th><th>SKU</th><th>Product</th><th class="num">Plts</th><th>WH</th><th>Stage</th><th>Came in</th></tr></thead><tbody>${arr.map(row).join('')}</tbody></table></div>`;
+  const totals = arr => {
+    const t = {}; arr.forEach(o => skuRows(o).forEach(r => { if (r.sku) t[r.sku] = (t[r.sku] || 0) + (+r.plts || 0); }));
+    const plts = arr.reduce((a, o) => a + (+o.pallets || 0), 0);
+    return `${pmPlural(arr.length, 'WN')} · ${pmPlural(plts, 'pallet')}${Object.keys(t).length ? ' · by SKU: ' + Object.entries(t).map(([k, n]) => `${k} ×${n}`).join(', ') : ''}`;
+  };
+  const card = (title, sub, arr, cls = '') => `<div class="card stack ${cls}" style="gap:8px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline"><h3>${title}</h3><span class="meta">${esc(totals(arr))}</span></div>${sub ? `<p class="meta" style="font-size:.85rem">${sub}</p>` : ''}${table(arr)}</div>`;
+  const byMaster = {}, byGroup = {}, held = {}, own = [];
+  list.forEach(o => {
+    if (o.masterPo) (byMaster[o.masterPo] ||= []).push(o);
+    else if (o.group) (byGroup[o.group] ||= []).push(o);
+    else if (MASTER_PO_DEPOTS.includes(o.depotCode) && stageIdx(o.stage) <= stageIdx('ready')) (held[o.depotCode] ||= []).push(o);
+    else own.push(o);
+  });
+  const out = [];
+  Object.entries(byMaster).forEach(([m, arr]) => out.push(card(`Master PO <span class="mono">${esc(m)}</span>`, `${esc(arr[0].depotCode ? arr[0].depotCode + ' ' + (arr[0].depotName || arr[0].dest || '') : arr[0].dest || '')}${arr[0].group ? ' · ' + esc(arr[0].group) : ''}. One delivery covers every original PO below.`, arr)));
+  Object.entries(byGroup).forEach(([g, arr]) => out.push(card(`Consolidating: ${esc(g)}`, 'Master PO number not received yet. When it comes in, add it to each WN below.', arr)));
+  Object.entries(held).forEach(([code, arr]) => out.push(card(`Waiting for a master PO: ${esc(code)} ${esc(arr[0].depotName || '')}`, `Master PO depot. These go on the Wednesday request (${esc(nextWednesday())}).`, arr)));
+  if (own.length) out.push(card('Own PO (refreshed for redelivery, no master PO)', 'Each original PO gets refreshed by ADW and delivered on its own appointment. Put the new PO in "Refreshed PO" on the order.', own));
+  $('#pm-out').innerHTML = out.join('') || `<p class="meta">${q ? 'No order has that number.' : 'No orders.'}</p>`;
 }
 function renderDeliveries(all) {
   const open = all.filter(o => !CLOSED.includes(o.stage));
@@ -2075,8 +2126,11 @@ function renderTracker() {
   resolveNames(rows.map(o => o.updatedBy));
   renderPipeline(rows);
   renderDeliveries(Object.entries(orders).map(([id, o]) => ({ id, ...o })));
+  renderPoMap();
 }
 $('#trk-q').addEventListener('input', renderTracker);
+$('#pm-q').addEventListener('input', renderPoMap);
+$('#pm-closed').addEventListener('change', renderPoMap);
 $('#trk-views').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (b) showTrkView(b.dataset.view); });
 showTrkView(trkView);
 // open an order on the Order board
@@ -2107,7 +2161,7 @@ $('#trk-add').addEventListener('submit', e => {
   e.target.reset(); toast(`Added WN ${wn}`);
 });
 $('#trk-csv').addEventListener('click', () => {
-  const cols = [['WN#', o => o.wn], ['Costco PO', o => o.po], ['Came in', o => inDay(o)], ['What it was', o => wasText(o)], ['SKUs', o => o.skus || o.qty], ['Pallets', o => o.pallets], ['Now at', o => o.loc || nowAt(o)], ['Next stop', o => o.nextStop || nextStop(o)],
+  const cols = [['WN#', o => o.wn], ['Costco PO', o => o.po], ['Came in', o => inDay(o)], ['Diamond order', o => o.so], ['BOL', o => o.bol], ['Refreshed PO', o => o.refreshPo], ['What it was', o => wasText(o)], ['SKUs', o => o.skus || o.qty], ['Pallets', o => o.pallets], ['Now at', o => o.loc || nowAt(o)], ['Next stop', o => o.nextStop || nextStop(o)],
     ['Stage', o => stageOf(o.stage).t], ['Delivery date', o => o.apptDate], ['Time', o => o.apptTime], ['Conf #', o => o.conf], ['Master PO', o => o.masterPo], ['Ships with', o => o.group], ['Who pays', o => payerTag(o)],
     ['Next step', o => o.nextNote || nextFor(o)], ['Customer quote', o => o.custFinal ?? calcQuote(o).total], ['Quote updated', o => o.quoteUpdated], ['Warehouse', o => o.wh], ['Depot', o => [o.depotCode, o.dest].filter(Boolean).join(' ')], ['Updated', o => o.updated]];
   const cell = v => { v = String(v ?? ''); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
