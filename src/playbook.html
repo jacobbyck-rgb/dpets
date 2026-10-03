@@ -709,14 +709,15 @@ td .pre { white-space: pre-line; }
     </ol>
   </div>
     <h2>Ticket builder</h2>
-    <p class="lede">Runs the same lookups as Diamond's <em>New Ticket</em> and <em>View Engine</em> tabs. Type the Costco PO and it fills in the depot code, destination, go-to warehouse, ADW contact and subject line. Use it to check a ticket before you save it in the real sheet. <strong>The form is filled with the example from the New Ticket tab.</strong></p>
+    <p class="lede">Runs the same lookups as Diamond's <em>New Ticket</em> and <em>View Engine</em> tabs. Type the Costco PO and it fills in the depot code, destination, go-to warehouse, ADW contact and subject line. Use it to check a ticket before you save it in the real sheet. <strong>Pick any order from the board below, or press Open in Ticket builder on the Order board.</strong></p>
   </div>
   <div class="builder">
     <div class="stack">
     <form class="card stack" id="tform" autocomplete="off">
       <fieldset>
         <div class="field"><label for="f-preset">Load a real order</label>
-          <select id="f-preset"><option value="13073">WN-13073 · Sumner · 1 pallet cat food · T3RA</option><option value="13026">WN-13026 · Sumner · 2 pallets · Cheema</option><option value="13087">WN-13087 · Monroe Twp NJ · 31 pallets · T3RA</option></select></div>
+          <select id="f-preset"><option value="">Choose an order from the board…</option></select>
+          <small class="meta" style="font-size:.8rem">Every order on the board is here. New orders show up as soon as they're added.</small></div>
         <legend>Identity</legend>
         <div class="row2">
           <div class="field"><label for="f-whn">WarehouseNow PO#</label><input id="f-whn" class="po" type="text" value="13073"></div>
@@ -1851,6 +1852,7 @@ function renderEditor() {
       ${nxt ? `<button class="btn primary" type="button" data-act="advance" ${dis}>Mark: ${esc(nxt.t)}</button>` : ''}
       ${o.stage === 'closeout' ? `<button class="btn primary" type="button" data-act="invoiced" ${dis} ${coDone < CLOSEOUT.length ? 'title="Finish the checklist first"' : ''}>Mark invoiced</button>` : ''}
       <label class="meta" style="display:flex;gap:6px;align-items:center">Stage <select data-f="stage" ${dis}>${stageOpts}</select></label>
+      <button class="btn" type="button" data-act="ticket">Open in Ticket builder</button>
     </div>
     ${closeout}${early}${early === delivery ? '' : delivery}${early === order ? '' : order}
     <div class="bsec">${quoteBlock(o, dis)}</div>
@@ -1872,6 +1874,7 @@ function selectOrder(id, opts = {}) {
   $('#b-edit').scrollTop = 0;
 }
 function renderBoard() {
+  if (typeof presetOptions === 'function') setTimeout(presetOptions, 0);
   if (typeof renderRhythm === 'function') setTimeout(renderRhythm, 0);
   const all = Object.entries(orders).map(([id, o]) => ({ id, ...o }));
   const open = all.filter(o => !CLOSED.includes(o.stage));
@@ -2141,6 +2144,7 @@ $('#b-edit').addEventListener('click', e => {
   const card = e.target.closest('.ord'); if (!card) return;
   const id = card.dataset.id, o = orders[id], act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'back') { $('#b-panes').classList.remove('editing'); return; }
+  if (act === 'ticket') { $('#b-panes').classList.remove('editing'); openInTicket(id); return; }
   if (act === 'prev' || act === 'next') { const j = boardList.indexOf(id) + (act === 'next' ? 1 : -1); if (boardList[j]) selectOrder(boardList[j]); return; }
   if (readOnly) return;
   if (act === 'advance') { const i = stageIdx(o.stage); save(id, { stage: STAGES[i + 1].k, stageSince: todayISO() }); }
@@ -2324,15 +2328,37 @@ const PRESETS = {
   '13087': { whn: '13087', date: '2026-10-02', po: '1750917236', carrier: 'T3RA', origin: 'Rushville IN 46173', skus: [['25350', '19 pallets refused 532 SU'], ['25347', '4 pallets refused 112 SU'], ['130317', '1 pallet refused 60 SU'], ['430541', '2 pallets refused 56 SU'], ['470974', '2 pallets refused 64 SU'], ['52296', '3 pallets refused 135 SU']], why: 'the load shifting in transit (they kept 6 pallets of 52296)', recv: '2026-10-02', stage: 'arriving', plts: 31, rw: 31 },
   '13026': { whn: '13026', date: '2026-10-01', po: '1710917341', carrier: 'Cheema', origin: 'Lathrop CA 95330', skus: [['1101794', '1 pallet refused 60 SU'], ['25350', '1 pallet refused 28 SU']], recv: '2026-10-01', stage: 'arriving', plts: 2, rw: 2 },
 };
+// any board order → ticket form. Hand-checked PRESETS (with SU counts) win when they exist
+function presetFromOrder(id) {
+  const o = orders[id]; if (!o) return null;
+  const pick = (list, val) => val ? list.find(x => x.toLowerCase().startsWith(String(val).toLowerCase().split(/\s+/)[0])) || '' : '';
+  const day = (o.inDate || o.created || '').slice(0, 10);
+  const pl = n => `${n} pallet${+n === 1 ? '' : 's'}`;
+  const skus = [...String(o.skus || '').matchAll(/\b(\d{4,9})\s*x\s*(\d+)/gi)].map(m => [m[1], pl(m[2])]);
+  const stage = ['new', 'inbound'].includes(o.stage) ? 'arriving' : ['atwh', 'rework'].includes(o.stage) ? 'today' : 'done';
+  return { whn: o.wn || '', date: day, po: o.po || '', carrier: pick(D.carriers, o.carrier), origin: pick(D.origins, o.origin), skus: skus.length ? skus : [['', o.qty || pl(o.pallets || 1)]],
+    recv: day, stage, why: o.reason && !/^damage$/i.test(o.reason) ? o.reason.toLowerCase() : '', plts: o.pallets || 1, rw: o.qReworked ?? o.pallets ?? 1, payer: ['carrier', 'small'].includes(o.payer) ? o.payer : 'diamond', ot: !!o.qOT,
+    wh: o.wh && o.wh !== decode(o.po || '').wh && !/\?/.test(o.wh) ? o.wh : '' };
+}
+function presetOptions() {
+  const sel = $('#f-preset'); if (!sel) return;
+  const cur = sel.value;
+  const list = Object.entries(orders).filter(([, o]) => o.wn && o.wn !== '?' && !CLOSED.includes(o.stage)).sort((a, b) => String(b[1].wn).localeCompare(String(a[1].wn)));
+  sel.innerHTML = '<option value="">Choose an order from the board…</option>' + list.map(([id, o]) => `<option value="${esc(id)}">${esc(['WN-' + o.wn, o.dest || o.depotName, o.pallets ? o.pallets + ' plt' : '', o.carrier, stageOf(o.stage).t].filter(Boolean).join(' · '))}</option>`).join('');
+  if ([...sel.options].some(x => x.value === cur)) sel.value = cur;
+}
 function loadPreset(k) {
-  const pr = PRESETS[k]; if (!pr) return;
+  const fromBoard = presetFromOrder(k);
+  const pr = PRESETS[String(k).replace(/^WN-/, '')] ? { ...fromBoard, ...PRESETS[String(k).replace(/^WN-/, '')] } : fromBoard;
+  if (!pr) return;
   $('#f-whn').value = pr.whn; $('#f-date').value = pr.date; $('#f-po').value = pr.po;
   $('#f-carrier').value = pr.carrier; $('#f-origin').value = pr.origin; $('#f-recv').value = pr.recv; $('#f-stage').value = pr.stage;
-  $('#f-reason').value = 'Damage'; $('#f-disp').value = 'Rework'; $('#f-whov').value = ''; $('#f-why').value = pr.why || ''; $('#f-payer').value = 'diamond';
-  $('#f-plts').value = pr.plts; $('#f-rw').value = pr.rw; $('#f-redel').checked = true; $('#f-ot').checked = false; $('#f-ltl').value = 0;
+  $('#f-reason').value = 'Damage'; $('#f-disp').value = 'Rework'; $('#f-whov').value = pr.wh || ''; $('#f-why').value = pr.why || ''; $('#f-payer').value = pr.payer || 'diamond';
+  $('#f-plts').value = pr.plts; $('#f-rw').value = pr.rw; $('#f-redel').checked = true; $('#f-ot').checked = !!pr.ot; $('#f-ltl').value = 0;
   $('#skuLines').innerHTML = ''; pr.skus.forEach(([sku, q]) => addSkuLine(sku, q));
 }
-$('#f-preset').addEventListener('change', e => { loadPreset(e.target.value); build(); });
+$('#f-preset').addEventListener('change', e => { if (e.target.value) { loadPreset(e.target.value); build(); } });
+function openInTicket(id) { presetOptions(); $('#f-preset').value = id; loadPreset(id); build(); show('ticket'); window.scrollTo({ top: 0 }); }
 addSkuLine('450195', '1 pallet refused 60 SU');
 $('#addSku').addEventListener('click', () => { addSkuLine(); build(); });
 $('#tform').addEventListener('input', build);
