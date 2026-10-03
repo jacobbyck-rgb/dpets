@@ -70,7 +70,7 @@ nav.tabs::-webkit-scrollbar { display: none; }
 .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--tag); }
 
 main .wrap { padding-block: 28px 64px; }
-section.panel { display: grid; gap: 28px; }
+section.panel { display: grid; gap: 28px; grid-template-columns: minmax(0, 1fr); }
 .lede { max-width: 68ch; color: var(--muted); font-size: 1.02rem; }
 .lede strong { color: var(--ink); }
 
@@ -188,6 +188,33 @@ textarea { font-family: var(--mono); font-size: .82rem; line-height: 1.5; resize
 .stagebar button.late { border-color: var(--bad); }
 .stagebar button.late b { color: var(--bad); }
 .stagebar button[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--accent); }
+.bpanes { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 14px; align-items: start; }
+.bside { display: grid; gap: 8px; position: sticky; top: 8px; max-height: calc(100vh - 16px); grid-template-rows: auto minmax(0, 1fr); }
+.btools { display: flex; gap: 8px; align-items: center; }
+.btools .search { flex: 1; min-width: 0; }
+.blist { display: grid; gap: 6px; overflow: auto; align-content: start; padding: 2px; }
+.brow { font: inherit; color: inherit; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 10px; cursor: pointer; display: grid; gap: 3px; }
+.brow:hover { border-color: var(--accent); }
+.brow[aria-selected="true"] { box-shadow: inset 0 0 0 2px var(--accent); }
+.brow.late { border-left: 4px solid var(--bad); }
+.brow .r1 { display: flex; gap: 8px; align-items: baseline; justify-content: space-between; }
+.brow .r1 b { font: 700 1.05rem/1 var(--display); }
+.brow .r2 { font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.brow .r3 { font-size: .8rem; color: var(--bad); }
+.bedit { position: sticky; top: 8px; max-height: calc(100vh - 16px); overflow: auto; }
+.bedit .ord { gap: 12px; }
+.bnav { display: flex; gap: 6px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.bsec { display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 10px; }
+.bsec > .label { margin: 0; }
+.bback { display: none; }
+@media (max-width: 860px) {
+  .bpanes { grid-template-columns: 1fr; }
+  .bside { position: static; max-height: none; }
+  .blist { max-height: 60vh; }
+  .bedit { display: none; }
+  .bpanes.editing .bedit { display: block; position: fixed; inset: 0; z-index: 60; max-height: none; background: var(--bg); padding: 12px 16px 40px; }
+  .bback { display: inline-flex; }
+}
 .ord { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: grid; gap: 10px; }
 .ord.late { border-left: 4px solid var(--bad); }
 .ord-top { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; }
@@ -573,34 +600,11 @@ td .pre { white-space: pre-line; }
 <section class="panel" id="board" role="tabpanel" aria-labelledby="tab-board" hidden>
   <div class="stack">
     <h2>Order board</h2>
-    <p class="lede">Every open Diamond order and where it stands after the ticket goes out. Move an order forward as things happen. The board flags anything sitting too long, tells you when to go to Costco for a delivery, and walks you through closing out.</p>
+    <p class="lede">Pick an order on the left, update it on the right. The most urgent orders are at the top.</p>
     <p id="b-mode" style="font-size:.85rem;color:var(--muted)">Loading saved orders…</p>
   </div>
 
   <div class="stagebar" id="b-stages"></div>
-
-  <div class="card stack">
-    <h3>Held, scheduled &amp; consolidated</h3>
-    <p style="font-size:.88rem;color:var(--muted)">What's sitting at a warehouse, what's waiting on an appointment, what's booked, and which POs ship together. Group POs with the <b>Ships with</b> field in each order's details.</p>
-    <div class="hsc">
-      <div class="stack" style="gap:8px"><span class="label">Scheduled</span><div id="b-sched" class="stack" style="gap:6px"></div></div>
-      <div class="stack" style="gap:8px"><span class="label">Appointment requested</span><div id="b-req" class="stack" style="gap:6px"></div></div>
-      <div class="stack" style="gap:8px"><span class="label">Held at warehouse</span><div id="b-held" class="stack" style="gap:6px"></div></div>
-    </div>
-    <span class="label">Consolidations: POs shipping together</span>
-    <div id="b-groups" class="stack" style="gap:8px"></div>
-  </div>
-
-  <div class="grid2">
-    <div class="card stack">
-      <h3>Needs action</h3>
-      <div id="b-due" class="stack" style="gap:8px"></div>
-    </div>
-    <div class="card stack">
-      <h3>Ready to book with Costco</h3>
-      <div id="b-book" class="stack" style="gap:8px"></div>
-    </div>
-  </div>
 
   <details class="card" id="b-addwrap">
     <summary><b>Add an order</b></summary>
@@ -618,20 +622,45 @@ td .pre { white-space: pre-line; }
     </form>
   </details>
 
-  <div class="stack">
-    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
-      <h3>All orders</h3>
-      <label class="check-inline"><input type="checkbox" id="b-showdone"> Show closed</label>
+  <div class="bpanes" id="b-panes">
+    <div class="bside">
+      <div class="btools">
+        <input type="search" id="b-q" class="search" placeholder="Find WN#, PO, SKU, WH…" aria-label="Find an order">
+        <label class="check-inline"><input type="checkbox" id="b-showdone"> Closed</label>
+      </div>
+      <div id="b-list" class="blist" role="listbox" aria-label="Orders"></div>
     </div>
-    <div id="b-list" class="stack" style="gap:10px"></div>
+    <div class="bedit" id="b-edit" aria-live="polite"></div>
   </div>
 
-  <div class="card stack">
-    <h3>What each stage means</h3>
+  <details class="card" id="b-duewrap" open>
+    <summary><b>Needs action</b> <span class="meta" id="b-duecount"></span></summary>
+    <div id="b-due" class="stack" style="gap:8px;margin-top:10px"></div>
+  </details>
+  <details class="card">
+    <summary><b>Ready to book with Costco</b></summary>
+    <div id="b-book" class="stack" style="gap:8px;margin-top:10px"></div>
+  </details>
+  <details class="card">
+    <summary><b>Held, scheduled &amp; consolidated</b></summary>
+    <div class="stack" style="margin-top:10px">
+    <p style="font-size:.88rem;color:var(--muted)">Group POs with the <b>Ships with</b> field on an order.</p>
+    <div class="hsc">
+      <div class="stack" style="gap:8px"><span class="label">Scheduled</span><div id="b-sched" class="stack" style="gap:6px"></div></div>
+      <div class="stack" style="gap:8px"><span class="label">Appointment requested</span><div id="b-req" class="stack" style="gap:6px"></div></div>
+      <div class="stack" style="gap:8px"><span class="label">Held at warehouse</span><div id="b-held" class="stack" style="gap:6px"></div></div>
+    </div>
+    <span class="label">Consolidations: POs shipping together</span>
+    <div id="b-groups" class="stack" style="gap:8px"></div>
+    </div>
+  </details>
+
+  <details class="card"><summary><b>What each stage means</b></summary><div class="stack" style="margin-top:10px">
     <div class="scroll"><table>
       <thead><tr><th>Stage</th><th>Do this</th><th>Late after</th><th>Ticket System</th><th>App</th></tr></thead>
       <tbody id="b-guide"></tbody></table></div>
   </div>
+  </div></details>
 </section>
 
 <!-- REAL ORDER -->
@@ -1687,11 +1716,12 @@ function lateness(o) {
 
 // storage: shared db when the viewer serves it, else this browser only
 let orders = {}, backend = null, readOnly = false, pendingRender = false, stageFilter = null;
+let selId = null, boardList = [], edPending = false, edTextFocus = false;
+const TEXTY = 'input[type=text],input[type=number],input[type=date],input[type=search],textarea';
 const writeQ = {};
 const nowAt = o => ({ new: 'On carrier trailer', inbound: 'Carrier → ' + (o.wh || 'WH'), delivered: 'Delivered to depot', closeout: 'Delivered to depot', done: 'Delivered / invoiced', disposed: 'Disposed' }[o.stage] || o.wh || 'Warehouse');
 const nextStop = o => ['done', 'disposed'].includes(o.stage) ? '—' : ['delivered', 'closeout'].includes(o.stage) ? 'Close out (POD, invoice)' : ['new', 'inbound'].includes(o.stage) ? (o.wh || 'WH to be sourced') : (o.dest || o.depotName || 'Depot');
 const fmtUpd = o => { const d = o.updated ? new Date(o.updated) : null; return d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''; };
-const openCards = new Set();
 let myId = null; const names = {}; let userNs = null;
 function save(id, patch) {
   orders[id] = { ...orders[id], ...patch, updated: new Date().toISOString(), ...(myId ? { updatedBy: myId } : {}) };
@@ -1775,6 +1805,63 @@ function quoteBlock(o, dis) {
     <p class="meta" style="font-size:.8rem">In the app: update the Customer Quote lines to these counts and set Customer + Warehouse Final Cost. If the delivery rides a master PO, charge the $400 once (on one WN) and write "Incl WN-####" on the others in Diamond\u2019s Ticket System.</p>
   </div>`;
 }
+function renderEditor() {
+  const box = $('#b-edit'); if (!box) return;
+  const ae = document.activeElement, inEd = ae && box.contains(ae);
+  // don't rebuild under someone typing; catch up when they leave the field
+  if (edTextFocus || (inEd && ae.matches(TEXTY))) { edPending = true; return; }
+  const keep = inEd ? (ae.dataset.f ? `[data-f="${ae.dataset.f}"]` : ae.dataset.co ? `[data-co="${ae.dataset.co}"]` : null) : null;
+  const o0 = selId && orders[selId];
+  if (!o0) { box.innerHTML = '<div class="card"><p class="meta">Pick an order on the left.</p></div>'; return; }
+  const o = { id: selId, ...o0 };
+  const st = stageOf(o.stage), l = lateness(o), i = stageIdx(o.stage);
+  const nxt = STAGES[i + 1] && !CLOSED.includes(o.stage) && o.stage !== 'closeout' ? STAGES[i + 1] : null;
+  const co = o.closeout || {}, coDone = CLOSEOUT.filter(([k]) => co[k]).length;
+  const showCo = ['delivered', 'closeout', 'done'].includes(o.stage);
+  const dis = readOnly ? 'disabled' : '';
+  const stageOpts = STAGES.map(s => `<option value="${s.k}" ${s.k === o.stage ? 'selected' : ''}>${esc(s.t)}</option>`).join('');
+  const pos = boardList.indexOf(selId);
+  const fld = (label, f, type = 'text', extra = '') => `<div class="field"><label>${label}</label><input type="${type}" data-f="${f}" value="${esc(o[f] ?? '')}" ${extra} ${dis}></div>`;
+  const delivery = `<div class="bsec"><span class="label">Delivery</span><div class="row2">
+      ${fld('Master PO', 'masterPo', 'text', 'class="po"')}${fld('Ships with (group name)', 'group', 'text', 'placeholder="e.g. Monroe Twp master – Oct"')}
+      ${fld('Appt date', 'apptDate', 'date')}${fld('Appt time', 'apptTime', 'text', 'placeholder="08:00"')}${fld('Confirmation #', 'conf', 'text', 'class="po"')}</div></div>`;
+  const order = `<div class="bsec"><span class="label">Order</span><div class="row2">
+      ${fld('Costco PO', 'po', 'text', 'class="po"')}${fld('Qty / SKUs', 'qty')}${fld('Pallets', 'pallets', 'number', 'min="0"')}${fld('Rework WH', 'wh')}</div></div>`;
+  const closeout = showCo ? `<div class="bsec"><span class="label">Closeout ${coDone}/${CLOSEOUT.length}</span><ol class="check">${CLOSEOUT.map(([k, t]) => `<li class="${co[k] ? 'done' : ''}"><input type="checkbox" id="co-${esc(o.id)}-${k}" data-co="${k}" ${co[k] ? 'checked' : ''} ${dis}><label for="co-${esc(o.id)}-${k}">${esc(t)}</label></li>`).join('')}</ol></div>` : '';
+  // put what this stage needs first
+  const early = ['ready', 'requested', 'scheduled'].includes(o.stage) ? delivery : ['new', 'inbound', 'atwh'].includes(o.stage) ? order : '';
+  box.innerHTML = `<article class="ord card ${l.late ? 'late' : ''}" data-id="${esc(o.id)}">
+    <div class="bnav"><button class="btn bback" type="button" data-act="back">← All orders</button>
+      <span class="meta">${pos >= 0 ? `${pos + 1} of ${boardList.length}` : ''}</span>
+      <span style="display:flex;gap:6px"><button class="btn" type="button" data-act="prev" ${pos <= 0 ? 'disabled' : ''}>← Prev</button><button class="btn" type="button" data-act="next" ${pos < 0 || pos >= boardList.length - 1 ? 'disabled' : ''}>Next →</button></span></div>
+    <div class="ord-top"><span class="wn">${esc(o.wn && o.wn !== '?' ? 'WN ' + o.wn : o.id)}</span><span class="mono">${esc(o.po || '')}</span>
+      <span class="pill ${l.late ? 'late' : CLOSED.includes(o.stage) ? 'ok' : 'wait'}">${esc(st.t)}</span>${l.msg ? `<span class="meta">${esc(l.msg)}</span>` : ''}</div>
+    <span class="meta">${esc([o.depotCode && o.depotCode + ' ' + (o.depotName || o.dest || ''), o.wh, o.qty, o.payer === 'carrier' ? 'carrier pays' : o.payer === 'small' ? '< 5 bags' : o.payer === 'normal' ? 'normal order (FTL)' : ''].filter(Boolean).join(' · '))}</span>
+    <p class="ord-next"><b>Next:</b> ${esc(o.nextNote || nextFor(o))}</p>
+    <div class="ord-ctrl">
+      ${nxt ? `<button class="btn primary" type="button" data-act="advance" ${dis}>Mark: ${esc(nxt.t)}</button>` : ''}
+      ${o.stage === 'closeout' ? `<button class="btn primary" type="button" data-act="invoiced" ${dis} ${coDone < CLOSEOUT.length ? 'title="Finish the checklist first"' : ''}>Mark invoiced</button>` : ''}
+      <label class="meta" style="display:flex;gap:6px;align-items:center">Stage <select data-f="stage" ${dis}>${stageOpts}</select></label>
+    </div>
+    ${closeout}${early}${early === delivery ? '' : delivery}${early === order ? '' : order}
+    <div class="bsec">${quoteBlock(o, dis)}</div>
+    <div class="bsec">
+      <div class="field"><label>Next step (leave blank for the default)</label><input type="text" data-f="nextNote" value="${esc(o.nextNote || '')}" ${dis}></div>
+      <div class="field"><label>Notes</label><textarea rows="3" data-f="notes" style="font-family:var(--body);font-size:.9rem" ${dis}>${esc(o.notes || '')}</textarea></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="meta">Updated ${esc(fmtUpd(o))}${o.updatedBy && names[o.updatedBy] ? ' · ' + esc(names[o.updatedBy]) : ''}</span>${readOnly ? '' : `<button class="btn" type="button" data-act="delete">Delete</button><span class="meta" data-confirm hidden>Delete ${esc(o.wn ? 'WN ' + o.wn : o.id)}? <button class="btn" type="button" data-act="delete-yes">Yes, delete</button></span>`}</div>
+  </article>`;
+  if (keep) box.querySelector(keep)?.focus();
+}
+function selectOrder(id, opts = {}) {
+  selId = id;
+  if (opts.fromOutside) { stageFilter = null; $('#b-q').value = ''; if (CLOSED.includes(orders[id]?.stage)) $('#b-showdone').checked = true; show('board'); }
+  $('#b-panes').classList.add('editing');
+  renderBoard();
+  document.querySelector(`#b-list [data-sel="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest' });
+  if (opts.fromOutside && innerWidth > 860) $('#b-panes').scrollIntoView({ block: 'start', behavior: 'smooth' });
+  $('#b-edit').scrollTop = 0;
+}
 function renderBoard() {
   if (typeof renderRhythm === 'function') setTimeout(renderRhythm, 0);
   const all = Object.entries(orders).map(([id, o]) => ({ id, ...o }));
@@ -1787,8 +1874,9 @@ function renderBoard() {
   }).join('');
   // needs action
   const due = open.map(o => ({ o, l: lateness(o) })).filter(x => x.l.late).sort((a, b) => stageIdx(b.o.stage) - stageIdx(a.o.stage));
-  $('#b-due').innerHTML = due.length ? due.map(({ o, l }) => `<div class="due-row"><span class="pill late">WN ${esc(o.wn || o.id)}</span><span><b>${esc(stageOf(o.stage).t)}</b>: ${esc(l.msg)}. ${esc(nextFor(o))}</span></div>`).join('')
+  $('#b-due').innerHTML = due.length ? due.map(({ o, l }) => `<div class="due-row"><button type="button" class="pill late" style="border:0;cursor:pointer" data-sel="${esc(o.id)}">${esc(o.wn && o.wn !== '?' ? 'WN ' + o.wn : o.id)}</button><span><b>${esc(stageOf(o.stage).t)}</b>: ${esc(l.msg)}. ${esc(nextFor(o))}</span></div>`).join('')
     : `<p style="color:var(--muted);font-size:.92rem">${open.length ? 'Nothing overdue. ' + open.length + ' open order' + (open.length === 1 ? '' : 's') + ' on track.' : 'No open orders yet. Add one below.'}</p>`;
+  $('#b-duecount').textContent = due.length ? `· ${due.length}` : '';
   // held / requested / scheduled / consolidations
   const line = o => `<div class="hrow"><b>WN ${esc(o.wn || '?')} · ${esc(o.po || '')}</b><span>${esc([o.qty, o.wh, o.dest].filter(Boolean).join(' · '))}</span><span class="meta">Next: ${esc(o.nextNote || nextFor(o))}</span></div>`;
   const sched = open.filter(o => o.stage === 'scheduled').sort((a, b) => String(a.apptDate).localeCompare(String(b.apptDate)));
@@ -1850,47 +1938,21 @@ function renderBoard() {
   const reqd = open.filter(o => o.stage === 'requested').length;
   $('#b-book').innerHTML = (booking || '<p style="color:var(--muted);font-size:.92rem">Nothing is reworked and waiting on a PO right now.</p>')
     + (reqd ? `<p style="font-size:.88rem;color:var(--muted)">${reqd} appointment${reqd === 1 ? '' : 's'} already requested and waiting on Costco.</p>` : '');
-  // list
-  const show = all.filter(o => ($('#b-showdone').checked || !CLOSED.includes(o.stage)) && (!stageFilter || o.stage === stageFilter))
+  // list (left) + editor (right)
+  const q = ($('#b-q').value || '').trim().toLowerCase();
+  const show = all.filter(o => ($('#b-showdone').checked || !CLOSED.includes(o.stage)) && (!stageFilter || o.stage === stageFilter)
+      && (!q || [o.wn, o.po, o.skus, o.qty, o.wh, o.dest, o.depotName, o.masterPo, o.group, o.conf].join(' ').toLowerCase().includes(q)))
     .sort((a, b) => (lateness(b).late - lateness(a).late) || (stageIdx(a.stage) - stageIdx(b.stage)) || String(a.wn).localeCompare(String(b.wn)));
-  const stageOpts = sel => STAGES.map(s => `<option value="${s.k}" ${s.k === sel ? 'selected' : ''}>${esc(s.t)}</option>`).join('');
-  const dis = readOnly ? 'disabled' : '';
+  boardList = show.map(o => o.id);
+  if (!selId || !orders[selId]) selId = show[0]?.id || null;
   $('#b-list').innerHTML = show.length ? show.map(o => {
-    const st = stageOf(o.stage), l = lateness(o), i = stageIdx(o.stage);
-    const nxt = STAGES[i + 1] && !CLOSED.includes(o.stage) && o.stage !== 'closeout' ? STAGES[i + 1] : null;
-    const co = o.closeout || {};
-    const coDone = CLOSEOUT.filter(([k]) => co[k]).length;
-    const showCo = ['delivered', 'closeout', 'done'].includes(o.stage);
-    return `<article class="ord ${l.late ? 'late' : ''}" data-id="${esc(o.id)}">
-      <div class="ord-top"><span class="wn">WN ${esc(o.wn || '—')}</span><span class="mono">${esc(o.po || '')}</span>
-        <span class="meta">${esc([o.depotCode && o.depotCode + ' ' + (o.dest || ''), o.wh, o.qty, o.payer === 'carrier' ? 'carrier pays' : o.payer === 'small' ? '< 5 bags' : ''].filter(Boolean).join(' · '))}</span>
-        <span class="pill ${l.late ? 'late' : CLOSED.includes(o.stage) ? 'ok' : 'wait'}">${esc(st.t)}</span>${l.msg ? `<span class="meta">${esc(l.msg)}</span>` : ''}</div>
-      <p class="ord-next"><b>Next:</b> ${esc(o.nextNote || nextFor(o))}</p>${o.group ? `<p class="meta" style="font-size:.85rem">Ships with: <b>${esc(o.group)}</b></p>` : ''}
-      <div class="ord-ctrl">
-        ${nxt ? `<button class="btn primary" type="button" data-act="advance" ${dis}>Mark: ${esc(nxt.t)}</button>` : ''}
-        ${o.stage === 'closeout' ? `<button class="btn primary" type="button" data-act="invoiced" ${dis} ${coDone < CLOSEOUT.length ? 'title="Finish the checklist first"' : ''}>Mark invoiced</button>` : ''}
-        <label class="meta" style="display:flex;gap:6px;align-items:center">Stage <select data-f="stage" ${dis}>${stageOpts(o.stage)}</select></label>
-      </div>
-      ${showCo ? `<div class="stack" style="gap:2px"><span class="label">Closeout ${coDone}/${CLOSEOUT.length}</span><ol class="check">${CLOSEOUT.map(([k, t]) => `<li class="${co[k] ? 'done' : ''}"><input type="checkbox" id="co-${esc(o.id)}-${k}" data-co="${k}" ${co[k] ? 'checked' : ''} ${dis}><label for="co-${esc(o.id)}-${k}">${esc(t)}</label></li>`).join('')}</ol></div>` : ''}
-      <details ${openCards.has(o.id) ? 'open' : ''}><summary>Details</summary>
-        <div class="row2">
-          <div class="field"><label>Costco PO</label><input type="text" class="po" data-f="po" value="${esc(o.po || '')}" ${dis}></div>
-          <div class="field"><label>Qty</label><input type="text" data-f="qty" value="${esc(o.qty || '')}" ${dis}></div>
-          <div class="field"><label>Pallets</label><input type="number" min="0" data-f="pallets" value="${esc(o.pallets ?? '')}" ${dis}></div>
-          <div class="field"><label>Rework WH</label><input type="text" data-f="wh" value="${esc(o.wh || '')}" ${dis}></div>
-          <div class="field"><label>Master PO</label><input type="text" class="po" data-f="masterPo" value="${esc(o.masterPo || '')}" ${dis}></div>
-          <div class="field"><label>Ships with (group name)</label><input type="text" data-f="group" value="${esc(o.group || '')}" placeholder="e.g. Monroe Twp master – Oct" ${dis}></div>
-          <div class="field"><label>Appt date</label><input type="date" data-f="apptDate" value="${esc(o.apptDate || '')}" ${dis}></div>
-          <div class="field"><label>Appt time</label><input type="text" data-f="apptTime" value="${esc(o.apptTime || '')}" placeholder="08:00" ${dis}></div>
-          <div class="field"><label>Confirmation #</label><input type="text" class="po" data-f="conf" value="${esc(o.conf || '')}" ${dis}></div>
-        </div>
-        ${quoteBlock(o, dis)}
-        <div class="field" style="margin-top:8px"><label>Next step (leave blank for the default)</label><input type="text" data-f="nextNote" value="${esc(o.nextNote || '')}" ${dis}></div>
-        <div class="field" style="margin-top:8px"><label>Notes</label><textarea rows="2" data-f="notes" style="font-family:var(--body);font-size:.9rem" ${dis}>${esc(o.notes || '')}</textarea></div>
-        <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="meta">Updated ${esc((o.updated || '').slice(0, 10))}</span>${readOnly ? '' : `<button class="btn" type="button" data-act="delete">Delete</button><span class="meta" data-confirm hidden>Delete WN ${esc(o.wn)}? <button class="btn" type="button" data-act="delete-yes">Yes, delete</button></span>`}</div>
-      </details>
-    </article>`;
-  }).join('') : `<p style="color:var(--muted)">${all.length ? 'No orders match this filter.' : 'No orders yet. Add your first one above.'}</p>`;
+    const l = lateness(o);
+    return `<button type="button" class="brow ${l.late ? 'late' : ''}" role="option" data-sel="${esc(o.id)}" aria-selected="${o.id === selId}">
+      <span class="r1"><b>${esc(o.wn && o.wn !== '?' ? 'WN ' + o.wn : o.id)}</b><span class="pill ${l.late ? 'late' : CLOSED.includes(o.stage) ? 'ok' : 'wait'}">${esc(stageOf(o.stage).t)}</span></span>
+      <span class="r2">${esc([o.po, o.pallets ? o.pallets + ' plt' : '', o.depotCode ? o.depotCode + ' ' + (o.dest || o.depotName || '') : o.dest, o.wh].filter(Boolean).join(' · '))}</span>
+      ${l.late || (o.stage === 'scheduled' && l.msg) ? `<span class="r3" style="${l.late ? '' : 'color:var(--muted)'}">${esc(l.msg)}</span>` : ''}</button>`;
+  }).join('') : `<p style="color:var(--muted);font-size:.9rem">${all.length ? 'No orders match.' : 'No orders yet. Add one above.'}</p>`;
+  renderEditor();
   $('#b-addwrap').hidden = readOnly;
   renderTracker();
 }
@@ -2003,10 +2065,7 @@ showTrkView(trkView);
 // open an order on the Order board
 $('#tracker').addEventListener('click', e => {
   const b = e.target.closest('[data-open]'); if (!b) return;
-  openCards.add(b.dataset.open); stageFilter = null; $('#b-showdone').checked = true;
-  show('board'); renderBoard();
-  const el = document.querySelector(`.ord[data-id="${CSS.escape(b.dataset.open)}"]`);
-  if (el) { el.scrollIntoView({ block: 'start', behavior: 'smooth' }); el.style.outline = '2px solid var(--accent)'; setTimeout(() => { el.style.outline = ''; }, 1600); }
+  selectOrder(b.dataset.open, { fromOutside: true });
 });
 $('#trk-f').addEventListener('change', renderTracker);
 $('#trk-body').addEventListener('change', e => {
@@ -2058,15 +2117,23 @@ $('#b-add').addEventListener('submit', e => {
   const d = decode(po);
   const wh = $('#b-fromtk').dataset.used && $('#f-whov').value.trim();
   save(id, { wn, po, qty: $('#b-qty').value.trim(), pallets: +$('#b-plts').value || 0, payer: $('#b-payer').value, stage: $('#b-stage').value, stageSince: todayISO(), ...d, wh: wh || d.wh, closeout: {}, created: new Date().toISOString() });
-  e.target.reset(); delete $('#b-fromtk').dataset.used; showDecode(); toast(`Added WN ${wn}`);
+  e.target.reset(); delete $('#b-fromtk').dataset.used; showDecode(); toast(`Added WN ${wn}`); $('#b-addwrap').open = false; selectOrder(id);
 });
-$('#b-list').addEventListener('toggle', e => {
-  const card = e.target.closest?.('.ord'); if (!card || e.target.tagName !== 'DETAILS') return;
-  if (e.target.open) openCards.add(card.dataset.id); else openCards.delete(card.dataset.id);
-}, true);
-$('#b-list').addEventListener('click', e => {
-  const card = e.target.closest('.ord'); if (!card || readOnly) return;
+$('#board').addEventListener('click', e => { const b = e.target.closest('[data-sel]'); if (b) selectOrder(b.dataset.sel); });
+$('#b-q').addEventListener('input', renderBoard);
+// a text field's change fires as focus leaves it, so track typing focus ourselves
+$('#b-edit').addEventListener('focusin', e => { if (e.target.matches(TEXTY)) edTextFocus = true; });
+$('#b-edit').addEventListener('focusout', () => setTimeout(() => {
+  const ae = document.activeElement;
+  edTextFocus = !!(ae && $('#b-edit').contains(ae) && ae.matches(TEXTY));
+  if (edPending && !edTextFocus) { edPending = false; renderEditor(); }
+}, 0));
+$('#b-edit').addEventListener('click', e => {
+  const card = e.target.closest('.ord'); if (!card) return;
   const id = card.dataset.id, o = orders[id], act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'back') { $('#b-panes').classList.remove('editing'); return; }
+  if (act === 'prev' || act === 'next') { const j = boardList.indexOf(id) + (act === 'next' ? 1 : -1); if (boardList[j]) selectOrder(boardList[j]); return; }
+  if (readOnly) return;
   if (act === 'advance') { const i = stageIdx(o.stage); save(id, { stage: STAGES[i + 1].k, stageSince: todayISO() }); }
   if (act === 'usequote') { const q = calcQuote(o); if (q.total != null) save(id, { custFinal: q.total }); }
   if (act === 'quoted') save(id, { quoteUpdated: todayISO(), closeout: ['delivered', 'closeout', 'done'].includes(o.stage) ? { ...(o.closeout || {}), quote: true } : (o.closeout || {}) });
@@ -2078,7 +2145,7 @@ $('#b-list').addEventListener('click', e => {
   if (act === 'delete') card.querySelector('[data-confirm]').hidden = false;
   if (act === 'delete-yes') remove(id);
 });
-$('#b-list').addEventListener('change', e => {
+$('#b-edit').addEventListener('change', e => {
   const card = e.target.closest('.ord'); if (!card || readOnly) return;
   const id = card.dataset.id, o = orders[id];
   if (e.target.dataset.co) { save(id, { closeout: { ...(o.closeout || {}), [e.target.dataset.co]: e.target.checked } }); return; }
@@ -2218,10 +2285,7 @@ $('#rh-week').addEventListener('click', e => { const b = e.target.closest('[data
 $('#rh-tasks').addEventListener('change', e => { const k = e.target.dataset.rk; if (k) rhTick(k, e.target.checked); });
 $('#rh-tasks').addEventListener('click', e => {
   const b = e.target.closest('[data-open]'); if (!b) return;
-  openCards.add(b.dataset.open); stageFilter = null; $('#b-showdone').checked = true;
-  show('board'); renderBoard();
-  const el = document.querySelector(`.ord[data-id="${CSS.escape(b.dataset.open)}"]`);
-  if (el) { el.scrollIntoView({ block: 'start', behavior: 'smooth' }); el.style.outline = '2px solid var(--accent)'; setTimeout(() => { el.style.outline = ''; }, 1600); }
+  selectOrder(b.dataset.open, { fromOutside: true });
 });
 if (rhDay === 0 || rhDay === 6) rhDay = 1;
 rhLoad();
