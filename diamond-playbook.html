@@ -2567,6 +2567,7 @@ Thank you!` : 'Enter a Costco PO with a go-to warehouse to build the confirmatio
   const recvWord = !recv ? '[day]' : daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : daysAgo < 7 ? 'on ' + recv.toLocaleDateString('en-US', { weekday: 'long' }) : 'on ' + recv.toLocaleDateString('en-US');
   const st = (dest.match(/,\s*([A-Z]{2})$/) || [])[1] || 'the';
   const stage = { arriving: `the ${totPl > 1 ? 'pallets are' : 'pallet is'} on the way to our warehouse for rework`, today: `${totPl > 1 ? 'pallets were' : 'pallet was'} offloaded and ${totPl > 1 ? 'are' : 'is'} being reworked today`, done: `${totPl > 1 ? 'pallets were' : 'pallet was'} offloaded and ${totPl > 1 ? 'have' : 'has'} been reworked` }[v('#f-stage')];
+  const skuTable = lines.length ? lines.map(l => `${l.costco}\t${l.size} ${l.name}\t${l.qty || ticketQty}`).join('\n') : `—\tSKU breakdown pending warehouse count\t${ticketQty}`;
   const hour = new Date().getHours();
   $('#t-email').value =
 `From: requests@warehousenow.com
@@ -2577,6 +2578,10 @@ Subject: ${subject}
 ${hour < 12 ? 'Morning' : 'Afternoon'}
 
 See attached ticket for this PO we received ${recvWord} at the ${st} depot, ${stage}, can we refresh the PO for delivery this week?
+
+Costco PO ${po} · WarehouseNow PO ${whn}
+SKU\tProduct Name\tQty
+${skuTable}
 
 Attached: ticket image, Costco sticker, merged PDF (photos, BOL, order confirmation).`;
   const att = [
