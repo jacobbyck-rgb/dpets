@@ -211,6 +211,26 @@ textarea { font-family: var(--mono); font-size: .82rem; line-height: 1.5; resize
 .hrow b { font-weight: 600; }
 .hrow .meta { color: var(--muted); font-size: .82rem; }
 .grp { border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 4px; padding: 10px 12px; display: grid; gap: 6px; font-size: .9rem; background: var(--surface); }
+.trk-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.trk-bar input { max-width: 320px; }
+.trk-bar select { width: auto; }
+.trk-wrap { max-height: 70vh; overflow: auto; }
+table.trk { font-size: .84rem; min-width: 1500px; }
+table.trk th { white-space: nowrap; z-index: 1; }
+table.trk th small { text-transform: none; letter-spacing: 0; font-weight: 400; }
+table.trk td { padding: 4px 5px; vertical-align: middle; }
+table.trk input, table.trk select { padding: 5px 6px; font-size: .84rem; background: transparent; border-color: transparent; border-radius: 3px; }
+table.trk input:hover, table.trk select:hover { border-color: var(--line); }
+table.trk input:focus, table.trk select:focus { background: var(--surface); border-color: var(--accent); }
+table.trk input::placeholder { color: var(--muted); opacity: .8; }
+table.trk tr.late td:first-child { box-shadow: inset 4px 0 0 var(--bad); }
+table.trk tr.closed { opacity: .55; }
+table.trk .w-wn { width: 70px; } table.trk .w-po { width: 120px; } table.trk .w-sku { width: 200px; } table.trk .w-n { width: 52px; }
+table.trk .w-loc { width: 150px; } table.trk .w-st { width: 150px; } table.trk .w-d { width: 132px; } table.trk .w-t { width: 70px; }
+table.trk .w-c { width: 140px; } table.trk .w-m { width: 110px; } table.trk .w-g { width: 150px; } table.trk .w-nx { width: 240px; }
+table.trk .upd { color: var(--muted); font-size: .76rem; white-space: nowrap; }
+.trk-add { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.trk-add input { width: auto; min-width: 120px; flex: 0 1 200px; }
 .mini-head, .mini-line { display: grid; grid-template-columns: minmax(0, 1.6fr) 70px minmax(0, 1fr) minmax(0, 1fr) 34px; gap: 6px; align-items: center; }
 .mini-head span { font-size: .78rem; color: var(--muted); }
 tr.hl td { background: var(--tag-soft); font-weight: 600; }
@@ -285,6 +305,7 @@ td .pre { white-space: pre-line; }
   <div class="wrap">
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button class="tab" role="tab" id="tab-process" aria-controls="process" aria-selected="true">How it works</button>
+      <button class="tab" role="tab" id="tab-tracker" aria-controls="tracker" aria-selected="false">Tracker</button>
       <button class="tab" role="tab" id="tab-board" aria-controls="board" aria-selected="false">Order board</button>
       <button class="tab" role="tab" id="tab-example" aria-controls="example" aria-selected="false">Real order</button>
       <button class="tab" role="tab" id="tab-triage" aria-controls="triage" aria-selected="false">Triage</button>
@@ -313,6 +334,22 @@ td .pre { white-space: pre-line; }
   </div>
     <h2>Why this account feels different</h2>
     <p class="lede">On a normal account a customer books space and we store or move their freight. On Diamond, <strong>nothing is planned in advance</strong>. A Costco depot refuses part of a Diamond load at the dock, usually for damaged bags, and the carrier gets stuck holding it. WarehouseNow finds a crossdock near that depot, the crossdock reworks the pallets, and we book a new delivery back into Costco through the Costco portal. Then we bill Diamond per pallet. <strong>The Costco PO is the main key</strong>, because Diamond, ADW and Costco all track the order by it. Keep the WarehouseNow PO next to it for our own systems.</p>
+  </div>
+
+  <div class="card stack">
+    <h3>Why it’s called reverse logistics</h3>
+    <p style="font-size:.93rem;max-width:72ch">Normal (forward) logistics moves freight one way: Diamond’s plant → truck → Costco depot → store. Most WarehouseNow accounts sit in that path, booked ahead of time. Diamond is the opposite. Every order starts when freight <b>comes back out</b> of that path: a receiver refuses it, it’s damaged, or there’s too much of it.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Reverse logistics step</th><th>On Diamond</th></tr></thead>
+      <tbody>
+        <tr><td><b>Refusal / return</b></td><td>Costco (or Chewy) refuses pallets for damage, a shifted load or an overage. Sticker: "FRT REMAINING ON TRAILER"</td></tr>
+        <tr><td><b>Recovery</b></td><td>Find a warehouse near the depot to get it off the carrier’s truck fast (the 20-minute rule)</td></tr>
+        <tr><td><b>Inspection</b></td><td>WH counts by SKU, takes photos, finds the bad bags</td></tr>
+        <tr><td><b>Refurbish / rework</b></td><td>Good bags restacked on clean pallets ($65/pallet rework)</td></tr>
+        <tr><td><b>Disposition</b></td><td>Rework and redeliver, dispose/donate (under 10 bags), or return to the plant (overages back to Ripon)</td></tr>
+        <tr><td><b>Re-entry</b></td><td>New Costco appointment, often consolidated under a master PO, back into the depot</td></tr>
+      </tbody></table></div>
+    <p style="font-size:.88rem;color:var(--muted)">That’s why nothing is planned ahead, more parties are involved (Diamond, Costco/ADW, the carrier, the WH, sometimes Chewy), the goal is recovering product value, and everything is tracked by PO.</p>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -412,6 +449,39 @@ td .pre { white-space: pre-line; }
       <div class="bars" id="originBars"></div>
     </div>
   </div>
+</section>
+
+<!-- TRACKER -->
+<section class="panel" id="tracker" role="tabpanel" aria-labelledby="tab-tracker" hidden>
+  <div class="stack">
+    <h2>Live tracker</h2>
+    <p class="lede">Every open Diamond order in one table: its POs and SKUs, <strong>where it is now</strong>, <strong>where it goes next</strong>, and whether a delivery is booked. Click any cell to edit it. Changes save for everyone you share this page with, and the Order board uses the same data.</p>
+    <p id="t-mode" style="font-size:.85rem;color:var(--muted)">Loading…</p>
+  </div>
+  <div class="trk-bar">
+    <input type="text" id="trk-q" placeholder="Search WN#, PO, SKU, warehouse…" aria-label="Search tracker">
+    <select id="trk-f" aria-label="Show">
+      <option value="open">Open orders</option>
+      <option value="held">Held at warehouse</option>
+      <option value="sched">Requested / scheduled</option>
+      <option value="all">All, including closed</option>
+    </select>
+    <button class="btn" type="button" id="trk-csv">Download CSV</button>
+  </div>
+  <div class="scroll trk-wrap"><table class="trk" id="trk-table">
+    <thead><tr>
+      <th>WN#</th><th>Costco PO</th><th>SKUs <small>(sku x plts)</small></th><th class="num">Plts</th><th>Now at</th><th>Next stop</th><th>Stage</th><th>Delivery date</th><th>Time</th><th>Conf #</th><th>Master PO</th><th>Ships with</th><th>Next step</th><th>Updated</th>
+    </tr></thead>
+    <tbody id="trk-body"></tbody>
+  </table></div>
+  <form id="trk-add" class="trk-add" autocomplete="off">
+    <span class="label">Add a row</span>
+    <input type="text" id="ta-wn" class="po" placeholder="WN#" aria-label="WN#" required>
+    <input type="text" id="ta-po" class="po" placeholder="Costco PO" aria-label="Costco PO">
+    <input type="text" id="ta-sku" placeholder="SKUs e.g. 25350 x19, 25347 x4" aria-label="SKUs">
+    <button class="btn primary" type="submit">Add</button>
+  </form>
+  <p style="font-size:.85rem;color:var(--muted)">Blank <b>Now at</b> and <b>Next stop</b> cells fill in from the stage, warehouse and depot (shown in grey). Type over them when the real answer differs. Write SKUs as <code>25350 x19, 25347 x4</code> and the master PO list on the Order board picks them up.</p>
 </section>
 
 <!-- ORDER BOARD -->
@@ -1444,8 +1514,12 @@ function lateness(o) {
 // storage: shared db when the viewer serves it, else this browser only
 let orders = {}, backend = null, readOnly = false, pendingRender = false, stageFilter = null;
 const writeQ = {};
+const nowAt = o => ({ new: 'On carrier trailer', inbound: 'Carrier → ' + (o.wh || 'WH'), delivered: 'Delivered to depot', closeout: 'Delivered to depot', done: 'Delivered / invoiced', disposed: 'Disposed' }[o.stage] || o.wh || 'Warehouse');
+const nextStop = o => ['done', 'disposed'].includes(o.stage) ? '—' : ['delivered', 'closeout'].includes(o.stage) ? 'Close out (POD, invoice)' : ['new', 'inbound'].includes(o.stage) ? (o.wh || 'WH to be sourced') : (o.dest || o.depotName || 'Depot');
+const fmtUpd = o => { const d = o.updated ? new Date(o.updated) : null; return d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''; };
+let myId = null; const names = {}; let userNs = null;
 function save(id, patch) {
-  orders[id] = { ...orders[id], ...patch, updated: new Date().toISOString() };
+  orders[id] = { ...orders[id], ...patch, updated: new Date().toISOString(), ...(myId ? { updatedBy: myId } : {}) };
   const body = orders[id];
   renderBoard();
   writeQ[id] = (writeQ[id] || Promise.resolve()).then(() => backend.put(id, body)).catch(e => {
@@ -1468,16 +1542,17 @@ $('#b-mode').textContent = 'Connecting to the saved board…';
   let db = null;
   try { db = await (window.claude?.use?.('db') ?? null); } catch { db = null; }
   if (!db) { $('#b-mode').textContent = 'Saved in this browser only. Open the claude.ai link to use the shared board.'; return; }
+  try { userNs = await (window.claude?.use?.('user') ?? null); myId = userNs ? await userNs.id() : null; } catch { userNs = null; }
   const col = db.collection('orders');
   backend = { put: (id, body) => col.doc(id).set(body), del: id => col.doc(id).delete() };
   $('#b-mode').textContent = 'Saved to the board. Changes show up for anyone you share it with.';
   col.onSnapshot(snap => {
     const next = {}; snap.docs.forEach(d => { next[d.id] = d.data(); });
     orders = next;
-    if ($('#board').contains(document.activeElement) && document.activeElement.matches('input, textarea')) pendingRender = true; else renderBoard();
+    if (document.activeElement?.closest?.('#board, #tracker') && document.activeElement.matches('input, textarea, select')) pendingRender = true; else renderBoard();
   }, () => { $('#b-mode').textContent = 'Lost the connection to the saved board. Reload to reconnect.'; });
 })();
-$('#board').addEventListener('focusout', () => { if (pendingRender) { pendingRender = false; setTimeout(renderBoard, 0); } });
+['#board', '#tracker'].forEach(sel => $(sel).addEventListener('focusout', () => { if (pendingRender) { pendingRender = false; setTimeout(renderBoard, 0); } }));
 
 function renderBoard() {
   const all = Object.entries(orders).map(([id, o]) => ({ id, ...o }));
@@ -1511,7 +1586,7 @@ function renderBoard() {
     const gid = 'grp-' + k.replace(/[^A-Za-z0-9]/g, '');
     const pl = n => `${n} PALLET${+n === 1 ? '' : 'S'}`;
     const skuLines = o => {
-      const q = String(o.qty || '');
+      const q = String(o.skus || o.qty || '');
       const multi = [...q.matchAll(/\b(\d{4,9})\s*x\s*(\d+)/gi)];
       if (multi.length) return multi.map(m => `WN-${o.wn || '?'} // ${pl(m[2])} // SKU ${m[1]}`);
       const one = q.match(/(?:item|sku)\s*#?\s*(\d{4,9})/i);
@@ -1596,7 +1671,80 @@ function renderBoard() {
     </article>`;
   }).join('') : `<p style="color:var(--muted)">${all.length ? 'No orders match this filter.' : 'No orders yet. Add your first one above.'}</p>`;
   $('#b-addwrap').hidden = readOnly;
+  renderTracker();
 }
+
+/* ---------- live tracker ---------- */
+async function resolveNames(ids) {
+  const need = [...new Set(ids.filter(i => i && !(i in names)))];
+  if (!need.length || !userNs?.profiles) return;
+  try { const ps = await userNs.profiles(need); need.forEach(i => { names[i] = ps[i]?.name || ''; }); } catch { return; }
+  document.querySelectorAll('[data-uid]').forEach(el => { const n = names[el.dataset.uid]; if (n) el.textContent = el.dataset.when + ' · ' + n; });
+}
+function trackerRows() {
+  const f = $('#trk-f').value, q = $('#trk-q').value.trim().toLowerCase();
+  return Object.entries(orders).map(([id, o]) => ({ id, ...o })).filter(o => {
+    if (f === 'open' && CLOSED.includes(o.stage)) return false;
+    if (f === 'held' && !['atwh', 'rework', 'ready'].includes(o.stage)) return false;
+    if (f === 'sched' && !['requested', 'scheduled'].includes(o.stage)) return false;
+    if (q && ![o.wn, o.po, o.skus, o.qty, o.wh, o.dest, o.masterPo, o.group, o.loc, o.nextStop].join(' ').toLowerCase().includes(q)) return false;
+    return true;
+  }).sort((a, b) => (stageIdx(b.stage) - stageIdx(a.stage)) || String(a.wn).localeCompare(String(b.wn)));
+}
+function renderTracker() {
+  if (!$('#trk-body')) return;
+  const dis = readOnly ? 'disabled' : '';
+  const inp = (o, f, cls, ph = '', type = 'text') => `<input type="${type}" class="${cls}" data-f="${f}" value="${esc(o[f] ?? '')}" placeholder="${esc(ph)}" aria-label="${esc(f)} for WN ${esc(o.wn)}" ${dis}>`;
+  const rows = trackerRows();
+  $('#trk-body').innerHTML = rows.map(o => {
+    const l = lateness(o);
+    const stageSel = `<select class="w-st" data-f="stage" aria-label="Stage for WN ${esc(o.wn)}" ${dis}>${STAGES.map(s => `<option value="${s.k}" ${s.k === o.stage ? 'selected' : ''}>${esc(s.t)}</option>`).join('')}</select>`;
+    const when = fmtUpd(o);
+    const who = o.updatedBy ? names[o.updatedBy] : '';
+    return `<tr data-id="${esc(o.id)}" class="${l.late ? 'late' : ''} ${CLOSED.includes(o.stage) ? 'closed' : ''}" title="${esc(l.msg || '')}">
+      <td>${inp(o, 'wn', 'w-wn po')}</td><td>${inp(o, 'po', 'w-po po')}</td>
+      <td>${inp(o, 'skus', 'w-sku', o.qty || 'sku x plts')}</td><td>${inp(o, 'pallets', 'w-n', '', 'number')}</td>
+      <td>${inp(o, 'loc', 'w-loc', nowAt(o))}</td><td>${inp(o, 'nextStop', 'w-loc', nextStop(o))}</td>
+      <td>${stageSel}</td><td>${inp(o, 'apptDate', 'w-d', '', 'date')}</td><td>${inp(o, 'apptTime', 'w-t', '08:00')}</td><td>${inp(o, 'conf', 'w-c po')}</td>
+      <td>${inp(o, 'masterPo', 'w-m po')}</td><td>${inp(o, 'group', 'w-g')}</td>
+      <td>${inp(o, 'nextNote', 'w-nx', nextFor(o))}</td>
+      <td class="upd" ${o.updatedBy ? `data-uid="${esc(o.updatedBy)}" data-when="${esc(when)}"` : ''}>${esc(when + (who ? ' · ' + who : ''))}</td></tr>`;
+  }).join('') || `<tr><td colspan="14" style="color:var(--muted);padding:12px">${Object.keys(orders).length ? 'No orders match.' : 'No orders yet. Add the first one below.'}</td></tr>`;
+  $('#trk-add').hidden = readOnly;
+  $('#t-mode').textContent = $('#b-mode').textContent;
+  resolveNames(rows.map(o => o.updatedBy));
+}
+$('#trk-q').addEventListener('input', renderTracker);
+$('#trk-f').addEventListener('change', renderTracker);
+$('#trk-body').addEventListener('change', e => {
+  const tr = e.target.closest('tr[data-id]'); if (!tr || readOnly) return;
+  const id = tr.dataset.id, o = orders[id], f = e.target.dataset.f; if (!f) return;
+  let val = e.target.value.trim();
+  if (f === 'pallets') val = val === '' ? null : +val;
+  if (f === 'po') { val = val.replace(/\D/g, '').replace(/^0+/, ''); const d = decode(val); save(id, { po: val, ...d, wh: o.wh || d.wh }); return; }
+  if (f === 'stage') { save(id, { stage: val, stageSince: todayISO() }); return; }
+  if ((o[f] ?? '') === (val ?? '')) return;
+  save(id, { [f]: val });
+});
+$('#trk-add').addEventListener('submit', e => {
+  e.preventDefault();
+  const wn = $('#ta-wn').value.replace(/\D/g, ''); if (!wn) return;
+  const id = 'WN-' + wn;
+  if (orders[id]) { toast(`WN ${wn} is already in the tracker`); return; }
+  const po = $('#ta-po').value.replace(/\D/g, '').replace(/^0+/, '');
+  const skus = $('#ta-sku').value.trim();
+  const plts = [...skus.matchAll(/\b\d{4,9}\s*x\s*(\d+)/gi)].reduce((a, m) => a + +m[1], 0);
+  save(id, { wn, po, skus, pallets: plts || null, payer: 'diamond', stage: 'new', stageSince: todayISO(), ...decode(po), closeout: {}, created: new Date().toISOString() });
+  e.target.reset(); toast(`Added WN ${wn}`);
+});
+$('#trk-csv').addEventListener('click', () => {
+  const cols = [['WN#', o => o.wn], ['Costco PO', o => o.po], ['SKUs', o => o.skus || o.qty], ['Pallets', o => o.pallets], ['Now at', o => o.loc || nowAt(o)], ['Next stop', o => o.nextStop || nextStop(o)],
+    ['Stage', o => stageOf(o.stage).t], ['Delivery date', o => o.apptDate], ['Time', o => o.apptTime], ['Conf #', o => o.conf], ['Master PO', o => o.masterPo], ['Ships with', o => o.group],
+    ['Next step', o => o.nextNote || nextFor(o)], ['Warehouse', o => o.wh], ['Depot', o => [o.depotCode, o.dest].filter(Boolean).join(' ')], ['Updated', o => o.updated]];
+  const cell = v => { v = String(v ?? ''); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  const csv = [cols.map(c => c[0]).join(','), ...trackerRows().map(o => cols.map(c => cell(c[1](o))).join(','))].join('\n');
+  saveFile(`diamond-tracker-${todayISO()}.csv`, new Blob([csv], { type: 'text/csv' }));
+});
 $('#b-guide').innerHTML = STAGES.map(s => `<tr><td><b>${esc(s.t)}</b></td><td>${esc(s.next === 'master' ? 'Master PO depot (Frederick, Mira Loma): add to the Wednesday Master PO request. Other depots: ask ADW to refresh the PO. Then request the appointment.' : s.next)}</td><td class="num">${s.late == null ? (s.k === 'scheduled' ? 'appt day' : '—') : s.late === 0 ? 'same day' : s.late + ' day' + (s.late === 1 ? '' : 's')}</td><td>${esc(s.ts)}</td><td>${esc(s.app)}</td></tr>`).join('');
 $('#b-stage').innerHTML = STAGES.map(s => `<option value="${s.k}">${esc(s.t)}</option>`).join('');
 $('#b-stages').addEventListener('click', e => { const b = e.target.closest('[data-stage]'); if (!b) return; stageFilter = stageFilter === b.dataset.stage ? null : b.dataset.stage; renderBoard(); });
