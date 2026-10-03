@@ -251,6 +251,18 @@ table.trk .upd { color: var(--muted); font-size: .76rem; white-space: nowrap; }
 .truck b { font-weight: 600; }
 .truck .meta { color: var(--muted); font-size: .82rem; }
 .linkbtn { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font: inherit; text-decoration: underline; }
+.cover { display: flex; flex-wrap: wrap; gap: 6px; }
+.cover span { font-size: .8rem; padding: 4px 8px; border-radius: 3px; border: 1px solid var(--line); background: var(--sunken); }
+.cover span.ok { background: var(--ok-soft); border-color: transparent; }
+.cover span.none { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
+.whcity h3 { margin-bottom: 4px; }
+.whcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.whcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; }
+.whcard.pref { border-color: var(--tag); box-shadow: inset 0 0 0 1px var(--tag); }
+.whcard .field label { font-size: .75rem; }
+.whcard input, .whcard textarea { font-size: .85rem; padding: 6px 8px; }
+.whcard textarea { font-family: var(--body); }
+.whcard .q4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .mini-head, .mini-line { display: grid; grid-template-columns: minmax(0, 1.6fr) 70px minmax(0, 1fr) minmax(0, 1fr) 34px; gap: 6px; align-items: center; }
 .mini-head span { font-size: .78rem; color: var(--muted); }
 tr.hl td { background: var(--tag-soft); font-weight: 600; }
@@ -327,6 +339,7 @@ td .pre { white-space: pre-line; }
       <button class="tab" role="tab" id="tab-process" aria-controls="process" aria-selected="true">How it works</button>
       <button class="tab" role="tab" id="tab-tracker" aria-controls="tracker" aria-selected="false">Tracker</button>
       <button class="tab" role="tab" id="tab-appt" aria-controls="appt" aria-selected="false">Appointments</button>
+      <button class="tab" role="tab" id="tab-whs" aria-controls="whs" aria-selected="false">Warehouses</button>
       <button class="tab" role="tab" id="tab-board" aria-controls="board" aria-selected="false">Order board</button>
       <button class="tab" role="tab" id="tab-example" aria-controls="example" aria-selected="false">Real order</button>
       <button class="tab" role="tab" id="tab-triage" aria-controls="triage" aria-selected="false">Triage</button>
@@ -469,6 +482,35 @@ td .pre { white-space: pre-line; }
       <div class="bars" id="originBars"></div>
     </div>
   </div>
+</section>
+
+<!-- WAREHOUSES -->
+<section class="panel" id="whs" role="tabpanel" aria-labelledby="tab-whs" hidden>
+  <div class="stack">
+    <h2>Warehouses</h2>
+    <p class="lede">The warehouse to call for each depot. It started from Diamond’s <em>Go to Warehouses</em> sheet. Edit it here, star the <strong>preferred</strong> one per depot, and every new order in the Ticket builder picks it up, with contact, emails and quote rates, for everyone you share the page with.</p>
+    <p id="wh-mode" style="font-size:.85rem;color:var(--muted)"></p>
+  </div>
+  <div class="card stack">
+    <h3>Coverage by depot</h3>
+    <div id="wh-cover" class="cover"></div>
+  </div>
+  <div class="trk-bar"><input type="text" id="wh-q" placeholder="Search warehouse, city, contact…" aria-label="Search warehouses"></div>
+  <div id="wh-list" class="stack" style="gap:18px"></div>
+  <form id="wh-add" class="card stack" autocomplete="off">
+    <h3>Add a warehouse</h3>
+    <div class="row2">
+      <div class="field"><label for="wa-city">Serves depot city</label><select id="wa-city"></select></div>
+      <div class="field"><label for="wa-name">Warehouse name</label><input id="wa-name" type="text" required></div>
+      <div class="field"><label for="wa-code">WH code</label><input id="wa-code" type="text" class="po" placeholder="e.g. JRY-SUM-WA"></div>
+      <div class="field"><label for="wa-hours">Hours</label><input id="wa-hours" type="text" placeholder="0800-1600 M-F"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label for="wa-addr">Address</label><input id="wa-addr" type="text"></div>
+      <div class="field"><label for="wa-contact">Contact, emails, phone</label><input id="wa-contact" type="text"></div>
+    </div>
+    <div><button class="btn primary" type="submit">Add warehouse</button></div>
+  </form>
 </section>
 
 <!-- TRACKER -->
@@ -1097,12 +1139,17 @@ function depotFor(po) {
   // New Ticket B13: XLOOKUP on LEFT(PO,4), then LEFT(PO,3)
   return D.depots.find(d => d.code === po.slice(0, 4)) || D.depots.find(d => d.code === po.slice(0, 3)) || null;
 }
-function warehouseFor(dest) {
-  // New Ticket B27: first Go-to row whose City1 appears inside the destination text
-  if (!dest) return null;
-  const d = dest.toLowerCase();
-  return D.warehouses.find(w => w.city && d.includes(w.city.toLowerCase())) || null;
+// Warehouses: the saved list from the Warehouses tab, or Diamond's Go to Warehouses sheet until that's filled
+let WH = null;
+const whId = w => ((w.code || 'WH') + '-' + (w.city || '')).replace(/[^A-Za-z0-9_-]/g, '');
+const cityKey = c => String(c || '').replace(/\d+$/, '').trim().toLowerCase();
+function getWarehouses() { return WH && WH.length ? WH : D.warehouses.map(w => ({ ...w, id: whId(w) })); }
+function warehousesFor(dest) {
+  const d = String(dest || '').toLowerCase();
+  if (!d) return [];
+  return getWarehouses().filter(w => w.city && d.includes(cityKey(w.city))).sort((a, b) => (b.preferred ? 1 : 0) - (a.preferred ? 1 : 0));
 }
+function warehouseFor(dest) { return warehousesFor(dest)[0] || null; }
 // People seen on real ADW threads who aren't in Diamond's contact sheet yet
 const EXTRA_ADW = {
   '171': [{ name: 'Grey Secord', email: 'Gsecord@acosta.com', cc: true, note: 'NW Sales Support (Acosta). On carrier threads only, not in Diamond\u2019s sheet or the ticket email' }],
@@ -1473,6 +1520,91 @@ $('#dl-sticker').addEventListener('click', async () => {
   await saveFile(`WN-${lastTicket?.whn || 'order'}-sticker.png`, await canvasBlob(cv));
 });
 
+/* ---------- warehouses tab ---------- */
+let whBackend = null;
+const whWriteQ = {};
+function whDepots(w) { const k = cityKey(w.city); return D.depots.filter(d => d.city && d.city.toLowerCase().includes(k)); }
+function materializeWH() { if (!WH || !WH.length) WH = D.warehouses.map((w, i) => ({ ...w, id: whId(w), order: i, quote: KNOWN_WH_QUOTES[w.code] ? { un: KNOWN_WH_QUOTES[w.code].un, re: KNOWN_WH_QUOTES[w.code].re, rw: KNOWN_WH_QUOTES[w.code].rw, del: KNOWN_WH_QUOTES[w.code].del ?? null } : {} })); }
+function saveWh(id, patch) {
+  materializeWH();
+  const i = WH.findIndex(w => w.id === id);
+  const body = { ...(i >= 0 ? WH[i] : {}), ...patch, updated: new Date().toISOString(), ...(myId ? { updatedBy: myId } : {}) };
+  delete body.id;
+  if (i >= 0) WH[i] = { id, ...body }; else WH.push({ id, ...body });
+  afterWhChange();
+  whWriteQ[id] = (whWriteQ[id] || Promise.resolve()).then(() => whBackend ? whBackend.put(id, body) : (store.set('dp-wh', WH), null)).catch(e => toast(e?.code === 'invalid_argument' ? 'You can view the warehouses but not change them.' : 'Couldn’t save. Try again.'));
+}
+function removeWh(id) {
+  materializeWH(); WH = WH.filter(w => w.id !== id); afterWhChange();
+  whWriteQ[id] = (whWriteQ[id] || Promise.resolve()).then(() => whBackend ? whBackend.del(id) : (store.set('dp-wh', WH), null)).catch(() => toast('Couldn’t delete. Try again.'));
+}
+function afterWhChange() { renderWhs(); lastWh = null; build(); renderBoard(); if (typeof renderRef === 'function') renderRef(); }
+function renderWhs() {
+  const list = getWarehouses();
+  // coverage chips: every depot city
+  const cities = [...new Set(D.depots.map(d => d.city || d.facility.trim()))];
+  $('#wh-cover').innerHTML = cities.map(c => {
+    const ws = c ? warehousesFor(c) : [];
+    const p = ws.find(w => w.preferred) || ws[0];
+    return `<span class="${p ? (ws.some(w => w.preferred) ? 'ok' : '') : 'none'}">${esc(c || '(no city)')}: ${p ? esc(p.name || p.code) + (ws.some(w => w.preferred) ? ' ★' : '') : 'none'}</span>`;
+  }).join('');
+  const q = $('#wh-q').value.trim().toLowerCase();
+  const shown = list.filter(w => !q || [w.name, w.code, w.city, w.contact, w.address].join(' ').toLowerCase().includes(q));
+  const groups = {}; shown.forEach(w => (groups[cityKey(w.city) || '?'] ||= []).push(w));
+  const dis = readOnly ? 'disabled' : '';
+  const fld = (w, f, label, ta) => `<div class="field"><label>${esc(label)}</label>${ta ? `<textarea rows="${ta === 2 ? 2 : 3}" data-wf="${f}" ${dis}>${esc(w[f] || '')}</textarea>` : `<input type="text" data-wf="${f}" value="${esc(w[f] || '')}" ${dis}>`}</div>`;
+  const qf = (w, k, label) => `<div class="field"><label>${label}</label><input type="number" min="0" step="0.5" data-wq="${k}" value="${esc(w.quote?.[k] ?? '')}" ${dis}></div>`;
+  $('#wh-list').innerHTML = Object.entries(groups).map(([k, ws]) => {
+    const deps = whDepots(ws[0]);
+    return `<div class="whcity stack" style="gap:8px"><h3>${esc(ws[0].city.replace(/\d+$/, ''))}${ws[0].state ? ', ' + esc(ws[0].state) : ''} <small style="font:400 .85rem var(--body);color:var(--muted)">${deps.length ? 'depots ' + esc(deps.map(d => d.code).join(', ')) : 'no depot match'}</small></h3>
+      <div class="whcards">${ws.map(w => `<div class="whcard ${w.preferred ? 'pref' : ''}" data-wid="${esc(w.id)}">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><b>${esc(w.name || '(no name)')}</b>${readOnly ? (w.preferred ? '<span class="pill ok">★ Preferred</span>' : '') : `<button type="button" class="btn ${w.preferred ? 'primary' : ''}" data-wact="pref">${w.preferred ? '★ Preferred' : 'Make preferred'}</button>`}</div>
+        <div class="row2">${fld(w, 'name', 'Name')}${fld(w, 'code', 'WH code')}${fld(w, 'city', 'Serves city')}</div>${fld(w, 'hours', 'Hours', 2)}
+        ${fld(w, 'address', 'Address', true)}${fld(w, 'contact', 'Contact, emails, phone', true)}
+        <div class="row2">${fld(w, 'delivery', 'Delivery rate', 2)}${fld(w, 'storage', 'Storage', 2)}</div>
+        ${fld(w, 'rates', 'Rates on file', true)}
+        <span class="label">Warehouse quote for the app (per pallet; delivery per load)</span>
+        <div class="q4">${qf(w, 'un', 'Unload')}${qf(w, 're', 'Reload')}${qf(w, 'rw', 'Rework')}${qf(w, 'del', 'Delivery')}</div>
+        ${fld(w, 'notes', 'Notes', true)}
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="meta" style="font-size:.78rem;color:var(--muted)">${w.updated ? 'Updated ' + esc(fmtUpd(w)) : 'From Diamond’s sheet'}</span>${readOnly ? '' : `<button type="button" class="btn" data-wact="del">Delete</button><span hidden data-wconfirm>Delete ${esc(w.name || w.code)}? <button type="button" class="btn" data-wact="del-yes">Yes, delete</button></span>`}</div>
+      </div>`).join('')}</div></div>`;
+  }).join('') || '<p class="meta">No warehouses match.</p>';
+  $('#wa-city').innerHTML = [...new Set(D.depots.map(d => d.city).filter(Boolean))].map(c => `<option>${esc(c)}</option>`).join('');
+  $('#wh-add').hidden = readOnly;
+  $('#wh-mode').textContent = whBackend ? 'Saved for everyone with access. The Ticket builder uses the ★ preferred warehouse for each depot.' : (WH && WH.length ? 'Saved in this browser only. Open the claude.ai link for the shared list.' : 'Showing Diamond’s Go to Warehouses sheet. Edits here will save the list.');
+}
+$('#wh-q').addEventListener('input', renderWhs);
+$('#wh-list').addEventListener('change', e => {
+  const card = e.target.closest('[data-wid]'); if (!card || readOnly) return;
+  const id = card.dataset.wid, w = getWarehouses().find(x => x.id === id) || {};
+  if (e.target.dataset.wq) { const v = e.target.value === '' ? null : +e.target.value; saveWh(id, { quote: { ...(w.quote || {}), [e.target.dataset.wq]: v } }); return; }
+  const f = e.target.dataset.wf; if (!f) return;
+  const v = e.target.value.trim(); if ((w[f] || '') === v) return;
+  saveWh(id, { [f]: v });
+});
+$('#wh-list').addEventListener('click', e => {
+  const card = e.target.closest('[data-wid]'); if (!card || readOnly) return;
+  const id = card.dataset.wid, act = e.target.closest('[data-wact]')?.dataset.wact; if (!act) return;
+  if (act === 'pref') {
+    materializeWH();
+    const me = WH.find(w => w.id === id), k = cityKey(me.city);
+    WH.filter(w => cityKey(w.city) === k && w.id !== id && w.preferred).forEach(w => saveWh(w.id, { preferred: false }));
+    saveWh(id, { preferred: !me.preferred });
+  }
+  if (act === 'del') card.querySelector('[data-wconfirm]').hidden = false;
+  if (act === 'del-yes') removeWh(id);
+});
+$('#wh-add').addEventListener('submit', e => {
+  e.preventDefault();
+  const city = $('#wa-city').value.split(',')[0].trim(), state = ($('#wa-city').value.split(',')[1] || '').trim();
+  const w = { city, state, name: $('#wa-name').value.trim(), code: $('#wa-code').value.trim(), hours: $('#wa-hours').value.trim(), address: $('#wa-addr').value.trim(), contact: $('#wa-contact').value.trim(), quote: {}, preferred: false };
+  if (!w.name) return;
+  const id = whId({ code: w.code || w.name, city }) + '-' + Date.now().toString(36);
+  saveWh(id, w); e.target.reset(); toast(`Added ${w.name}`);
+});
+// first render after the rest of the page's script has set up (board state, builder)
+setTimeout(() => { const saved = store.get('dp-wh', null); if (saved && saved.length && !whBackend) WH = saved; renderWhs(); lastWh = null; build(); }, 0);
+
 /* ---------- order board ---------- */
 // Depots that run on Master POs (Jan's Wednesday process)
 const MASTER_PO_DEPOTS = ['1052', '731', '1053', '1054', '960', '929', '961'];
@@ -1605,6 +1737,14 @@ $('#b-mode').textContent = 'Connecting to the saved board…';
     renderTracker(); return;
   }
   try { userNs = await (window.claude?.use?.('user') ?? null); myId = userNs ? await userNs.id() : null; } catch { userNs = null; }
+  const wcol = db.collection('warehouses');
+  whBackend = { put: (id, body) => wcol.doc(id).set(body), del: id => wcol.doc(id).delete() };
+  wcol.onSnapshot(snap => {
+    const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order ?? 999) - (b.order ?? 999) || String(a.city).localeCompare(String(b.city)));
+    WH = list.length ? list : null;
+    if (document.activeElement?.closest?.('#whs') && document.activeElement.matches('input, textarea')) return;
+    renderWhs(); lastWh = null; build(); renderBoard();
+  }, () => {});
   const col = db.collection('orders');
   backend = { put: (id, body) => col.doc(id).set(body), del: id => col.doc(id).delete() };
   $('#b-mode').textContent = 'Saved to the board. Changes show up for anyone you share it with.';
@@ -2181,9 +2321,9 @@ Attached: ticket image, Costco sticker, merged PDF (photos, BOL, order confirmat
   $('#t-money-label').textContent += ' (Customer Quote lines in the app)';
 
   // warehouse cost + margin
-  if (wh && wh.code !== lastWh) {
-    lastWh = wh.code;
-    const k = KNOWN_WH_QUOTES[wh.code];
+  if (wh && (wh.id + JSON.stringify(wh.quote || {})) !== lastWh) {
+    lastWh = wh.id + JSON.stringify(wh.quote || {});
+    const k = wh.quote && (wh.quote.un != null || wh.quote.rw != null) ? { ...wh.quote, src: 'the Warehouses tab' } : KNOWN_WH_QUOTES[wh.code];
     const sheetDel = +(String(wh.delivery || '').match(/\$?\s*(\d{3})/) || [])[1] || 0;
     // a WH with no saved quote starts at 0 so the last warehouse's rates don't carry over
     $('#w-un').value = k ? k.un : 0; $('#w-re').value = k ? k.re : 0; $('#w-rw').value = k ? k.rw : 0;
@@ -2197,9 +2337,8 @@ Attached: ticket image, Costco sticker, merged PDF (photos, BOL, order confirmat
     + (small ? '' : `<span style="color:var(--muted)">Warehouse cost</span><span style="color:var(--muted)">${fmt$(whCost)}</span><span><b>Margin</b>${ltl ? ' (LTL passed through)' : ''}</span><span style="color:${margin >= 0 ? 'var(--ok)' : 'var(--bad)'}"><b>${fmt$(margin)}</b></span>`);
 
   // warehouses on file for this destination
-  const city = (dest || '').toLowerCase();
-  const all = D.warehouses.filter(w => w.city && city && city.includes(w.city.replace(/\d+$/, '').toLowerCase()));
-  $('#whList').innerHTML = all.length ? all.map((w, i) => `<div class="whopt ${w === wh ? 'first' : ''}"><b>${esc(w.code)} · ${esc(w.name || '(no name)')}${w === wh ? ' (the sheet picks this one)' : ''}</b><span class="pre">${esc(w.hours)}</span><span><b>Delivery:</b> ${esc(w.delivery || '—')}</span><span><b>Rate/pallet:</b> <span class="pre">${esc(w.rates || '—')}</span></span><span><b>Storage:</b> ${esc(w.storage || '—')}</span>${w.notes ? `<span class="pre">${esc(w.notes)}</span>` : ''}</div>`).join('') : `<p style="font-size:.9rem;color:var(--bad)">${dest ? 'No warehouse on file for ' + esc(dest) + '. Source one as a normal load.' : 'Enter a Costco PO first.'}</p>`;
+  const all = warehousesFor(dest);
+  $('#whList').innerHTML = all.length ? all.map((w, i) => `<div class="whopt ${wh && w.id === wh.id ? 'first' : ''}"><b>${esc(w.code)} · ${esc(w.name || '(no name)')}${wh && w.id === wh.id ? (w.preferred ? ' ★ preferred' : ' (picked first)') : ''}</b><span class="pre">${esc(w.hours)}</span><span><b>Delivery:</b> ${esc(w.delivery || '—')}</span><span><b>Rate/pallet:</b> <span class="pre">${esc(w.rates || '—')}</span></span><span><b>Storage:</b> ${esc(w.storage || '—')}</span>${w.notes ? `<span class="pre">${esc(w.notes)}</span>` : ''}</div>`).join('') : `<p style="font-size:.9rem;color:var(--bad)">${dest ? 'No warehouse on file for ' + esc(dest) + '. Source one as a normal load.' : 'Enter a Costco PO first.'}</p>`;
 
   // all ADW emails, this depot highlighted
   const mine = new Set(reps.map(r => r.email.toLowerCase()));
@@ -2231,7 +2370,7 @@ build();
 /* ---------- reference tables ---------- */
 const REF = {
   'Costco depots': { rows: D.depots, cols: [['code', 'Code', 'mono'], ['facility', 'Facility'], ['city', 'Destination (go-to city)'], ['contact', 'Appt email']] },
-  'Go-to warehouses': { rows: D.warehouses, cols: [['city', 'Depot city'], ['state', 'St'], ['code', 'WH code', 'mono'], ['name', 'Warehouse'], ['hours', 'Hours', 'pre'], ['address', 'Address', 'pre'], ['contact', 'Contact', 'pre'], ['delivery', 'Delivery', 'pre'], ['rates', 'Rates', 'pre'], ['storage', 'Storage', 'pre'], ['notes', 'Notes', 'pre']] },
+  'Go-to warehouses': { get rows() { return getWarehouses(); }, cols: [['city', 'Depot city'], ['state', 'St'], ['code', 'WH code', 'mono'], ['name', 'Warehouse'], ['hours', 'Hours', 'pre'], ['address', 'Address', 'pre'], ['contact', 'Contact', 'pre'], ['delivery', 'Delivery', 'pre'], ['rates', 'Rates', 'pre'], ['storage', 'Storage', 'pre'], ['notes', 'Notes', 'pre']] },
   'ADW contacts': { rows: [...D.adwwMap.map(m => ({ ...m, name: D.contacts[m.contact]?.name, email: D.contacts[m.contact]?.email })), ...Object.entries(EXTRA_ADW).flatMap(([code, list]) => list.map(c => ({ code, facility: D.depots.find(d => d.code === code)?.facility || '', region: 'Northwest', name: c.name, email: c.email, notes: c.note + ' (not in Diamond\u2019s sheet)' })))], cols: [['code', 'Code', 'mono'], ['facility', 'Facility'], ['region', 'Region'], ['name', 'Contact'], ['email', 'Email', 'mono'], ['notes', 'Notes']] },
   'SKUs': { rows: D.skus, cols: [['costco', 'Costco #', 'mono'], ['diamond', 'Diamond #', 'mono'], ['size', 'Size'], ['name', 'Item'], ['pltQty', 'Bags / plt'], ['pltWeight', 'Plt lbs']] },
 };
