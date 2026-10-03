@@ -22,4 +22,6 @@ publish `diamond-playbook.html` to the URL above → send the download and inclu
 Quotes, the warehouse and the customer live in the WarehouseNow web app (Quotes tab); the board mirrors them.
 Carrier pays → the Load # in the app must be changed to the carrier. Track `payer` and `payerOk` on the board.
 
+New emails in Front (ADW ticket etc.): Compose new, tag with the WN#, add to the Diamond Pet mailbox (diamondpet@warehousenow.com).
+
 Keep Diamond paperwork (PDFs, BOLs, stickers, photos) out of git.

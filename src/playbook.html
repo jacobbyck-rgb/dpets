@@ -870,6 +870,13 @@ td .pre { white-space: pre-line; }
             <textarea id="t-email" rows="16" aria-label="Email draft" readonly></textarea>
             <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" data-copy="t-email">Copy email</button></div>
             <p style="font-size:.82rem;color:var(--muted)">Modeled on Grant's WN-12331 email: send from requests@, To the depot's ADW contacts, Cc diamondpet@ and Diamond OS&amp;D. The ticket goes as an attachment, and the email asks ADW to refresh the PO.</p>
+            <div class="note" style="font-size:.88rem"><b>In Front, every new email:</b>
+              <ol style="margin:6px 0 0 18px;display:grid;gap:3px">
+                <li>Start it as a <b>new email</b> (Compose), not a reply on another order's thread.</li>
+                <li><b>Tag it with the WarehouseNow PO</b> (<span class="mono" id="t-fronttag">WN-#####</span>) so the thread files under that order.</li>
+                <li><b>Add it to the Diamond Pet mailbox</b> (diamondpet@warehousenow.com) so the team sees it and ADW's replies land there.</li>
+                <li>After sending, pin the subject in the order's Slack channel.</li>
+              </ol></div>
           </div>
           <div class="stack" style="gap:10px">
             <span class="label">Email attachments: download them here</span>
@@ -1650,7 +1657,7 @@ setTimeout(() => { const saved = store.get('dp-wh', null); if (saved && saved.le
 const MASTER_PO_DEPOTS = ['1052', '731', '1053', '1054', '960', '929', '961'];
 const STAGES = [
   { k: 'new', t: 'New refusal', late: 0, ts: 'NA', app: 'Quote Approved',
-    next: 'Fast: 1) WH confirmation to the cx (under 20 min, driver waiting), 2) warehouse email, 3) ticket + ADW email the same day. Save WH + Customer quotes in the app. Find out who pays (Diamond direct or the carrier) before the quote goes in.' },
+    next: 'Fast: 1) WH confirmation to the cx (under 20 min, driver waiting), 2) warehouse email, 3) ticket + ADW email the same day (new email in Front, tagged with the WN# and added to the Diamond Pet mailbox). Save WH + Customer quotes in the app. Find out who pays (Diamond direct or the carrier) before the quote goes in.' },
   { k: 'inbound', t: 'Heading to WH', late: 1, ts: 'NA', app: 'ETA Received',
     next: 'Get driver name, ETA and trailer # from the carrier. Tell the WH it’s coming.' },
   { k: 'atwh', t: 'At WH, counting', late: 1, ts: 'NA', app: 'ETA Received',
@@ -2275,7 +2282,7 @@ function rhythmTasks(dow) {
   const every = (key, title, how, list, extra) => t.push({ sec: 'Every day', key, title, how, list, extra });
   const day = (key, title, how, list, extra, email) => t.push({ sec: DAY_THEME[dow] || 'Today', key, title, how, list, extra, email });
 
-  every('new', 'New refusals: cx, then WH, then ADW', 'Carrier confirmation within 20 min (driver is waiting), warehouse email next, then the ticket + ADW email the same day. Under 10 damaged bags: dispose/donate, no need to wait on Thomas.', at('new'));
+  every('new', 'New refusals: cx, then WH, then ADW', 'Carrier confirmation within 20 min (driver is waiting), warehouse email next, then the ticket + ADW email the same day: new email in Front, tag the WN#, add to the Diamond Pet mailbox. Under 10 damaged bags: dispose/donate, no need to wait on Thomas.', at('new'));
   every('late', 'Clear everything overdue', 'Stuck past its stage limit. Do the next step shown, then move the stage.', open.filter(o => lateness(o).late && !['new', 'scheduled'].includes(o.stage)), o => lateness(o).msg);
   every('tomorrow', 'Reconfirm tomorrow’s deliveries', 'Call/email the WH and carrier: truck, time, confirmation # and every PO#.', open.filter(o => o.stage === 'scheduled' && o.apptDate === isoPlus(1)), o => [o.apptTime, o.conf && 'Conf ' + o.conf].filter(Boolean).join(' · '));
   every('payer', 'Confirm the carrier and who pays (Diamond direct or the carrier)', 'Ask Thomas if unsure and post the answer in the Slack channel. Carrier pays: change the Load # in the app. Then set the Pricing rule and tick Payer confirmed on the board.', open.filter(o => !o.payerOk && o.payer !== 'small'), o => (o.carrier ? 'carrier ' + o.carrier : 'carrier missing') + ' \u00b7 ' + payerTag(o));
@@ -2485,6 +2492,7 @@ function build() {
   // View Engine B32: TEXTJOIN(", ", Costco PO, Qty, Disposition, Origin, Destination - WHNow PO)
   const subject = [po, ticketQty, disp, origin, dest ? `${dest} - ${whn}` : ''].filter(Boolean).join(', ');
   $('#t-subject').textContent = subject || '—';
+  $('#t-fronttag').textContent = whn ? 'WN-' + whn : 'WN-#####';
   $('#t-whsub').textContent = `WN-${whn} Rework Diamond pet food ${ticketQty}`.trim();
 
   const team = 'diamondosd@diamondpet.com, diamondpet@warehousenow.com';
