@@ -231,6 +231,7 @@ table.trk .w-c { width: 140px; } table.trk .w-m { width: 110px; } table.trk .w-g
 table.trk .upd { color: var(--muted); font-size: .76rem; white-space: nowrap; }
 .trk-add { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .trk-add input { width: auto; min-width: 120px; flex: 0 1 200px; }
+.qbox { border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; margin-top: 10px; display: grid; gap: 8px; background: var(--sunken); }
 .mini-head, .mini-line { display: grid; grid-template-columns: minmax(0, 1.6fr) 70px minmax(0, 1fr) minmax(0, 1fr) 34px; gap: 6px; align-items: center; }
 .mini-head span { font-size: .78rem; color: var(--muted); }
 tr.hl td { background: var(--tag-soft); font-weight: 600; }
@@ -470,7 +471,7 @@ td .pre { white-space: pre-line; }
   </div>
   <div class="scroll trk-wrap"><table class="trk" id="trk-table">
     <thead><tr>
-      <th>WN#</th><th>Costco PO</th><th>SKUs <small>(sku x plts)</small></th><th class="num">Plts</th><th>Now at</th><th>Next stop</th><th>Stage</th><th>Delivery date</th><th>Time</th><th>Conf #</th><th>Master PO</th><th>Ships with</th><th>Next step</th><th>Updated</th>
+      <th>WN#</th><th>Costco PO</th><th>SKUs <small>(sku x plts)</small></th><th class="num">Plts</th><th>Now at</th><th>Next stop</th><th>Stage</th><th>Delivery date</th><th>Time</th><th>Conf #</th><th>Master PO</th><th>Ships with</th><th>Next step</th><th class="num">Quote</th><th>Updated</th>
     </tr></thead>
     <tbody id="trk-body"></tbody>
   </table></div>
@@ -1087,7 +1088,7 @@ const skuBy = c => D.skus.find(s => s.costco === String(c));
 /* ---------- triage ---------- */
 const CASES = [
   { id: 'rework', t: 'Damaged pallets', s: 'Standard rework, ~87% of tickets',
-    steps: ['The carrier usually emails Diamond OS&D + WarehouseNow "Kindly advise disposition". Requests@ replies "We are looking into this now and will advise shortly"', 'Confirm #qb-team opened the Slack channel / AT order', 'Collect BOL, receiver rejection sticker and pallet photos from the carrier', 'Decode the depot from the Costco PO and find the go-to WH (e.g. Frederick MD → Runners Inc)', 'FAST (aim for under 20 min): send the WH address to the cx, the customer (usually the carrier): name, address, hours, check-in WN#. Ask for driver info + ETA', 'FAST: email the WH with the WN#, pallets, SKUs, paperwork + photos so they know what\u2019s coming. Pin the subject in Slack', 'Save the Warehouse Quote in the app (e.g. GEF: $5 unload, $5 reload, $55 rework)', 'Make the ticket in Diamond\u2019s sheet', 'NEXT PRIORITY, same day: report to ADW. Email the ticket, WH address, BOL, SKU page and photos to the depot\u2019s ADW contacts + Diamond OS&D + diamondpet@', 'In the WarehouseNow app save the Customer Quote (unload $12.50 + reload $12.50 + rework $65 per pallet, redelivery $400) and the Warehouse Quote. That marks the order approved', 'Watch the ADW email thread for replies', 'Get arrival photos + rework timing from the WH and post them in Slack', 'Get the count by SKU / Item ID (color) and check it against the ticket. Tell ADW if it changes', 'Damaged bags under 10: ALWAYS dispose/donate. Don\u2019t wait for Thomas. Tell the WH to go ahead', 'Get reworked pallet photos. Status → Ready', 'Book the appointment in the Costco portal (2+ days out). Status → Requested', 'On APPROVED / APPT REVISED, send confirmation #, time and exact PO#s. Status → Scheduled', 'After delivery get the POD with the sticker listing all PO#s. Status → Delivered', 'Confirm who pays (Diamond or the carrier) from the email chain and post it in the channel for Mariah', 'Set Customer + Warehouse Final Cost in the app. App: Complete → Invoiced', 'Enter charges in the Ticket System. Status → Invoiced'],
+    steps: ['The carrier usually emails Diamond OS&D + WarehouseNow "Kindly advise disposition". Requests@ replies "We are looking into this now and will advise shortly"', 'Confirm #qb-team opened the Slack channel / AT order', 'Collect BOL, receiver rejection sticker and pallet photos from the carrier', 'Decode the depot from the Costco PO and find the go-to WH (e.g. Frederick MD → Runners Inc)', 'FAST (aim for under 20 min): send the WH address to the cx, the customer (usually the carrier): name, address, hours, check-in WN#. Ask for driver info + ETA', 'FAST: email the WH with the WN#, pallets, SKUs, paperwork + photos so they know what\u2019s coming. Pin the subject in Slack', 'Save the Warehouse Quote in the app (e.g. GEF: $5 unload, $5 reload, $55 rework)', 'Make the ticket in Diamond\u2019s sheet', 'NEXT PRIORITY, same day: report to ADW. Email the ticket, WH address, BOL, SKU page and photos to the depot\u2019s ADW contacts + Diamond OS&D + diamondpet@', 'In the WarehouseNow app save the Customer Quote (unload $12.50 + reload $12.50 + rework $65 per pallet, redelivery $400) and the Warehouse Quote. That marks the order approved', 'Watch the ADW email thread for replies', 'Get arrival photos + rework timing from the WH and post them in Slack', 'Get the count by SKU / Item ID (color) and check it against the ticket. Tell ADW if it changes', 'Damaged bags under 10: ALWAYS dispose/donate. Don\u2019t wait for Thomas. Tell the WH to go ahead', 'Get reworked pallet photos. Status → Ready', 'Update the quote in the app to the actual counts (pallets reworked, bags disposed). Use the Quote box on the Order board', 'Book the appointment in the Costco portal (2+ days out). Status → Requested', 'On APPROVED / APPT REVISED, send confirmation #, time and exact PO#s. Status → Scheduled', 'After delivery get the POD with the sticker listing all PO#s. Status → Delivered', 'Confirm who pays (Diamond or the carrier) from the email chain and post it in the channel for Mariah', 'Set Customer + Warehouse Final Cost in the app. App: Complete → Invoiced', 'Enter charges in the Ticket System. Status → Invoiced'],
     side: [['ok', 'Bill: $25/plt handling + $65/plt rework + $400 redelivery.'], ['', 'Real example: Costco PO 10520914317, 2 pallets damaged, Pace Logistics from Gaston SC → Frederick depot (1052) → Runners Inc (RUN-FRE-MD), WN# 12840. Ticket went to Krista Davidson + Jenniffer Vasiento.'], ['', 'If the depot is on Master POs (Mira Loma), hold the pallets and use the Wednesday cycle instead of booking right away.']] },
   { id: 'hold', t: 'FTL on the PO / BOL', s: 'Normal order. Coverage + Ops run it',
     steps: ['YOU: reply-all to Thomas and the carrier. Received, it’s being handled, WN# to follow', 'CHECK: does the PO / BOL / carrier’s paperwork say "FTL"? If yes, it’s a NORMAL order. If it lists a pallet count (even 31 or 37), use the Diamond process (ticket, ADW, Diamond rates)', 'YOU: in the order’s Slack channel, confirm it’s a NORMAL order (FTL). Diamond’s fixed $25/$65/$400 rates don’t apply', 'COVERAGE (e.g. @east-coverage): source a warehouse near the refusal point and a backup. Go to Warehouses only covers Costco depots', 'COVERAGE / OPS: get WH rates, save the Warehouse Quote, and build the Customer Quote on the normal lines: Handling, Rework ($0 if none), Storage, Redelivery', 'OPS: send the carrier the confirmation (WH, address, hours, check-in WN#), get ETA, have the WH photograph every pallet and the trailer floor', 'YOU: ask Thomas who pays (a trailer defect may be on the carrier). Post the answer in the channel', 'YOU: request the next available appointment in the customer\u2019s portal right away (Chewy: chewy.custhelp.com/app/scheduling_portal, see the Appointments tab). Thomas can push for earlier once there\u2019s a request in', 'OPS / WH: get the redelivery carrier name and DOT # for the appointment request', 'YOU: reply-all to Thomas with a screenshot of the confirmation and reference #: "Appointment has been requested and I will confirm once approved." Chewy answers within 2 business days', 'YOU: when Chewy approves, confirm the date and time to Thomas, the WH and the carrier', 'OPS: hold, book the reload/redelivery for the appointment, get the POD', 'YOU: keep Thomas updated (received, scheduled, delivered) and pass anything Diamond asks to the channel', 'Track it on the Order board, but Ops owns the day-to-day. Step in only for Diamond-side questions'],
@@ -1454,7 +1455,7 @@ const STAGES = [
   { k: 'atwh', t: 'At WH, counting', late: 1, ts: 'NA', app: 'ETA Received',
     next: 'Get arrival photos and the count by SKU / color. If it differs from the ticket, confirm with the WH, then tell ADW.' },
   { k: 'rework', t: 'Being reworked', late: 2, ts: 'NA', app: 'ETA Received',
-    next: 'Get reworked-pallet photos and how many pallets are ready vs disposed.' },
+    next: 'Get reworked-pallet photos and how many pallets are ready vs disposed. When rework is done, update the quote (pallets reworked, bags disposed).' },
   { k: 'ready', t: 'Ready, need PO', late: 2, ts: 'Ready', app: 'ETA Received',
     next: 'master' },
   { k: 'requested', t: 'Appt requested', late: 2, ts: 'Requested', app: 'ETA Received',
@@ -1490,13 +1491,32 @@ function decode(po) {
   const depot = depotFor(po); const dest = depot?.city || ''; const wh = warehouseFor(dest);
   return { depotCode: depot?.code || '', depotName: depot?.facility || '', dest, wh: wh ? wh.code : '' };
 }
+// Quote from actual counts. Diamond direct / carrier / <5 bags use the fixed rules; FTL (normal order) is quoted by hand from the WH
+function calcQuote(o) {
+  const payer = o.payer || 'diamond';
+  const h = o.qHandled ?? o.pallets ?? 0, r = o.qReworked ?? o.pallets ?? 0;
+  const del = o.qDelivery || (o.masterPo || o.group ? 'shared' : 'own');
+  const ltl = +o.qLTL || 0;
+  if (payer === 'normal') return { lines: [['FTL / normal order: quote by hand from the WH rates (Handling, Rework, Storage, Redelivery)', null]], total: null };
+  let lines = [];
+  if (payer === 'small') { if (del === 'own') lines.push(['Delivery (< 5 bags)', 500]); }
+  else if (payer === 'carrier') { lines = [[`Unload ${h} × $15`, h * 15], [`Reload ${h} × $15`, h * 15], [`Rework ${r} × $65`, r * 65]]; if (del === 'own') lines.push(['Delivery (only if Thomas asked)', 400]); }
+  else {
+    lines = [[`Unloading ${h} × $12.50`, h * 12.5], [`Reloading ${h} × $12.50`, h * 12.5], [`Rework ${r} × $65`, r * 65]];
+    if (del === 'own') lines.push(['Redelivery', 400]);
+    else if (del === 'shared') lines.push([`Redelivery: rides ${o.masterPo ? 'master PO ' + o.masterPo : 'a master PO'}${o.qDeliveryOn ? ' (charged on WN ' + o.qDeliveryOn + ')' : ''}`, 0]);
+    if (o.qOT) lines.push(['OT / weekend call', 200]);
+  }
+  if (ltl) lines.push(['LTL', ltl]);
+  return { lines, total: lines.reduce((a, l) => a + (l[1] || 0), 0) };
+}
 function nextFor(o) {
   const st = stageOf(o.stage);
   if (st.next !== 'master') return st.next;
   const contacts = adwwFor(o.depotCode).map(r => r.name.trim()).join(' / ') || 'ADW';
-  return MASTER_PO_DEPOTS.includes(o.depotCode)
+  return (MASTER_PO_DEPOTS.includes(o.depotCode)
     ? `Master PO depot. Hold it and add it to the Wednesday request (${nextWednesday()}). When Diamond sends the Master PO, request the appointment.`
-    : `Ask ${contacts} to refresh the PO for delivery this week, then request the appointment in the portal.`;
+    : `Ask ${contacts} to refresh the PO for delivery this week, then request the appointment in the portal.`) + (o.quoteUpdated ? '' : ' Update the app quote to the actual reworked count if you haven\u2019t.');
 }
 function lateness(o) {
   const st = stageOf(o.stage);
@@ -1517,6 +1537,7 @@ const writeQ = {};
 const nowAt = o => ({ new: 'On carrier trailer', inbound: 'Carrier → ' + (o.wh || 'WH'), delivered: 'Delivered to depot', closeout: 'Delivered to depot', done: 'Delivered / invoiced', disposed: 'Disposed' }[o.stage] || o.wh || 'Warehouse');
 const nextStop = o => ['done', 'disposed'].includes(o.stage) ? '—' : ['delivered', 'closeout'].includes(o.stage) ? 'Close out (POD, invoice)' : ['new', 'inbound'].includes(o.stage) ? (o.wh || 'WH to be sourced') : (o.dest || o.depotName || 'Depot');
 const fmtUpd = o => { const d = o.updated ? new Date(o.updated) : null; return d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''; };
+const openCards = new Set();
 let myId = null; const names = {}; let userNs = null;
 function save(id, patch) {
   orders[id] = { ...orders[id], ...patch, updated: new Date().toISOString(), ...(myId ? { updatedBy: myId } : {}) };
@@ -1554,6 +1575,32 @@ $('#b-mode').textContent = 'Connecting to the saved board…';
 })();
 ['#board', '#tracker'].forEach(sel => $(sel).addEventListener('focusout', () => { if (pendingRender) { pendingRender = false; setTimeout(renderBoard, 0); } }));
 
+function quoteBlock(o, dis) {
+  const q = calcQuote(o), del = o.qDelivery || (o.masterPo || o.group ? 'shared' : 'own');
+  const margin = q.total != null && o.whFinal != null ? q.total - o.whFinal : (o.custFinal != null && o.whFinal != null ? o.custFinal - o.whFinal : null);
+  const opt = (v, t, cur) => `<option value="${v}" ${v === cur ? 'selected' : ''}>${t}</option>`;
+  return `<div class="qbox">
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline"><span class="label">Quote: update when reworked and again at closeout</span>${o.quoteUpdated ? `<span class="pill ok">Updated ${esc(o.quoteUpdated)}</span>` : '<span class="pill wait">Not updated yet</span>'}</div>
+    <div class="row2">
+      <div class="field"><label>Pricing rule</label><select data-f="payer" ${dis}>${opt('diamond', 'Diamond direct', o.payer || 'diamond')}${opt('carrier', 'Carrier pays', o.payer)}${opt('small', '< 5 bags', o.payer)}${opt('normal', 'Normal order (FTL)', o.payer)}</select></div>
+      <div class="field"><label>Pallets handled</label><input type="number" min="0" data-f="qHandled" value="${esc(o.qHandled ?? '')}" placeholder="${esc(o.pallets ?? '')}" ${dis}></div>
+      <div class="field"><label>Pallets reworked</label><input type="number" min="0" data-f="qReworked" value="${esc(o.qReworked ?? '')}" placeholder="${esc(o.pallets ?? '')}" ${dis}></div>
+      <div class="field"><label>Bags disposed</label><input type="number" min="0" data-f="qDisposed" value="${esc(o.qDisposed ?? '')}" ${dis}></div>
+      <div class="field"><label>Delivery</label><select data-f="qDelivery" ${dis}>${opt('own', 'Own appointment ($400)', del)}${opt('shared', 'Rides a master PO', del)}${opt('none', 'No delivery', del)}</select></div>
+      <div class="field"><label>Delivery charged on WN#</label><input type="text" data-f="qDeliveryOn" value="${esc(o.qDeliveryOn || '')}" placeholder="if shared" ${dis}></div>
+      <div class="field"><label>LTL ($)</label><input type="number" min="0" data-f="qLTL" value="${esc(o.qLTL ?? '')}" ${dis}></div>
+      <label class="check-inline" style="align-self:end"><input type="checkbox" data-f="qOT" ${o.qOT ? 'checked' : ''} ${dis}> OT / weekend</label>
+    </div>
+    <div class="money">${q.lines.map(([k, x]) => `<span>${esc(k)}</span><span>${x == null ? '' : fmt$(x)}</span>`).join('')}${q.total != null ? `<span class="tot">Customer quote</span><span class="tot">${fmt$(q.total)}</span>` : ''}</div>
+    <div class="row2">
+      <div class="field"><label>Customer final ($)</label><input type="number" min="0" data-f="custFinal" value="${esc(o.custFinal ?? '')}" ${dis}></div>
+      <div class="field"><label>Warehouse final ($)</label><input type="number" min="0" data-f="whFinal" value="${esc(o.whFinal ?? '')}" ${dis}></div>
+      <div class="field"><label>Margin</label><span class="v" style="padding:8px 0;font-weight:700;color:${margin == null ? 'var(--muted)' : margin >= 0 ? 'var(--ok)' : 'var(--bad)'}">${margin == null ? '—' : fmt$(margin)}</span></div>
+    </div>
+    ${readOnly ? '' : `<div style="display:flex;gap:8px;flex-wrap:wrap">${q.total != null ? `<button class="btn" type="button" data-act="usequote">Use ${fmt$(q.total)} as Customer final</button>` : ''}<button class="btn primary" type="button" data-act="quoted">I updated the quote in the app</button></div>`}
+    <p class="meta" style="font-size:.8rem">In the app: update the Customer Quote lines to these counts and set Customer + Warehouse Final Cost. If the delivery rides a master PO, charge the $400 once (on one WN) and write "Incl WN-####" on the others in Diamond\u2019s Ticket System.</p>
+  </div>`;
+}
 function renderBoard() {
   const all = Object.entries(orders).map(([id, o]) => ({ id, ...o }));
   const open = all.filter(o => !CLOSED.includes(o.stage));
@@ -1650,7 +1697,7 @@ function renderBoard() {
         <label class="meta" style="display:flex;gap:6px;align-items:center">Stage <select data-f="stage" ${dis}>${stageOpts(o.stage)}</select></label>
       </div>
       ${showCo ? `<div class="stack" style="gap:2px"><span class="label">Closeout ${coDone}/${CLOSEOUT.length}</span><ol class="check">${CLOSEOUT.map(([k, t]) => `<li class="${co[k] ? 'done' : ''}"><input type="checkbox" id="co-${esc(o.id)}-${k}" data-co="${k}" ${co[k] ? 'checked' : ''} ${dis}><label for="co-${esc(o.id)}-${k}">${esc(t)}</label></li>`).join('')}</ol></div>` : ''}
-      <details><summary>Details</summary>
+      <details ${openCards.has(o.id) ? 'open' : ''}><summary>Details</summary>
         <div class="row2">
           <div class="field"><label>Costco PO</label><input type="text" class="po" data-f="po" value="${esc(o.po || '')}" ${dis}></div>
           <div class="field"><label>Qty</label><input type="text" data-f="qty" value="${esc(o.qty || '')}" ${dis}></div>
@@ -1661,9 +1708,8 @@ function renderBoard() {
           <div class="field"><label>Appt date</label><input type="date" data-f="apptDate" value="${esc(o.apptDate || '')}" ${dis}></div>
           <div class="field"><label>Appt time</label><input type="text" data-f="apptTime" value="${esc(o.apptTime || '')}" placeholder="08:00" ${dis}></div>
           <div class="field"><label>Confirmation #</label><input type="text" class="po" data-f="conf" value="${esc(o.conf || '')}" ${dis}></div>
-          <div class="field"><label>Customer final ($)</label><input type="number" min="0" data-f="custFinal" value="${esc(o.custFinal ?? '')}" ${dis}></div>
-          <div class="field"><label>Warehouse final ($)</label><input type="number" min="0" data-f="whFinal" value="${esc(o.whFinal ?? '')}" ${dis}></div>
         </div>
+        ${quoteBlock(o, dis)}
         <div class="field" style="margin-top:8px"><label>Next step (leave blank for the default)</label><input type="text" data-f="nextNote" value="${esc(o.nextNote || '')}" ${dis}></div>
         <div class="field" style="margin-top:8px"><label>Notes</label><textarea rows="2" data-f="notes" style="font-family:var(--body);font-size:.9rem" ${dis}>${esc(o.notes || '')}</textarea></div>
         <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="meta">Updated ${esc((o.updated || '').slice(0, 10))}</span>${readOnly ? '' : `<button class="btn" type="button" data-act="delete">Delete</button><span class="meta" data-confirm hidden>Delete WN ${esc(o.wn)}? <button class="btn" type="button" data-act="delete-yes">Yes, delete</button></span>`}</div>
@@ -1708,8 +1754,9 @@ function renderTracker() {
       <td>${stageSel}</td><td>${inp(o, 'apptDate', 'w-d', '', 'date')}</td><td>${inp(o, 'apptTime', 'w-t', '08:00')}</td><td>${inp(o, 'conf', 'w-c po')}</td>
       <td>${inp(o, 'masterPo', 'w-m po')}</td><td>${inp(o, 'group', 'w-g')}</td>
       <td>${inp(o, 'nextNote', 'w-nx', nextFor(o))}</td>
+      <td class="num" style="white-space:nowrap;font-size:.8rem">${o.custFinal != null ? fmt$(o.custFinal) + ' final' : (calcQuote(o).total != null ? fmt$(calcQuote(o).total) + ' est' : '—')}${o.quoteUpdated ? ' ✓' : ''}</td>
       <td class="upd" ${o.updatedBy ? `data-uid="${esc(o.updatedBy)}" data-when="${esc(when)}"` : ''}>${esc(when + (who ? ' · ' + who : ''))}</td></tr>`;
-  }).join('') || `<tr><td colspan="14" style="color:var(--muted);padding:12px">${Object.keys(orders).length ? 'No orders match.' : 'No orders yet. Add the first one below.'}</td></tr>`;
+  }).join('') || `<tr><td colspan="15" style="color:var(--muted);padding:12px">${Object.keys(orders).length ? 'No orders match.' : 'No orders yet. Add the first one below.'}</td></tr>`;
   $('#trk-add').hidden = readOnly;
   $('#t-mode').textContent = $('#b-mode').textContent;
   resolveNames(rows.map(o => o.updatedBy));
@@ -1740,7 +1787,7 @@ $('#trk-add').addEventListener('submit', e => {
 $('#trk-csv').addEventListener('click', () => {
   const cols = [['WN#', o => o.wn], ['Costco PO', o => o.po], ['SKUs', o => o.skus || o.qty], ['Pallets', o => o.pallets], ['Now at', o => o.loc || nowAt(o)], ['Next stop', o => o.nextStop || nextStop(o)],
     ['Stage', o => stageOf(o.stage).t], ['Delivery date', o => o.apptDate], ['Time', o => o.apptTime], ['Conf #', o => o.conf], ['Master PO', o => o.masterPo], ['Ships with', o => o.group],
-    ['Next step', o => o.nextNote || nextFor(o)], ['Warehouse', o => o.wh], ['Depot', o => [o.depotCode, o.dest].filter(Boolean).join(' ')], ['Updated', o => o.updated]];
+    ['Next step', o => o.nextNote || nextFor(o)], ['Customer quote', o => o.custFinal ?? calcQuote(o).total], ['Quote updated', o => o.quoteUpdated], ['Warehouse', o => o.wh], ['Depot', o => [o.depotCode, o.dest].filter(Boolean).join(' ')], ['Updated', o => o.updated]];
   const cell = v => { v = String(v ?? ''); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
   const csv = [cols.map(c => c[0]).join(','), ...trackerRows().map(o => cols.map(c => cell(c[1](o))).join(','))].join('\n');
   saveFile(`diamond-tracker-${todayISO()}.csv`, new Blob([csv], { type: 'text/csv' }));
@@ -1767,10 +1814,16 @@ $('#b-add').addEventListener('submit', e => {
   save(id, { wn, po, qty: $('#b-qty').value.trim(), pallets: +$('#b-plts').value || 0, payer: $('#b-payer').value, stage: $('#b-stage').value, stageSince: todayISO(), ...d, wh: wh || d.wh, closeout: {}, created: new Date().toISOString() });
   e.target.reset(); delete $('#b-fromtk').dataset.used; showDecode(); toast(`Added WN ${wn}`);
 });
+$('#b-list').addEventListener('toggle', e => {
+  const card = e.target.closest?.('.ord'); if (!card || e.target.tagName !== 'DETAILS') return;
+  if (e.target.open) openCards.add(card.dataset.id); else openCards.delete(card.dataset.id);
+}, true);
 $('#b-list').addEventListener('click', e => {
   const card = e.target.closest('.ord'); if (!card || readOnly) return;
   const id = card.dataset.id, o = orders[id], act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'advance') { const i = stageIdx(o.stage); save(id, { stage: STAGES[i + 1].k, stageSince: todayISO() }); }
+  if (act === 'usequote') { const q = calcQuote(o); if (q.total != null) save(id, { custFinal: q.total }); }
+  if (act === 'quoted') save(id, { quoteUpdated: todayISO(), closeout: ['delivered', 'closeout', 'done'].includes(o.stage) ? { ...(o.closeout || {}), quote: true } : (o.closeout || {}) });
   if (act === 'invoiced') {
     const left = CLOSEOUT.filter(([k]) => !(o.closeout || {})[k]).length;
     if (left) { toast(`${left} closeout step${left === 1 ? '' : 's'} left`); return; }
@@ -1784,8 +1837,8 @@ $('#b-list').addEventListener('change', e => {
   const id = card.dataset.id, o = orders[id];
   if (e.target.dataset.co) { save(id, { closeout: { ...(o.closeout || {}), [e.target.dataset.co]: e.target.checked } }); return; }
   const f = e.target.dataset.f; if (!f) return;
-  let val = e.target.value.trim();
-  if (['pallets', 'custFinal', 'whFinal'].includes(f)) val = val === '' ? null : +val;
+  let val = e.target.type === 'checkbox' ? e.target.checked : e.target.value.trim();
+  if (['pallets', 'custFinal', 'whFinal', 'qHandled', 'qReworked', 'qDisposed', 'qLTL'].includes(f)) val = val === '' ? null : +val;
   if (f === 'po') { val = val.replace(/\D/g, '').replace(/^0+/, ''); save(id, { po: val, ...decode(val), wh: o.wh || decode(val).wh }); return; }
   if (f === 'stage') { save(id, { stage: val, stageSince: todayISO() }); return; }
   if ((o[f] ?? '') === (val ?? '')) return;
