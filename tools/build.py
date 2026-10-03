@@ -12,6 +12,11 @@ root = Path(__file__).resolve().parent.parent
 data = subprocess.run([sys.executable, str(root / "tools/extract_data.py"), sys.argv[1]],
                       check=True, capture_output=True, text=True).stdout
 data = json.dumps(json.loads(data), separators=(",", ":")).replace("</", "<\\/")
-page = (root / "src/playbook.html").read_text().replace("/*DATA*/", data)
+# Optional snapshot of the live tracker (tools: ArtifactData list -> snapshot/orders/*.json), shown when the live data can't load
+snap_dir = root / "snapshot" / "orders"
+orders = {f.stem: json.loads(f.read_text()) for f in sorted(snap_dir.glob("*.json"))} if snap_dir.exists() else {}
+as_of = max((o.get("updated", "") for o in orders.values()), default="")[:10]
+snap = json.dumps({"asOf": as_of, "orders": orders}, separators=(",", ":")).replace("</", "<\\/")
+page = (root / "src/playbook.html").read_text().replace("/*DATA*/", data).replace("/*SNAP*/", snap)
 (root / "diamond-playbook.html").write_text(page)
 print("wrote diamond-playbook.html", len(page), "bytes")

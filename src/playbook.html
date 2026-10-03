@@ -1028,6 +1028,7 @@ Jacob</div><button class="btn" type="button" data-copy="wed-email">Copy</button>
 </main>
 
 <script id="data" type="application/json">/*DATA*/</script>
+<script id="snap" type="application/json">/*SNAP*/</script>
 <script>
 (() => {
 const D = JSON.parse(document.getElementById('data').textContent);
@@ -1580,8 +1581,15 @@ function remove(id) {
   delete orders[id]; renderBoard();
   writeQ[id] = (writeQ[id] || Promise.resolve()).then(() => backend.del(id)).catch(() => toast('Couldn’t delete. Try again.'));
 }
+let SNAP = {}; try { SNAP = JSON.parse(document.getElementById('snap').textContent || '{}'); } catch { SNAP = {}; }
+let usingSnap = false;
 const local = {
-  load() { orders = store.get('dp-orders', {}); renderBoard(); },
+  load() {
+    const saved = store.get('dp-orders', null);
+    if (saved && Object.keys(saved).length) orders = saved;
+    else { orders = { ...(SNAP.orders || {}) }; usingSnap = Object.keys(orders).length > 0; }
+    renderBoard();
+  },
   put() { store.set('dp-orders', orders); return Promise.resolve(); },
   del() { store.set('dp-orders', orders); return Promise.resolve(); },
 };
@@ -1590,7 +1598,12 @@ $('#b-mode').textContent = 'Connecting to the saved board…';
 (async () => {
   let db = null;
   try { db = await (window.claude?.use?.('db') ?? null); } catch { db = null; }
-  if (!db) { $('#b-mode').textContent = 'Saved in this browser only. Open the claude.ai link to use the shared board.'; return; }
+  if (!db) {
+    $('#b-mode').textContent = usingSnap
+      ? `Snapshot of the live tracker from ${SNAP.asOf || 'the last update'}. Changes here save only in this browser. Open the claude.ai link for the live version.`
+      : 'Saved in this browser only. Open the claude.ai link to use the shared board.';
+    renderTracker(); return;
+  }
   try { userNs = await (window.claude?.use?.('user') ?? null); myId = userNs ? await userNs.id() : null; } catch { userNs = null; }
   const col = db.collection('orders');
   backend = { put: (id, body) => col.doc(id).set(body), del: id => col.doc(id).delete() };
