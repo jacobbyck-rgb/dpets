@@ -293,6 +293,20 @@ tr.hl td { background: var(--tag-soft); font-weight: 600; }
 .day:last-child { border-right: 0; }
 .day.hl { background: var(--tag-soft); }
 .day h3 { font-size: 1.1rem; }
+button.day { font: inherit; color: inherit; text-align: left; border: 0; border-right: 1px solid var(--line); background: none; cursor: pointer; }
+button.day:last-child { border-right: 0; }
+button.day[aria-pressed="true"] { box-shadow: inset 0 -3px 0 var(--tag); }
+.day .cnt { font-size: .85rem; color: var(--muted); }
+.day .cnt b { color: var(--ink); }
+.rtask { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 6px; }
+.rtask.done { opacity: .6; }
+.rtask.done .rt-h label { text-decoration: line-through; }
+.rtask .rt-h { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: start; }
+.rtask .rt-h label { font-weight: 600; }
+.rtask .rt-list { font-size: .88rem; display: grid; gap: 3px; padding-left: 28px; }
+.rtask .rt-how { font-size: .85rem; color: var(--muted); padding-left: 28px; }
+.rtask textarea { width: 100%; font: .82rem/1.4 var(--mono, monospace); }
+.rt-sec { font: 600 .8rem/1 var(--display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
 .day ul { margin: 0; padding-left: 16px; font-size: .9rem; display: grid; gap: 4px; }
 
 /* Reference */
@@ -974,35 +988,14 @@ td .pre { white-space: pre-line; }
     <h2>Weekly rhythm</h2>
     <p class="lede">New refusals show up any day. On top of that, Jan Tappel set a fixed weekly cycle for depots that run on Master POs: <strong>rework and hold for up to a week, then request one Master PO every Wednesday.</strong></p>
   </div>
-  <div class="week">
-    <div class="day"><span class="label">Mon</span><h3>Intake</h3><ul><li>Refused product arrives at WHs</li><li>Unload + rework</li><li>Log every WN# and Costco PO</li></ul></div>
-    <div class="day"><span class="label">Tue</span><h3>Intake</h3><ul><li>Same as Monday</li><li>Chase reworked-pallet photos</li><li>Confirm bag counts by SKU</li></ul></div>
-    <div class="day hl"><span class="label">Wed</span><h3>Master PO day</h3><ul><li>List the refused pallets held this week</li><li>Email Diamond the WN#/PO pairs</li><li>Ask for a Master PO covering them (Copy master PO list on the board)</li><li>Check for other held POs at the same WH to add</li><li>Then book the delivery</li></ul></div>
-    <div class="day"><span class="label">Thu</span><h3>Appointments</h3><ul><li>Request the Master PO appointment in the portal</li><li>Follow up on pending approvals</li></ul></div>
-    <div class="day"><span class="label">Fri</span><h3>Close out</h3><ul><li>Chase PODs</li><li>Move Delivered → Invoiced</li><li>Update the takeover tracker</li></ul></div>
-  </div>
-  <div class="grid2">
-    <div class="card stack">
-      <h3>Wednesday email</h3>
-      <div class="copyrow"><div class="box" id="wed-email" style="white-space:pre-line">Subject: Master PO request – refused Diamond pallets week of [date]
-
-Hi Jan,
-
-Per the weekly process, here are the refused POs we reworked and are holding this week:
-
-WN-123 – Costco PO XXXXXXXXXX – [pallets]
-WN-456 – Costco PO XXXXXXXXXX – [pallets]
-
-Can we get a Master PO for these so we can schedule delivery?
-
-Thanks,
-Jacob</div><button class="btn" type="button" data-copy="wed-email">Copy</button></div>
+  <div class="week" id="rh-week" role="group" aria-label="Pick a day"></div>
+  <div class="card stack" id="rh-today">
+    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline">
+      <h3 id="rh-title">Today</h3><span class="meta" id="rh-prog"></span>
     </div>
-    <div class="card stack">
-      <h3>Daily checklist</h3>
-      <ol class="check" id="daily"></ol>
-      <p style="font-size:.82rem;color:var(--muted)">Ticks are saved in this browser only.</p>
-    </div>
+    <p class="meta" id="rh-sub" style="font-size:.88rem"></p>
+    <div class="stack" id="rh-tasks"></div>
+    <p class="meta" id="rh-save" style="font-size:.8rem"></p>
   </div>
   <div class="note"><b>Jan's rule, in her words:</b> "Rework and hold the refused product for one week and once a week on Wednesday, review the refused pallets and po numbers and request master po's for whatever was refused during the one week period." Mira Loma, CA uses Master POs. New Jersey and Texas don't always.</div>
 </section>
@@ -1783,6 +1776,7 @@ function quoteBlock(o, dis) {
   </div>`;
 }
 function renderBoard() {
+  if (typeof renderRhythm === 'function') setTimeout(renderRhythm, 0);
   const all = Object.entries(orders).map(([id, o]) => ({ id, ...o }));
   const open = all.filter(o => !CLOSED.includes(o.stage));
   // stage bar
@@ -2097,20 +2091,148 @@ $('#b-list').addEventListener('change', e => {
   save(id, { [f]: val });
 });
 
-/* ---------- daily checklist ---------- */
-const DAILY = ['New refusal in? cx first (under 20 min), then the WH, then ADW', 'Open the Order board and clear everything under Needs action', 'Scan #diamond-deliveries for new refusals and updates', 'Every open load has both a Costco PO and a WHNow PO', 'Chase arrival / rework photos from WHs. Set a Slack reminder for each follow-up', 'Check pending appointments in the Costco portal (Manual Appt Follow up)', 'Send confirmation #s for newly approved appointments', 'Chase PODs for yesterday’s deliveries', 'Update statuses in the Ticket System', 'Log anything new in the Live Case Log'];
-const today = new Date().toISOString().slice(0, 10);
-let ticks = store.get('dp-daily', {});
-if (ticks.day !== today) ticks = { day: today, done: [] };
-function renderDaily() {
-  $('#daily').innerHTML = DAILY.map((s, i) => `<li class="${ticks.done.includes(i) ? 'done' : ''}"><input type="checkbox" id="dd-${i}" data-i="${i}" ${ticks.done.includes(i) ? 'checked' : ''}><label for="dd-${i}">${esc(s)}</label></li>`).join('');
+/* ---------- weekly rhythm: today's to-do, built from the live orders ---------- */
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_THEME = { 1: 'Intake + rework', 2: 'Intake + rework', 3: 'Master PO day', 4: 'Appointments', 5: 'Close out' };
+const isoPlus = n => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+// team format: "WN-#### // N PALLETS // SKU ######", one line per SKU
+function teamLines(o) {
+  const pl = n => `${n} PALLET${+n === 1 ? '' : 'S'}`;
+  const q = String(o.skus || o.qty || '');
+  const multi = [...q.matchAll(/\b(\d{4,9})\s*x\s*(\d+)/gi)];
+  if (multi.length) return multi.map(m => `WN-${o.wn || '?'} // ${pl(m[2])} // SKU ${m[1]}`);
+  const one = q.match(/(?:item|sku)\s*#?\s*(\d{4,9})/i);
+  return [`WN-${o.wn || '?'} // ${pl(o.pallets || '?')}${one ? ' // SKU ' + one[1] : ''}`];
 }
-$('#daily').addEventListener('change', e => {
-  const i = +e.target.dataset.i;
-  ticks.done = e.target.checked ? [...new Set([...ticks.done, i])] : ticks.done.filter(x => x !== i);
-  store.set('dp-daily', ticks); renderDaily();
+const wnBtn = o => `<button type="button" class="linkbtn" data-open="${esc(o.id)}">${esc(o.wn && o.wn !== '?' ? 'WN ' + o.wn : o.id)}</button>`;
+const oneLine = (o, extra) => `<span>${wnBtn(o)} · ${esc([o.po, o.pallets ? plural(+o.pallets, 'pallet') : '', o.wh, o.depotCode ? o.depotCode + ' ' + (o.depotName || o.dest || '') : o.dest].filter(Boolean).join(' · '))}${extra ? ' · ' + esc(extra) : ''}</span>`;
+const holdsForMaster = o => MASTER_PO_DEPOTS.includes(o.depotCode) || !!o.group;
+
+// each task: key, title, how, orders (auto) or static, optional email
+function rhythmTasks(dow) {
+  const open = Object.entries(orders).map(([id, o]) => ({ id, ...o })).filter(o => !CLOSED.includes(o.stage));
+  const at = (...st) => open.filter(o => st.includes(o.stage));
+  const t = [];
+  const every = (key, title, how, list, extra) => t.push({ sec: 'Every day', key, title, how, list, extra });
+  const day = (key, title, how, list, extra, email) => t.push({ sec: DAY_THEME[dow] || 'Today', key, title, how, list, extra, email });
+
+  every('new', 'New refusals: cx, then WH, then ADW', 'Carrier confirmation within 20 min (driver is waiting), warehouse email next, then the ticket + ADW email the same day. Under 10 damaged bags: dispose/donate, no need to wait on Thomas.', at('new'));
+  every('late', 'Clear everything overdue', 'Stuck past its stage limit. Do the next step shown, then move the stage.', open.filter(o => lateness(o).late && !['new', 'scheduled'].includes(o.stage)), o => lateness(o).msg);
+  every('tomorrow', 'Reconfirm tomorrow’s deliveries', 'Call/email the WH and carrier: truck, time, confirmation # and every PO#.', open.filter(o => o.stage === 'scheduled' && o.apptDate === isoPlus(1)), o => [o.apptTime, o.conf && 'Conf ' + o.conf].filter(Boolean).join(' · '));
+  every('portal', 'Refresh requested appointments in the Costco portal', 'Look for APPROVED or APPT REVISED. Approved: move to Scheduled and send the confirmation # to the WH and carrier.', at('requested'), o => 'requested for ' + (o.apptDate || '?'));
+
+  if (dow === 1 || dow === 2) {
+    day('inbound', 'Loads heading to a WH: get driver, ETA, trailer #', 'Tell the WH what’s coming and when.', at('inbound'));
+    day('atwh', 'Arrived: get photos and the count by SKU', 'If the count differs from the ticket, confirm with the WH, then tell ADW.', at('atwh'));
+    day('rework', 'In rework: chase reworked-pallet photos', 'Get pallets ready vs bags disposed. When done, move to Ready and update the quote.', at('rework'));
+    const wed = open.filter(o => holdsForMaster(o) && !o.masterPo && ['atwh', 'rework', 'ready'].includes(o.stage));
+    day('lineup', `Line up Wednesday’s master PO list (${nextWednesday()})`, 'Everything below should be reworked and at Ready by Wednesday morning. Push the WH on anything still in rework.', wed, o => stageOf(o.stage).t);
+  }
+  if (dow === 3) {
+    const ready = open.filter(o => holdsForMaster(o) && !o.masterPo && o.stage === 'ready');
+    const late = open.filter(o => holdsForMaster(o) && !o.masterPo && ['atwh', 'rework'].includes(o.stage));
+    const by = {}; ready.forEach(o => (by[o.group || o.depotCode || '?'] ||= []).push(o));
+    Object.entries(by).forEach(([k, list]) => {
+      const code = list[0].depotCode, name = list[0].depotName || list[0].dest || '';
+      const reps = adwwFor(code);
+      const to = ['jtappel@diamondpet.com', ...reps.map(r => r.email)].filter(Boolean).join('; ');
+      const plts = list.reduce((a, o) => a + (+o.pallets || 0), 0);
+      const body = `To: ${to}\nSubject: Master PO request – refused Diamond pallets – ${code} ${name} – week of ${new Date(rhDate() + 'T12:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}\n\nHi Jan,\n\nPer the weekly process, here are the refused POs we reworked and are holding this week for ${code} ${name} (${plural(plts, 'pallet')}, ${list[0].wh || 'WH'}):\n\n${list.flatMap(teamLines).join('\n')}\n\nCostco POs: ${list.map(o => o.po).filter(Boolean).join(', ')}\n\nCan we get a Master PO for these so we can schedule delivery?\n\nThanks,\nJacob`;
+      day('mpo-' + k, `Request a master PO: ${k === code ? code + ' ' + name : k} (${plural(list.length, 'order')}, ${plural(plts, 'pallet')})`, 'Send this email. When the master PO comes back, put it in each order’s Master PO field: they then show up on Thursday’s booking list.', list, null, body);
+    });
+    if (!ready.length) day('mpo-none', 'Master PO requests', 'Nothing at a master PO depot is at Ready. Nothing to request this week.', []);
+    if (late.length) day('mpo-late', 'Not ready in time: roll to next Wednesday unless the WH finishes today', 'If the WH finishes rework today, set it to Ready and it joins the email above.', late, o => stageOf(o.stage).t);
+    const other = open.filter(o => !holdsForMaster(o) && o.stage === 'ready');
+    const ob = {}; other.forEach(o => (ob[o.depotCode || '?'] ||= []).push(o));
+    Object.entries(ob).forEach(([code, list]) => {
+      const reps = adwwFor(code);
+      const body = `To: ${reps.map(r => r.email).filter(Boolean).join('; ') || '(ADW contact)'}\nSubject: PO refresh for redelivery – ${list.map(o => 'WN-' + o.wn).join(', ')}\n\nHi ${reps.map(r => r.name.trim().split(' ')[0]).join(' / ') || 'team'},\n\nThese are reworked and ready to go back to ${code} ${list[0].depotName || list[0].dest || ''}. Can you refresh the PO${list.length > 1 ? 's' : ''} so we can request delivery this week?\n\n${list.flatMap(teamLines).join('\n')}\n\nCostco PO${list.length > 1 ? 's' : ''}: ${list.map(o => o.po).filter(Boolean).join(', ')}\n\nThanks,\nJacob`;
+      day('refresh-' + code, `Ask ADW to refresh POs: ${code} ${list[0].depotName || ''}`, 'Not a master PO depot, so each PO gets refreshed and booked on its own (one request per truck).', list, null, body);
+    });
+  }
+  if (dow === 4) {
+    const withMaster = open.filter(o => o.stage === 'ready' && o.masterPo);
+    const bm = {}; withMaster.forEach(o => (bm[o.masterPo] ||= []).push(o));
+    Object.entries(bm).forEach(([m, list]) => day('book-' + m, `Book master PO ${m}: one appointment for ${plural(list.reduce((a, o) => a + (+o.pallets || 0), 0), 'pallet')}`, 'Request it in the Costco portal (appointments.cwtraffic.com), then move these to Appt requested with the date.', list));
+    day('book', 'Book refreshed POs', 'PO refreshed by ADW? Request the appointment in the portal. One request per truck per delivery location.', open.filter(o => o.stage === 'ready' && !o.masterPo && !holdsForMaster(o)));
+    day('waitmpo', 'Master PO still not back from Diamond', 'Follow up with Jan on yesterday’s request.', open.filter(o => o.stage === 'ready' && !o.masterPo && holdsForMaster(o)));
+    day('conf', 'Send confirmation #s for next week’s deliveries', 'To the WH and carrier: date, time, confirmation # and every PO#.', open.filter(o => o.stage === 'scheduled' && o.apptDate && o.apptDate > isoPlus(1) && o.apptDate <= isoPlus(10)), o => [dayLabel(o.apptDate), o.apptTime, o.conf && 'Conf ' + o.conf].filter(Boolean).join(' · '));
+  }
+  if (dow === 5) {
+    day('pod', 'Chase PODs', 'Costco receiving sticker with every PO#. If the WH/carrier can’t get it: podrequests@costco.com.', at('delivered'));
+    day('close', 'Work the closeout checklists', 'Final quote, payer, Ticket System charges, then hand to Mariah.', at('closeout'), o => `${CLOSEOUT.filter(([k]) => (o.closeout || {})[k]).length}/${CLOSEOUT.length} done`);
+    day('quotes', 'Update quotes for reworked orders', 'App Customer Quote to the actual reworked count. Then press “I updated the quote” on the board.', open.filter(o => !o.quoteUpdated && stageIdx(o.stage) >= stageIdx('ready') && o.payer !== 'normal'));
+    day('nextweek', 'Look ahead: next week’s deliveries', 'Make sure each has a confirmation # and the WH knows.', open.filter(o => o.stage === 'scheduled' && o.apptDate > isoPlus(0) && o.apptDate <= isoPlus(7)), o => [dayLabel(o.apptDate), o.apptTime, o.conf ? 'Conf ' + o.conf : 'no conf #'].filter(Boolean).join(' · '));
+    day('tracker', 'Update the takeover tracker and the Live Case Log', 'Anything new this week that isn’t written down yet.', null);
+  }
+  if (dow === 0 || dow === 6) day('weekend', 'Weekend', 'Only new refusals and tomorrow’s deliveries. Everything else waits for Monday.', null);
+  every('habits', 'Daily habits', 'Scan #diamond-deliveries for new refusals and updates. Every open load has both a Costco PO and a WHNow PO. Update statuses in the Ticket System. Log anything new in the Live Case Log.', null);
+  return t;
+}
+const taskCount = t => t.list ? t.list.length : 0;
+
+// ticks: shared db (collection "rhythm", one doc per date) when served, else this browser
+let rhDay = new Date().getDay(), rhTicks = {}, rhBackend = null, rhUnsub = null;
+const rhDate = () => isoPlus((rhDay - new Date().getDay() + 7) % 7);
+function rhLoad() {
+  if (rhUnsub) { try { rhUnsub(); } catch {} rhUnsub = null; }
+  const date = rhDate();
+  if (rhBackend) rhUnsub = rhBackend.watch(date, d => { rhTicks = d || {}; renderRhythm(); });
+  else { rhTicks = (store.get('dp-rhythm', {})[date]) || {}; renderRhythm(); }
+}
+function rhTick(key, on) {
+  const date = rhDate();
+  rhTicks = { ...rhTicks, [key]: on ? { by: myId || '', at: new Date().toISOString() } : null };
+  if (!on) delete rhTicks[key];
+  renderRhythm();
+  if (rhBackend) rhBackend.put(date, rhTicks).catch(() => toast('Couldn’t save. Try again.'));
+  else { const all = store.get('dp-rhythm', {}); all[date] = rhTicks; Object.keys(all).filter(k => k < isoPlus(-14)).forEach(k => delete all[k]); store.set('dp-rhythm', all); }
+}
+function renderRhythm() {
+  if (!$('#rh-week')) return;
+  const today = new Date().getDay();
+  $('#rh-week').innerHTML = [1, 2, 3, 4, 5].map(d => {
+    const tasks = rhythmTasks(d).filter(t => t.sec !== 'Every day');
+    const n = tasks.reduce((a, t) => a + taskCount(t), 0);
+    return `<button type="button" class="day ${d === today ? 'hl' : ''}" data-day="${d}" aria-pressed="${d === rhDay}"><span class="label">${DAYS[d]}${d === today ? ' · today' : ''}</span><h3>${esc(DAY_THEME[d])}</h3><span class="cnt"><b>${n}</b> order item${n === 1 ? '' : 's'}</span></button>`;
+  }).join('');
+  const tasks = rhythmTasks(rhDay);
+  const dateLbl = new Date(rhDate() + 'T12:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  $('#rh-title').textContent = `${rhDay === today ? 'Today' : 'Preview'}: ${dateLbl} · ${DAY_THEME[rhDay] || 'Weekend'}`;
+  $('#rh-sub').textContent = rhDay === today ? 'Built from the live orders. Tick a task when it’s done. Click a WN# to open the order.' : 'Preview using today’s orders. It will change as orders move.';
+  const done = tasks.filter(t => rhTicks[t.key]).length;
+  $('#rh-prog').textContent = `${done}/${tasks.length} done`;
+  let sec = '';
+  $('#rh-tasks').innerHTML = tasks.map((t, i) => {
+    const head = t.sec !== sec ? `<div class="rt-sec">${esc((sec = t.sec))}</div>` : '';
+    const tk = rhTicks[t.key], n = taskCount(t), empty = t.list && !n;
+    const who = tk ? `<span class="pill ok">Done${tk.by && names[tk.by] ? ' · ' + esc(names[tk.by]) : ''}</span>` : t.list ? `<span class="pill ${empty ? '' : 'wait'}">${n}</span>` : '';
+    const list = n ? `<div class="rt-list">${t.list.map(o => oneLine(o, t.extra ? t.extra(o) : '')).join('')}</div>` : '';
+    const email = t.email ? `<textarea id="rt-mail-${i}" rows="8" readonly>${esc(t.email)}</textarea><div><button class="btn" type="button" data-copy="rt-mail-${i}">Copy email</button></div>` : '';
+    return `${head}<div class="rtask ${tk || empty ? 'done' : ''}"><div class="rt-h"><input type="checkbox" id="rt-${i}" data-rk="${esc(t.key)}" ${tk ? 'checked' : ''} ${readOnly ? 'disabled' : ''}><label for="rt-${i}">${esc(t.title)}${empty ? ' — nothing to do' : ''}</label>${who}</div>${list}${empty ? '' : `<div class="rt-how">${esc(t.how)}</div>`}${email ? `<div class="stack" style="padding-left:28px;gap:6px">${email}</div>` : ''}</div>`;
+  }).join('');
+  $('#rh-save').textContent = rhBackend ? 'Ticks are shared: Genderson sees what you’ve done today.' : 'Ticks are saved in this browser only. Open the claude.ai link to share them.';
+}
+$('#rh-week').addEventListener('click', e => { const b = e.target.closest('[data-day]'); if (!b) return; rhDay = +b.dataset.day; rhLoad(); });
+$('#rh-tasks').addEventListener('change', e => { const k = e.target.dataset.rk; if (k) rhTick(k, e.target.checked); });
+$('#rh-tasks').addEventListener('click', e => {
+  const b = e.target.closest('[data-open]'); if (!b) return;
+  openCards.add(b.dataset.open); stageFilter = null; $('#b-showdone').checked = true;
+  show('board'); renderBoard();
+  const el = document.querySelector(`.ord[data-id="${CSS.escape(b.dataset.open)}"]`);
+  if (el) { el.scrollIntoView({ block: 'start', behavior: 'smooth' }); el.style.outline = '2px solid var(--accent)'; setTimeout(() => { el.style.outline = ''; }, 1600); }
 });
-renderDaily();
+if (rhDay === 0 || rhDay === 6) rhDay = 1;
+rhLoad();
+(async () => {
+  let db = null;
+  try { db = await (window.claude?.use?.('db') ?? null); } catch { db = null; }
+  if (!db) return;
+  const col = db.collection('rhythm');
+  rhBackend = { put: (id, body) => col.doc(id).set(body), watch: (id, cb) => col.doc(id).onSnapshot(s => cb(s.exists ? s.data() : {}), () => {}) };
+  rhLoad();
+})();
 
 /* ---------- ticket builder ---------- */
 const opt = (v, sel) => `<option ${v === sel ? 'selected' : ''}>${esc(v)}</option>`;
