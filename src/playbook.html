@@ -2415,7 +2415,7 @@ function presetFromOrder(id) {
   const pl = n => `${n} pallet${+n === 1 ? '' : 's'}`;
   const skus = [...String(o.skus || '').matchAll(/\b(\d{4,9})\s*x\s*(\d+)/gi)].map(m => [m[1], pl(m[2])]);
   const stage = ['new', 'inbound'].includes(o.stage) ? 'arriving' : ['atwh', 'rework'].includes(o.stage) ? 'today' : 'done';
-  return { whn: o.wn || '', date: day, po: o.po || '', carrier: pick(D.carriers, o.carrier), origin: pick(D.origins, o.origin), skus: skus.length ? skus : [['', o.qty || pl(o.pallets || 1)]],
+  return { whn: o.wn || '', date: day, po: o.po || '', carrier: pick(D.carriers, o.carrier) || o.carrier || '', origin: pick(D.origins, o.origin) || o.origin || '', skus: skus.length ? skus : [['', o.qty || pl(o.pallets || 1)]],
     recv: day, stage, why: o.reason && !/^damage$/i.test(o.reason) ? o.reason.toLowerCase() : '', plts: o.pallets || 1, rw: o.qReworked ?? o.pallets ?? 1, payer: ['carrier', 'small'].includes(o.payer) ? o.payer : 'diamond', ot: !!o.qOT,
     wh: o.wh && o.wh !== decode(o.po || '').wh && !/\?/.test(o.wh) ? o.wh : '' };
 }
@@ -2431,7 +2431,9 @@ function loadPreset(k) {
   const pr = PRESETS[String(k).replace(/^WN-/, '')] ? { ...fromBoard, ...PRESETS[String(k).replace(/^WN-/, '')] } : fromBoard;
   if (!pr) return;
   $('#f-whn').value = pr.whn; $('#f-date').value = pr.date; $('#f-po').value = pr.po;
-  $('#f-carrier').value = pr.carrier; $('#f-origin').value = pr.origin; $('#f-recv').value = pr.recv; $('#f-stage').value = pr.stage;
+  // a carrier or plant that isn't on Diamond's list still goes on the ticket
+  const ensure = (sel, val, label) => { if (![...$(sel).options].some(x => x.value === val)) $(sel).insertAdjacentHTML('beforeend', `<option value="${esc(val)}">${esc(label || val)}</option>`); $(sel).value = val; };
+  ensure('#f-carrier', pr.carrier || '', pr.carrier || 'Carrier? (not set)'); ensure('#f-origin', pr.origin || '', pr.origin || 'Origin? (check the BOL)'); $('#f-recv').value = pr.recv; $('#f-stage').value = pr.stage;
   $('#f-reason').value = 'Damage'; $('#f-disp').value = 'Rework'; $('#f-whov').value = pr.wh || ''; $('#f-why').value = pr.why || ''; $('#f-payer').value = pr.payer || 'diamond';
   $('#f-plts').value = pr.plts; $('#f-rw').value = pr.rw; $('#f-redel').checked = true; $('#f-ot').checked = !!pr.ot; $('#f-ltl').value = 0;
   $('#skuLines').innerHTML = ''; pr.skus.forEach(([sku, q]) => addSkuLine(sku, q));
