@@ -14,6 +14,13 @@ Update the live board right away, without being asked, using ArtifactData on the
 - New WN# → create `orders/WN-#####` with the same fields the page uses (`wn`, `po`, depot fields from the PO, `wh`, `stage`, `stageSince`, `closeout: {}`, `created`).
 - Then tell Jacob what changed per WN# and what's next, and draft any reply/email he needs to send.
 
+## Slack (connector)
+
+New Diamond orders get a Slack channel from Capri (e.g. `#13135-monrovia-md-rework-diamond-pet-foods-northeast`;
+some start under the carrier's name, e.g. `...-pace-logistics-...`, and get renamed). They land in Jacob's
+"Diamond Pet" sidebar section. Track only NEW orders as they come in (plus the orders already on the board);
+don't backfill the old channels. When Jacob says "update WN-#####", read that channel yourself and update the board.
+
 ## After changing the page itself
 
 `python3 tools/build.py <Diamond xlsx>` → test → commit/push → refresh `snapshot/` (ArtifactData list, out_dir) →
