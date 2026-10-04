@@ -27,7 +27,8 @@ don't backfill the old channels. When Jacob says "update WN-#####", read that ch
 publish `diamond-playbook.html` to the URL above → send the download and include the live link.
 
 Quotes, the warehouse and the customer live in the WarehouseNow web app (Quotes tab); the board mirrors them.
-Carrier pays → the Load # in the app must be changed to the carrier. Track `payer` and `payerOk` on the board.
+Payer defaults to Diamond direct; only change it if Thomas says the carrier pays. Carrier pays → the Load # in the app must be changed to the carrier.
+App Load # = the Costco PO from the email subject (asked Genderson whether it should be the master PO instead). Track `payer` and `payerOk` on the board.
 
 New emails in Front (ADW ticket etc.): Compose new, tag with the WN#, add to the Diamond Pet mailbox (diamondpet@warehousenow.com).
 
