@@ -1,0 +1,348 @@
+<title>Order Study Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: dock-door header with KPI strip, tab rail, one working panel per tab. Freight-label type, safety-amber accent on slate. */
+:root{
+  --bg:#f3f4f2; --panel:#ffffff; --ink:#1d2329; --muted:#5b6670; --line:#d9ddd8; --soft:#e9ecea;
+  --accent:#d98e04; --accent-ink:#7a4f00; --accent-soft:#fbefd6;
+  --good:#2f7d4f; --good-soft:#e2f1e7; --warn:#b5530f; --warn-soft:#fbe7d8; --bad:#b3261e; --bad-soft:#f9e0de;
+  --t-qb:#5b4fc4; --t-cov:#0b7a8a; --t-own:#d98e04; --t-ops:#2f7d4f; --t-acct:#8a4b9e;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15191d; --panel:#1d2227; --ink:#e7eaec; --muted:#9aa5ae; --line:#323a41; --soft:#262c32;
+  --accent:#f2a91f; --accent-ink:#f6c45f; --accent-soft:#3a2d12;
+  --good:#5cc286; --good-soft:#1c3326; --warn:#ef8a4a; --warn-soft:#3a2416; --bad:#ef6b62; --bad-soft:#3b1d1b;
+  --t-qb:#9b90ff; --t-cov:#4fc3d2; --t-own:#f2a91f; --t-ops:#5cc286; --t-acct:#c98be0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15191d; --panel:#1d2227; --ink:#e7eaec; --muted:#9aa5ae; --line:#323a41; --soft:#262c32;
+  --accent:#f2a91f; --accent-ink:#f6c45f; --accent-soft:#3a2d12;
+  --good:#5cc286; --good-soft:#1c3326; --warn:#ef8a4a; --warn-soft:#3a2416; --bad:#ef6b62; --bad-soft:#3b1d1b;
+  --t-qb:#9b90ff; --t-cov:#4fc3d2; --t-own:#f2a91f; --t-ops:#5cc286; --t-acct:#c98be0; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:20px 48px;display:grid;gap:18px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:.01em}
+h1{font-size:34px;font-weight:700;text-transform:uppercase;line-height:1}
+h2{font-size:22px;font-weight:600;text-transform:uppercase}
+h3{font-size:18px;font-weight:600}
+.mono,.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;border-bottom:3px solid var(--ink);padding-bottom:12px}
+.hazard{height:6px;border-radius:3px;background:repeating-linear-gradient(-45deg,var(--accent) 0 10px,var(--ink) 10px 20px);width:120px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 12px;display:grid;gap:2px}
+.kpi b{font-family:var(--display);font-size:30px;font-weight:600;line-height:1.1}
+.kpi span{font-size:12px;color:var(--muted)}
+nav.tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line)}
+nav.tabs button{font:600 15px var(--display);text-transform:uppercase;letter-spacing:.04em;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:8px 12px;cursor:pointer}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+nav.tabs button:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{display:grid;gap:16px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;gap:12px;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px}
+.relay{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;counter-reset:step}
+.step{border:1px solid var(--line);border-top:4px solid var(--team);border-radius:6px;padding:10px;display:grid;gap:4px;background:var(--panel)}
+.step.gate{background:var(--accent-soft);border-color:var(--accent);border-top-color:var(--team)}
+.step .n{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.step strong{font-family:var(--display);font-size:17px;font-weight:600;line-height:1.15}
+.team{font-size:12px;font-weight:600;color:var(--team)}
+.step p{margin:0;font-size:12.5px;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--team);margin-right:5px;vertical-align:-1px}
+.pill{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 8px;border-radius:999px;white-space:nowrap}
+.pill.good{background:var(--good-soft);color:var(--good)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.plain{background:var(--soft);color:var(--muted)}
+.tag{font-family:var(--mono);font-weight:500;font-size:12px;border:1.5px solid var(--ink);border-radius:3px;padding:1px 6px;letter-spacing:.04em}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 12.5px var(--body);border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:3px 11px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.order{border:1px solid var(--line);border-radius:8px;background:var(--panel);overflow:hidden}
+.order-head{display:grid;gap:8px;padding:14px 16px}
+.order-title{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;border-top:1px dashed var(--line);padding-top:10px}
+.metrics div{display:grid}
+.metrics b{font-family:var(--mono);font-size:15px;font-weight:500}
+.metrics span{font-size:11.5px;color:var(--muted)}
+details.more{border-top:1px solid var(--line)}
+details.more>summary{cursor:pointer;padding:10px 16px;font-weight:600;font-size:13px;color:var(--accent-ink);list-style:none}
+details.more>summary::-webkit-details-marker{display:none}
+details.more>summary::before{content:"+ ";font-family:var(--mono)}
+details.more[open]>summary::before{content:"\2013 "}
+.more-body{padding:0 16px 16px;display:grid;gap:14px}
+ol.timeline{list-style:none;margin:0;padding:0;display:grid;gap:6px;border-left:2px solid var(--line)}
+ol.timeline li{padding-left:12px;position:relative;font-size:13px}
+ol.timeline li::before{content:"";position:absolute;left:-6px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--panel);border:2px solid var(--accent)}
+ol.timeline .when{font-family:var(--mono);font-size:11.5px;color:var(--muted);display:block}
+.lists{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px}
+.lists ul{margin:4px 0 0;padding-left:18px;font-size:13px}
+ol.steps{margin:0;padding-left:22px;display:grid;gap:6px}
+ol.steps li::marker{font-family:var(--mono);color:var(--accent-ink)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500;border-bottom:1.5px solid var(--ink);padding:6px 8px;white-space:nowrap}
+td{border-bottom:1px solid var(--line);padding:8px;vertical-align:top}
+td.nowrap{white-space:nowrap}
+input[type=search],input[type=text],textarea,select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 10px;width:100%}
+textarea{min-height:56px;resize:vertical}
+.btn{font:600 13px var(--body);background:var(--ink);color:var(--bg);border:0;border-radius:6px;padding:8px 14px;cursor:pointer}
+.row{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.row>*{min-width:0}
+.q{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.q input[type=checkbox]{width:18px;height:18px;margin-top:2px;accent-color:var(--accent)}
+.q.done .qtext{text-decoration:line-through;color:var(--muted)}
+.rule{display:grid;gap:2px;padding:10px 0;border-bottom:1px solid var(--line)}
+.rule:last-child,.q:last-child{border-bottom:0}
+.empty{border:1.5px dashed var(--line);border-radius:8px;padding:20px;color:var(--muted);text-align:center}
+.note{font-size:12.5px;color:var(--muted)}
+.howto{display:grid;gap:4px;font-size:13px}
+.howto code{font-family:var(--mono);background:var(--soft);padding:1px 5px;border-radius:3px}
+@media (prefers-reduced-motion:no-preference){.order,.box{transition:border-color .15s}.order:hover{border-color:var(--muted)}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div style="display:grid;gap:8px">
+      <div class="hazard" aria-hidden="true"></div>
+      <h1>Order Study Board</h1>
+      <div class="muted">Every order, start to finish: what happened, what it paid, what it taught.</div>
+    </div>
+    <div class="note" id="syncState">Connecting…</div>
+  </header>
+
+  <section class="kpis" id="kpis" aria-label="Summary"></section>
+
+  <nav class="tabs" role="tablist" id="tabs">
+    <button role="tab" data-tab="overview">Overview</button>
+    <button role="tab" data-tab="orders">Orders</button>
+    <button role="tab" data-tab="processes">Processes</button>
+    <button role="tab" data-tab="warehouses">Warehouses</button>
+    <button role="tab" data-tab="rules">Rules</button>
+    <button role="tab" data-tab="glossary">Glossary</button>
+    <button role="tab" data-tab="questions">Questions</button>
+  </nav>
+
+  <main id="view" class="panel"></main>
+</div>
+
+<script>
+const TEAMS = {
+  qb:{name:"QB team",c:"var(--t-qb)"}, cov:{name:"Coverage",c:"var(--t-cov)"}, own:{name:"Account owner (you)",c:"var(--t-own)"},
+  ops:{name:"Ops",c:"var(--t-ops)"}, acct:{name:"Accounting",c:"var(--t-acct)"}
+};
+const RELAY = [
+  {s:"New order",t:"qb",d:"Request lands on the load board / Front. QB opens the channel, tags teams, replies to cx fast."},
+  {s:"Sourcing + quotes",t:"cov",d:"Coverage calls warehouses, gets a bid, saves the WHS and cx quotes in the app."},
+  {s:"Quote Approved",t:"own",d:"You chase the yes, update the app and give Ops the GTG."},
+  {s:"ETA Received",t:"ops",d:"Driver name, phone, truck and trailer. Ops phones the WHS and gives the driver our ID."},
+  {s:"On Site",t:"ops",d:"Arrival pictures to the customer."},
+  {s:"In Process",t:"ops",d:"Progress pictures; confirm the scope on the dock."},
+  {s:"Complete",t:"own",d:"Completion + seal pictures and payment settled, then release the driver.",gate:true},
+  {s:"Invoiced",t:"acct",d:"Final WHS and cx costs, vendor invoice checked, invoice sent."}
+];
+const COLS = ["orders","processes","rules","warehouses","terms","questions"];
+const state = {orders:[],processes:[],rules:[],warehouses:[],terms:[],questions:[]};
+let loaded = false, db = null, canWrite = true;
+const ui = {tab:"overview", svc:"All", whRegion:"All", q:""};
+try{ const t = localStorage.getItem("osb.tab"); if(t) ui.tab = t; }catch(e){}
+if(/^#[a-z]+$/.test(location.hash)) ui.tab = location.hash.slice(1);
+
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money = n => (n==null||n==="") ? "—" : "$" + Number(n).toLocaleString("en-US",{maximumFractionDigits:2});
+const pct = (a,b) => (a&&b) ? Math.round((b-a)/b*100) + "%" : "—";
+const byDate = (a,b) => String(b.date||"").localeCompare(String(a.date||""));
+const wnSort = (a,b) => String(b.wn||b.id).localeCompare(String(a.wn||a.id));
+
+function outcomePill(o){
+  const k = (o||"").toLowerCase();
+  if(k==="clean") return '<span class="pill good">Ran clean</span>';
+  if(k==="rough") return '<span class="pill warn">Rough</span>';
+  if(k==="failed") return '<span class="pill bad">Failed</span>';
+  if(k==="open") return '<span class="pill plain">In progress</span>';
+  return o ? `<span class="pill plain">${esc(o)}</span>` : "";
+}
+function ratingPill(r){
+  const k=(r||"").toLowerCase();
+  if(k==="go-to") return '<span class="pill good">Go-to</span>';
+  if(k==="ok") return '<span class="pill plain">OK</span>';
+  if(k==="watch") return '<span class="pill warn">Watch closely</span>';
+  if(k==="avoid") return '<span class="pill bad">Avoid</span>';
+  if(k==="no cap") return '<span class="pill plain">No capacity yet</span>';
+  return r ? `<span class="pill plain">${esc(r)}</span>` : "";
+}
+
+function renderKpis(){
+  const o = state.orders;
+  const withMoney = o.filter(x=>x.cost&&x.billed);
+  const cost = withMoney.reduce((s,x)=>s+Number(x.cost),0), billed = withMoney.reduce((s,x)=>s+Number(x.billed),0);
+  const openQ = state.questions.filter(q=>!q.done).length;
+  const k = [
+    [o.length,"orders studied"],
+    [state.processes.length,"processes learned"],
+    [billed ? pct(cost,billed) : "—","blended margin"],
+    [billed ? money(Math.round(billed-cost)) : "—","gross profit studied"],
+    [state.rules.length,"rules learned"],
+    [state.warehouses.length,"warehouses known"],
+    [openQ,"open questions"]
+  ];
+  $("#kpis").innerHTML = k.map(([v,l])=>`<div class="kpi"><b class="num">${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+}
+
+function relayHtml(){
+  const legend = Object.values(TEAMS).map(t=>`<span style="--team:${t.c}"><i></i>${esc(t.name)}</span>`).join("");
+  const steps = RELAY.map((r,i)=>`<div class="step${r.gate?" gate":""}" style="--team:${TEAMS[r.t].c}">
+      <span class="n">${String(i+1).padStart(2,"0")}${r.gate?" · GATE":""}</span><strong>${esc(r.s)}</strong>
+      <span class="team">${esc(TEAMS[r.t].name)}</span><p>${esc(r.d)}</p></div>`).join("");
+  return `<div class="box"><div><h2>How an order moves</h2><div class="muted">A relay between teams. You own the customer the whole way and step in when a hand-off stalls.</div></div>
+    <div class="legend">${legend}</div><div class="relay">${steps}</div></div>`;
+}
+
+function orderCard(o, open){
+  const m = [
+    ["Pallets", o.pallets ?? "—"], ["WHS cost", money(o.cost)], ["Billed", money(o.billed)],
+    ["Margin", o.cost&&o.billed ? money(Math.round(o.billed-o.cost)) : "—"], ["Margin %", pct(o.cost,o.billed)],
+    ["Order → invoice", o.cycle || "—"]
+  ].map(([l,v])=>`<div><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+  const tl = (o.timeline||[]).map(e=>`<li><span class="when">${esc(e.when)}</span>${esc(e.text)}</li>`).join("");
+  const li = a => (a||[]).map(x=>`<li>${esc(x)}</li>`).join("") || "<li class='muted'>—</li>";
+  return `<article class="order">
+    <div class="order-head">
+      <div class="order-title"><span class="tag">WN-${esc(o.wn||o.id)}</span><h3>${esc(o.customer)}</h3>${outcomePill(o.outcome)}</div>
+      <div class="muted">${esc([o.service,o.temp,o.city,o.region].filter(Boolean).join(" · "))}${o.warehouse?` · WHS: ${esc(o.warehouse)}`:""}</div>
+      ${o.summary?`<div>${esc(o.summary)}</div>`:""}
+      <div class="metrics">${m}</div>
+    </div>
+    <details class="more"${open?" open":""}><summary>Timeline and lessons</summary>
+      <div class="more-body">
+        ${tl?`<ol class="timeline">${tl}</ol>`:""}
+        <div class="lists"><div><span class="eyebrow">What went right</span><ul>${li(o.wentRight)}</ul></div>
+        <div><span class="eyebrow">What to improve</span><ul>${li(o.improve)}</ul></div></div>
+        ${o.slack?`<div class="note">Slack: <span class="mono">#${esc(o.slack)}</span></div>`:""}
+      </div></details>
+  </article>`;
+}
+
+function emptyBox(what){
+  return `<div class="empty">${loaded ? `No ${what} yet. Send Claude a WN# and it will add the order and everything it teaches.` : (db===null && loaded===false && syncFailed ? "Open this page signed in to claude.ai to load the board." : `Loading ${what}…`)}</div>`;
+}
+let syncFailed = false;
+
+const VIEWS = {
+  overview(){
+    const recent = [...state.orders].sort(byDate).slice(0,3);
+    const rules = [...state.rules].sort(byDate).slice(0,5);
+    return relayHtml() + `<div class="grid2">
+      <div class="box"><h2>Latest orders</h2>${recent.length?recent.map(o=>orderCard(o,false)).join(""):emptyBox("orders")}</div>
+      <div class="box"><h2>Newest rules</h2>${rules.length?rules.map(ruleRow).join(""):emptyBox("rules")}
+        <div class="howto"><span class="eyebrow">Add to this board</span>
+        <span>Tell Claude: <code>study WN-13114</code>. It reads the Slack channel and adds the order, rules, warehouses, terms and questions here.</span></div></div>
+    </div>`;
+  },
+  orders(){
+    const svcs = ["All",...new Set(state.orders.map(o=>o.service).filter(Boolean))];
+    const list = state.orders.filter(o=>ui.svc==="All"||o.service===ui.svc).sort(wnSort);
+    return `<div class="chips" role="group" aria-label="Filter by service">${svcs.map(s=>`<button class="chip" data-svc="${esc(s)}" aria-pressed="${ui.svc===s}">${esc(s)}</button>`).join("")}</div>
+      ${list.length?list.map(o=>orderCard(o,false)).join(""):emptyBox("orders")}`;
+  },
+  processes(){
+    if(!state.processes.length) return emptyBox("processes");
+    return `<div class="grid2">${state.processes.map(p=>`<div class="box">
+      <div><h2>${esc(p.name)}</h2><div class="muted">${esc(p.summary)}</div></div>
+      <ol class="steps">${(p.steps||[]).map(s=>`<li><b>${esc(s.title)}:</b> ${esc(s.text)}</li>`).join("")}</ol>
+      ${p.differs?`<div class="note"><b>Differs from the base flow:</b> ${esc(p.differs)}</div>`:""}
+      <div class="note">Learned from ${(p.learnedFrom||[]).map(w=>`<span class="tag">WN-${esc(w)}</span>`).join(" ")||"—"}</div>
+    </div>`).join("")}</div>`;
+  },
+  warehouses(){
+    const regions = ["All",...new Set(state.warehouses.map(w=>w.region).filter(Boolean))];
+    const rank = {"go-to":0,"ok":1,"watch":2,"no cap":3,"avoid":4};
+    const list = state.warehouses.filter(w=>ui.whRegion==="All"||w.region===ui.whRegion)
+      .sort((a,b)=>(rank[(a.rating||"").toLowerCase()]??9)-(rank[(b.rating||"").toLowerCase()]??9));
+    if(!state.warehouses.length) return emptyBox("warehouses");
+    return `<div class="chips" role="group" aria-label="Filter by region">${regions.map(r=>`<button class="chip" data-region="${esc(r)}" aria-pressed="${ui.whRegion===r}">${esc(r)}</button>`).join("")}</div>
+    <div class="box"><div class="tablewrap"><table><thead><tr><th>Warehouse</th><th>Rating</th><th>Location</th><th>Temp</th><th>Rates</th><th>Contact</th><th>Notes</th><th>Orders</th></tr></thead><tbody>
+    ${list.map(w=>`<tr><td><b>${esc(w.name)}</b>${w.hours?`<div class="note mono">${esc(w.hours)}</div>`:""}</td><td>${ratingPill(w.rating)}</td>
+      <td class="nowrap">${esc(w.location)}</td><td>${esc(w.temp)}</td><td>${esc(w.rates)}</td><td>${esc(w.contact)}</td><td>${esc(w.notes)}</td>
+      <td class="nowrap mono">${(w.orders||[]).map(esc).join(", ")}</td></tr>`).join("")}
+    </tbody></table></div></div>`;
+  },
+  rules(){
+    const topics = [...new Set(state.rules.map(r=>r.topic||"General"))].sort();
+    if(!state.rules.length) return emptyBox("rules");
+    return `<div class="grid2">${topics.map(t=>`<div class="box"><h2>${esc(t)}</h2>
+      ${state.rules.filter(r=>(r.topic||"General")===t).map(ruleRow).join("")}</div>`).join("")}</div>`;
+  },
+  glossary(){
+    const q = ui.q.trim().toLowerCase();
+    const terms = state.terms.filter(t=>!q||(t.term+" "+t.meaning).toLowerCase().includes(q)).sort((a,b)=>a.term.localeCompare(b.term));
+    const groups = [...new Set(state.terms.map(t=>t.group||"Industry"))].sort();
+    return `<input type="search" id="gq" placeholder="Search terms (BOL, Cvg, drop trailer…)" value="${esc(ui.q)}" aria-label="Search glossary">
+      ${!state.terms.length?emptyBox("terms"):`<div class="grid2">${groups.map(g=>{const rows=terms.filter(t=>(t.group||"Industry")===g);return rows.length?`<div class="box"><h2>${esc(g)}</h2>
+        <div class="tablewrap"><table><tbody>${rows.map(t=>`<tr><td class="nowrap"><b>${esc(t.term)}</b></td><td>${esc(t.meaning)}</td></tr>`).join("")}</tbody></table></div></div>`:""}).join("")}</div>`}`;
+  },
+  questions(){
+    const open = state.questions.filter(q=>!q.done).sort(byDate), done = state.questions.filter(q=>q.done).sort(byDate);
+    const row = q => `<div class="q${q.done?" done":""}"><input type="checkbox" data-qid="${esc(q.id)}" ${q.done?"checked":""} ${canWrite?"":"disabled"} aria-label="Mark answered">
+      <div style="display:grid;gap:6px;min-width:0"><span class="qtext">${esc(q.text)}</span>
+      ${q.from?`<span class="note">From WN-${esc(q.from)}</span>`:""}
+      <textarea data-aid="${esc(q.id)}" placeholder="Answer, once the team tells you" ${canWrite?"":"disabled"}>${esc(q.answer||"")}</textarea></div></div>`;
+    return `<div class="grid2"><div class="box"><h2>Still open · ${open.length}</h2>
+        <form id="qform" class="row"><input type="text" id="qnew" placeholder="Add a question to ask the team" style="flex:1 1 220px" ${canWrite?"":"disabled"}><button class="btn" type="submit" ${canWrite?"":"disabled"}>Add</button></form>
+        ${open.length?open.map(row).join(""):(loaded?'<div class="note">Nothing open.</div>':emptyBox("questions"))}</div>
+      <div class="box"><h2>Answered · ${done.length}</h2>${done.length?done.map(row).join(""):'<div class="note">Tick a question once you have the answer.</div>'}</div></div>`;
+  }
+};
+function ruleRow(r){
+  return `<div class="rule"><b>${esc(r.text)}</b><span class="note">${esc(r.why||"")}${r.wn?` <span class="tag">WN-${esc(r.wn)}</span>`:""}</span></div>`;
+}
+
+function render(){
+  renderKpis();
+  document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected", String(b.dataset.tab===ui.tab)));
+  const active = document.activeElement, focusId = active && active.id, caret = active && active.selectionStart;
+  if(document.activeElement && document.activeElement.dataset && document.activeElement.dataset.aid) return; // don't clobber an answer being typed
+  $("#view").innerHTML = (VIEWS[ui.tab]||VIEWS.overview)();
+  if(focusId){ const el = document.getElementById(focusId); if(el){ el.focus(); try{ el.setSelectionRange(caret,caret);}catch(e){} } }
+}
+
+$("#tabs").addEventListener("click", e=>{
+  const b = e.target.closest("button[data-tab]"); if(!b) return;
+  ui.tab = b.dataset.tab; try{ localStorage.setItem("osb.tab", ui.tab);}catch(err){} render();
+});
+$("#view").addEventListener("click", e=>{
+  const s = e.target.closest("[data-svc]"); if(s){ ui.svc = s.dataset.svc; render(); return; }
+  const r = e.target.closest("[data-region]"); if(r){ ui.whRegion = r.dataset.region; render(); }
+});
+$("#view").addEventListener("input", e=>{ if(e.target.id==="gq"){ ui.q = e.target.value; render(); } });
+$("#view").addEventListener("change", async e=>{
+  const t = e.target;
+  if(t.dataset.qid && db){ try{ await db.collection("questions").doc(t.dataset.qid).update({done:t.checked, date:new Date().toISOString().slice(0,10)}); }catch(err){ t.checked=!t.checked; flash("Couldn't save that. You may have view-only access."); } }
+  if(t.dataset.aid && db){ try{ await db.collection("questions").doc(t.dataset.aid).update({answer:t.value}); flash("Answer saved"); }catch(err){ flash("Couldn't save the answer."); } finally { render(); } }
+});
+$("#view").addEventListener("submit", async e=>{
+  if(e.target.id!=="qform") return; e.preventDefault();
+  const inp = $("#qnew"), text = inp.value.trim(); if(!text||!db) return;
+  try{ await db.collection("questions").add({text, done:false, answer:"", date:new Date().toISOString().slice(0,10)}); inp.value=""; }
+  catch(err){ flash("Couldn't add the question. You may have view-only access."); }
+});
+function flash(msg){ const s=$("#syncState"); s.textContent = msg; clearTimeout(flash.t); flash.t=setTimeout(()=>s.textContent = loaded?"Live":"", 2500); }
+
+render();
+(async()=>{
+  db = window.claude?.use ? await window.claude.use("db") : null;
+  if(!db){ syncFailed = true; $("#syncState").textContent = "Offline: open in claude.ai to load"; render(); return; }
+  try{ const user = await window.claude.use("user"); const w = user?.can ? user.can("data.write") : null; if(w===false) canWrite=false; }catch(e){}
+  let pending = new Set(COLS);
+  COLS.forEach(c=>{
+    db.collection(c).onSnapshot(snap=>{
+      state[c] = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      pending.delete(c); if(!pending.size){ loaded = true; $("#syncState").textContent = "Live"; }
+      render();
+    }, err=>{ pending.delete(c); $("#syncState").textContent = "Couldn't load " + c; });
+  });
+})();
+</script>

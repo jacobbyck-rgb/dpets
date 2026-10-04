@@ -26,11 +26,16 @@ New emails in Front (ADW ticket etc.): Compose new, tag with the WN#, add to the
 
 Keep Diamond paperwork (PDFs, BOLs, stickers, photos) out of git.
 
-## Order study guide (non-Diamond orders)
+## Order Study Board (non-Diamond orders)
 
-Jacob's learning guide: https://claude.ai/code/artifact/9a623705-28c1-4927-bd83-60d160f585ba (Claude Docs doc).
-When he sends a WN# to study, read its Slack channel (`#<WN#>-city-st-service-customer-region`) start to finish, then in the doc:
-add a case study (template under Case studies), a row in the case-study table, and any new rules, warehouses,
-glossary terms and open questions. A new service type (storage, transload, disposal, mobile...) gets a row and its own
-process under "Processes by service". Never drop what's already there.
+Jacob's learning dashboard: https://claude.ai/artifact/5ztuUc4ZjBSe7T3NyATScu (shared db: `orders`, `processes`,
+`rules`, `warehouses`, `terms`, `questions`). Older doc version: https://claude.ai/code/artifact/9a623705-28c1-4927-bd83-60d160f585ba
+When he says "study WN-#####", read its Slack channel (`#<WN#>-city-st-service-customer-region`) start to finish, then with ArtifactData:
+- `orders/<wn>`: wn, customer, customerType, service, temp, city, region, pallets, warehouse, cost, billed, cycle,
+  outcome (clean|rough|failed|open), date, slack, summary, timeline [{when,text}], wentRight [], improve [].
+- New rules → `rules/rNN` {text, why, wn, topic, date}; warehouses → `warehouses/<slug>` {name, location, region, temp,
+  contact, rates, hours, rating (go-to|ok|watch|no cap|avoid), notes, orders []}; terms → `terms/<slug>` {term, meaning,
+  group}; questions → `questions/qNN` {text, from, done:false, answer:"", date}.
+- New service type → `processes/<slug>` {name, summary, steps [{title,text}], differs, learnedFrom []}; else add the WN# to learnedFrom.
+Read before writing and pin with `if_version`; never drop existing rows (questions hold Jacob's answers).
 Team flow: load board/Front → QB (channel + fast reply) → Coverage (warehouse bids, cx quote) → account owner (approval, app) → Ops (warehouse, driver, pics, cx updates) → Accounting (final costs, invoice).
