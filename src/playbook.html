@@ -1874,6 +1874,11 @@ function renderEditor() {
       <span class="pill ${l.late ? 'late' : CLOSED.includes(o.stage) ? 'ok' : 'wait'}">${esc(st.t)}</span>${l.msg ? `<span class="meta">${esc(l.msg)}</span>` : ''}</div>
     <span class="meta">${esc([o.depotCode && o.depotCode + ' ' + (o.depotName || o.dest || ''), o.wh, o.qty, o.payer === 'carrier' ? 'carrier pays' : o.payer === 'small' ? '< 5 bags' : o.payer === 'normal' ? 'normal order (FTL)' : ''].filter(Boolean).join(' · '))}</span>
     <p style="font-size:.9rem"><b>Came in:</b> ${inDay(o) ? esc(new Date(inDay(o) + 'T12:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })) + ` (${inAge(o)} day${inAge(o) === 1 ? '' : 's'} ago)` + (o.inDate ? '' : ' <span class="meta">· date it went on the board. Set the real refusal date below</span>') : '—'}<br><b>What it was:</b> ${esc(wasText(o))}<br><b>Carrier:</b> ${o.carrier ? esc(o.carrier) + (o.carrierContact ? ' (' + esc(o.carrierContact) + ')' : '') : '<span style="color:var(--bad)">not set. Add it in the Order section below</span>'}</p>
+    <div class="paybox"><span class="label">Follow-up</span>
+      <input type="date" data-f="todoDate" value="${esc(o.todoDate || '')}" style="width:auto" ${dis}>
+      <input type="text" data-f="todo" value="${esc(o.todo || '')}" placeholder="What to do that day (e.g. ask WH for reworked photos)" style="flex:1;min-width:200px" ${dis}>
+      ${o.todo ? `<button class="btn" type="button" data-act="tododone" ${dis}>Done</button>` : ''}
+    </div>
     <div class="paybox"><span class="label">Who pays</span>
       <div class="seg" role="group" aria-label="Who pays">
         <button type="button" data-pay="diamond" aria-pressed="${(o.payer || 'diamond') === 'diamond'}" ${dis}>Diamond direct</button>
@@ -1998,6 +2003,7 @@ function renderBoard() {
     return `<button type="button" class="brow ${l.late ? 'late' : ''}" role="option" data-sel="${esc(o.id)}" aria-selected="${o.id === selId}">
       <span class="r1"><b>${esc(o.wn && o.wn !== '?' ? 'WN ' + o.wn : o.id)}</b><span class="pill ${l.late ? 'late' : CLOSED.includes(o.stage) ? 'ok' : 'wait'}">${esc(stageOf(o.stage).t)}</span></span>
       <span class="r2">${esc([inTag(o), o.po, o.pallets ? o.pallets + ' plt' : '', o.depotCode ? o.depotCode + ' ' + (o.dest || o.depotName || '') : o.dest, o.wh].filter(Boolean).join(' · '))}</span>
+      ${o.todo && o.todoDate ? `<span class="r2" style="color:${o.todoDate <= todayISO() ? 'var(--bad)' : 'var(--accent)'}">\u25B8 ${esc(o.todoDate.slice(5).replace('-', '/'))}: ${esc(o.todo)}</span>` : ''}
       <span class="r2">${o.carrier ? `Carrier: <b>${esc(o.carrier)}</b>` : '<span style="color:var(--bad)">Carrier: ?</span>'} · <span class="pill ${o.payerOk ? 'ok' : 'wait'}" style="font-size:.68rem">${esc((PAYER_LBL[o.payer || 'diamond'] || '') + (o.payerOk ? '' : '?'))}</span></span>
       ${l.late || (o.stage === 'scheduled' && l.msg) ? `<span class="r3" style="${l.late ? '' : 'color:var(--muted)'}">${esc(l.msg)}</span>` : ''}</button>`;
   }).join('') : `<p style="color:var(--muted);font-size:.9rem">${all.length ? 'No orders match.' : 'No orders yet. Add one above.'}</p>`;
@@ -2230,6 +2236,7 @@ $('#b-edit').addEventListener('click', e => {
   const pay = e.target.closest('[data-pay]')?.dataset.pay;
   if (pay && !readOnly) { if (o.payer !== pay) save(id, { payer: pay }); return; }
   if (act === 'ticket') { $('#b-panes').classList.remove('editing'); openInTicket(id); return; }
+  if (act === 'tododone' && !readOnly) { save(id, { todo: '', todoDate: '', notes: (o.notes ? o.notes + ' ' : '') + todayISO().slice(5).replace('-', '/') + ': done: ' + (o.todo || '') }); return; }
   if (act === 'prev' || act === 'next') { const j = boardList.indexOf(id) + (act === 'next' ? 1 : -1); if (boardList[j]) selectOrder(boardList[j]); return; }
   if (readOnly) return;
   if (act === 'advance') { const i = stageIdx(o.stage); save(id, { stage: STAGES[i + 1].k, stageSince: todayISO() }); }
@@ -2281,6 +2288,9 @@ function rhythmTasks(dow) {
   const t = [];
   const every = (key, title, how, list, extra) => t.push({ sec: 'Every day', key, title, how, list, extra });
   const day = (key, title, how, list, extra, email) => t.push({ sec: DAY_THEME[dow] || 'Today', key, title, how, list, extra, email });
+  const forDate = isoPlus((dow - new Date().getDay() + 7) % 7);
+  const fu = open.filter(o => o.todoDate && o.todo && o.todoDate <= forDate).sort((a, b) => a.todoDate.localeCompare(b.todoDate));
+  t.push({ sec: 'Your follow-ups', key: 'todo', title: 'Follow-ups you set for this day', how: 'Set these on each order (Order board \u2192 Follow-up). Overdue ones stay here until you clear or move the date.', list: fu, extra: o => (o.todoDate < forDate ? 'OVERDUE ' + o.todoDate.slice(5) + ': ' : '') + o.todo });
 
   every('new', 'New refusals: cx, then WH, then ADW', 'Carrier confirmation within 20 min (driver is waiting), warehouse email next, then the ticket + ADW email the same day: new email in Front, tag the WN#, add to the Diamond Pet mailbox. Under 10 damaged bags: dispose/donate, no need to wait on Thomas.', at('new'));
   every('late', 'Clear everything overdue', 'Stuck past its stage limit. Do the next step shown, then move the stage.', open.filter(o => lateness(o).late && !['new', 'scheduled'].includes(o.stage)), o => lateness(o).msg);
