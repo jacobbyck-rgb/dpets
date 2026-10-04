@@ -37,5 +37,10 @@ When he says "study WN-#####", read its Slack channel (`#<WN#>-city-st-service-c
   contact, rates, hours, rating (go-to|ok|watch|no cap|avoid), notes, orders []}; terms → `terms/<slug>` {term, meaning,
   group}; questions → `questions/qNN` {text, from, done:false, answer:"", date}.
 - New service type → `processes/<slug>` {name, summary, steps [{title,text}], differs, learnedFrom []}; else add the WN# to learnedFrom.
+- Photos ("Read the Load" tab): pull load photos from the order's Slack channel (slack_read_file), downscale to <=1400px,
+  upload with Artifact `asset: true`, then `photos/pNN` {asset (id), wn, order, title, stage, verdict (bad|good|fixed|doc),
+  defects [defect ids], spots [{x%, y%, label}] placed on what to notice, lesson, quiz {question, options[], answer (index), why}}.
+  Defect field guide lives in `defects/<id>` (id = drawing: good, lean, collapsed, wrapshort, sideways, overhang, crushed,
+  broken, gaps, wet, seal); add the WN# to `seenOn` when an order shows it. Photos are Diamond-free customer data: never commit them.
 Read before writing and pin with `if_version`; never drop existing rows (questions hold Jacob's answers).
 Team flow: load board/Front → QB (channel + fast reply) → Coverage (warehouse bids, cx quote) → account owner (approval, app) → Ops (warehouse, driver, pics, cx updates) → Accounting (final costs, invoice).

@@ -8,6 +8,7 @@
   --accent:#d98e04; --accent-ink:#7a4f00; --accent-soft:#fbefd6;
   --good:#2f7d4f; --good-soft:#e2f1e7; --warn:#b5530f; --warn-soft:#fbe7d8; --bad:#b3261e; --bad-soft:#f9e0de;
   --t-qb:#5b4fc4; --t-cov:#0b7a8a; --t-own:#d98e04; --t-ops:#2f7d4f; --t-acct:#8a4b9e;
+  --wood:#a87b4f; --case:#e8d3a8; --case-line:#b99a62; --wrap:#5aa7d6; --floor:#8b949c;
   --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -16,12 +17,14 @@
   --bg:#15191d; --panel:#1d2227; --ink:#e7eaec; --muted:#9aa5ae; --line:#323a41; --soft:#262c32;
   --accent:#f2a91f; --accent-ink:#f6c45f; --accent-soft:#3a2d12;
   --good:#5cc286; --good-soft:#1c3326; --warn:#ef8a4a; --warn-soft:#3a2416; --bad:#ef6b62; --bad-soft:#3b1d1b;
-  --t-qb:#9b90ff; --t-cov:#4fc3d2; --t-own:#f2a91f; --t-ops:#5cc286; --t-acct:#c98be0; color-scheme:dark}}
+  --t-qb:#9b90ff; --t-cov:#4fc3d2; --t-own:#f2a91f; --t-ops:#5cc286; --t-acct:#c98be0;
+  --wood:#8a6540; --case:#9c8a66; --case-line:#6f5f42; --wrap:#6fb9e6; --floor:#5c656d; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#15191d; --panel:#1d2227; --ink:#e7eaec; --muted:#9aa5ae; --line:#323a41; --soft:#262c32;
   --accent:#f2a91f; --accent-ink:#f6c45f; --accent-soft:#3a2d12;
   --good:#5cc286; --good-soft:#1c3326; --warn:#ef8a4a; --warn-soft:#3a2416; --bad:#ef6b62; --bad-soft:#3b1d1b;
-  --t-qb:#9b90ff; --t-cov:#4fc3d2; --t-own:#f2a91f; --t-ops:#5cc286; --t-acct:#c98be0; color-scheme:dark}
+  --t-qb:#9b90ff; --t-cov:#4fc3d2; --t-own:#f2a91f; --t-ops:#5cc286; --t-acct:#c98be0;
+  --wood:#8a6540; --case:#9c8a66; --case-line:#6f5f42; --wrap:#6fb9e6; --floor:#5c656d; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5}
 .wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:20px 48px;display:grid;gap:18px}
@@ -100,6 +103,33 @@ textarea{min-height:56px;resize:vertical}
 .note{font-size:12.5px;color:var(--muted)}
 .howto{display:grid;gap:4px;font-size:13px}
 .howto code{font-family:var(--mono);background:var(--soft);padding:1px 5px;border-radius:3px}
+.sub{display:flex;flex-wrap:wrap;gap:6px}
+.defects{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:14px}
+.defect{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--sev);border-radius:8px;padding:14px;display:grid;gap:8px;align-content:start}
+.defect svg{width:100%;height:auto;background:var(--soft);border-radius:6px}
+.defect dl{margin:0;display:grid;gap:6px;font-size:13px}
+.defect dt{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.defect dd{margin:0}
+.sev{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--sev)}
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:16px}
+.photo{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;display:grid;align-content:start}
+.shot{position:relative;background:#111;line-height:0}
+.shot img{width:100%;height:auto;display:block}
+.spot{position:absolute;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;background:var(--accent);color:#1d2329;font:600 13px var(--mono);display:grid;place-items:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);line-height:1}
+.photo-body{padding:14px;display:grid;gap:10px}
+ol.spots{margin:0;padding-left:22px;display:grid;gap:4px;font-size:13px}
+ol.spots li::marker{font-family:var(--mono);font-weight:600;color:var(--accent-ink)}
+.quiz{display:grid;gap:12px;max-width:760px}
+.opts{display:grid;gap:8px}
+.opt{font:500 14px var(--body);text-align:left;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:10px 12px;cursor:pointer}
+.opt.right{border-color:var(--good);background:var(--good-soft)} .opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.score{font-family:var(--mono);font-size:13px}
+.checklist{display:grid;gap:10px;counter-reset:c}
+.checklist li{display:grid;gap:2px}
+form.up{display:grid;gap:10px}
+form.up .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px}
+.tickgrid{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px}
+.tickgrid label{display:flex;gap:6px;align-items:center}
 @media (prefers-reduced-motion:no-preference){.order,.box{transition:border-color .15s}.order:hover{border-color:var(--muted)}}
 </style>
 
@@ -118,6 +148,7 @@ textarea{min-height:56px;resize:vertical}
   <nav class="tabs" role="tablist" id="tabs">
     <button role="tab" data-tab="overview">Overview</button>
     <button role="tab" data-tab="orders">Orders</button>
+    <button role="tab" data-tab="load">Read the Load</button>
     <button role="tab" data-tab="processes">Processes</button>
     <button role="tab" data-tab="warehouses">Warehouses</button>
     <button role="tab" data-tab="rules">Rules</button>
@@ -143,10 +174,10 @@ const RELAY = [
   {s:"Complete",t:"own",d:"Completion + seal pictures and payment settled, then release the driver.",gate:true},
   {s:"Invoiced",t:"acct",d:"Final WHS and cx costs, vendor invoice checked, invoice sent."}
 ];
-const COLS = ["orders","processes","rules","warehouses","terms","questions"];
-const state = {orders:[],processes:[],rules:[],warehouses:[],terms:[],questions:[]};
-let loaded = false, db = null, canWrite = true;
-const ui = {tab:"overview", svc:"All", whRegion:"All", q:""};
+const COLS = ["orders","processes","rules","warehouses","terms","questions","defects","photos"];
+const state = {orders:[],processes:[],rules:[],warehouses:[],terms:[],questions:[],defects:[],photos:[]};
+let loaded = false, db = null, canWrite = true, assets = null;
+const ui = {tab:"overview", svc:"All", whRegion:"All", q:"", loadSub:"guide", quiz:{i:0, picked:null, right:0, seen:0}};
 try{ const t = localStorage.getItem("osb.tab"); if(t) ui.tab = t; }catch(e){}
 if(/^#[a-z]+$/.test(location.hash)) ui.tab = location.hash.slice(1);
 
@@ -187,6 +218,7 @@ function renderKpis(){
     [billed ? money(Math.round(billed-cost)) : "—","gross profit studied"],
     [state.rules.length,"rules learned"],
     [state.warehouses.length,"warehouses known"],
+    [state.photos.length,"photos studied"],
     [openQ,"open questions"]
   ];
   $("#kpis").innerHTML = k.map(([v,l])=>`<div class="kpi"><b class="num">${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
@@ -248,6 +280,10 @@ const VIEWS = {
     return `<div class="chips" role="group" aria-label="Filter by service">${svcs.map(s=>`<button class="chip" data-svc="${esc(s)}" aria-pressed="${ui.svc===s}">${esc(s)}</button>`).join("")}</div>
       ${list.length?list.map(o=>orderCard(o,false)).join(""):emptyBox("orders")}`;
   },
+  load(){
+    const subs = [["guide","Field guide"],["photos","Photo library"],["train","Train"],["checklist","Photo checklist"]];
+    return `<div class="sub" role="group" aria-label="Read the Load sections">${subs.map(([k,l])=>`<button class="chip" data-loadsub="${k}" aria-pressed="${ui.loadSub===k}">${l}</button>`).join("")}</div>` + (LOAD[ui.loadSub]||LOAD.guide)();
+  },
   processes(){
     if(!state.processes.length) return emptyBox("processes");
     return `<div class="grid2">${state.processes.map(p=>`<div class="box">
@@ -296,6 +332,115 @@ const VIEWS = {
       <div class="box"><h2>Answered · ${done.length}</h2>${done.length?done.map(row).join(""):'<div class="note">Tick a question once you have the answer.</div>'}</div></div>`;
   }
 };
+/* ---------- Read the Load: drawings ---------- */
+const SK = {
+  floor:()=>`<line x1="6" y1="130" x2="234" y2="130" stroke="var(--floor)" stroke-width="2"/>`,
+  pallet:(x,w)=>`<rect x="${x}" y="120" width="${w}" height="10" fill="var(--wood)"/><rect x="${x+w*.14}" y="123" width="${w*.22}" height="5" fill="var(--soft)"/><rect x="${x+w*.64}" y="123" width="${w*.22}" height="5" fill="var(--soft)"/>`,
+  cases:(x,yb,cols,rows,cw,ch,fill)=>{let s="";for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)s+=`<rect x="${x+c*cw}" y="${yb-(r+1)*ch}" width="${cw}" height="${ch}" fill="${fill||"var(--case)"}" stroke="var(--case-line)"/>`;return s;},
+  wrap:(x,y,w,h)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="var(--wrap)" fill-opacity=".2" stroke="var(--wrap)" stroke-width="1.5"/>`,
+  ring:(x,y,w,h)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" fill="none" stroke="var(--bad)" stroke-width="2" stroke-dasharray="5 3"/>`,
+  note:(x,y,t,c)=>`<text x="${x}" y="${y}" font-family="IBM Plex Mono,monospace" font-size="10" fill="${c||"var(--bad)"}">${t}</text>`,
+  bar:(y)=>`<line x1="14" y1="${y}" x2="226" y2="${y}" stroke="var(--muted)" stroke-width="4" stroke-linecap="round"/>`,
+  stack:(x)=>SK.pallet(x,72)+SK.cases(x,120,3,5,24,18)+SK.wrap(x-1,28,74,96)
+};
+function sketch(kind){
+  const v = b => `<svg viewBox="0 0 240 150" role="img" aria-label="${esc(kind)} drawing">${b}</svg>`;
+  switch(kind){
+    case "good": return v(SK.floor()+SK.stack(30)+SK.stack(130)+SK.bar(70)+SK.note(14,20,"square · wrapped · load bar","var(--good)"));
+    case "lean": return v(SK.floor()+SK.stack(20)+SK.pallet(140,72)+`<g transform="translate(176,120) skewX(-16) translate(-176,-120)">${SK.cases(140,120,3,5,24,18)}${SK.wrap(139,28,74,92)}</g>`+SK.ring(108,22,70,52)+SK.note(112,16,"top leaning over"));
+    case "collapsed": return v(SK.floor()+SK.stack(20)+SK.pallet(130,72)+SK.cases(130,120,3,2,24,18)+`<g fill="var(--case)" stroke="var(--case-line)"><rect x="150" y="70" width="24" height="18" transform="rotate(-25 162 79)"/><rect x="184" y="108" width="24" height="18" transform="rotate(18 196 117)"/><rect x="206" y="112" width="24" height="18" transform="rotate(-8 218 121)"/><rect x="176" y="62" width="24" height="18" transform="rotate(40 188 71)"/></g>`+SK.ring(140,52,96,80)+SK.note(128,44,"cases on floor"));
+    case "wrapshort": return v(SK.floor()+SK.pallet(80,72)+SK.cases(80,120,3,2,24,18)+SK.cases(88,84,3,3,24,18)+SK.wrap(87,30,74,56)+SK.ring(74,84,92,40)+SK.note(10,146,"no wrap on the bottom tiers")+SK.note(164,58,"slid off"));
+    case "sideways": return v(`<rect x="12" y="20" width="200" height="110" fill="none" stroke="var(--floor)" stroke-width="2"/><line x1="212" y1="20" x2="212" y2="130" stroke="var(--accent)" stroke-width="4"/>`+SK.note(214,16,"door","var(--accent-ink)")+
+      [[30,30,0],[30,80,0],[95,30,0],[95,80,1],[160,30,1],[160,80,0]].map(([x,y,bad])=>`<rect x="${x}" y="${y}" width="50" height="40" fill="var(--case)" stroke="var(--case-line)"/>`+(bad?`<rect x="${x+10}" y="${y}" width="10" height="4" fill="var(--wood)"/><rect x="${x+30}" y="${y}" width="10" height="4" fill="var(--wood)"/>`+SK.ring(x-4,y-4,58,48):`<rect x="${x+46}" y="${y+8}" width="4" height="9" fill="var(--wood)"/><rect x="${x+46}" y="${y+23}" width="4" height="9" fill="var(--wood)"/>`)).join("")+SK.note(14,145,"openings must face the door"));
+    case "overhang": return v(SK.floor()+SK.pallet(84,72)+SK.cases(72,120,4,4,24,18)+SK.ring(64,46,22,78)+SK.ring(154,46,22,78)+SK.note(40,36,"cases hang past the pallet edge"));
+    case "crushed": return v(SK.floor()+SK.pallet(84,72)+SK.cases(84,120,3,3,24,18)+`<path d="M84 66 Q120 74 156 66 L156 56 Q120 64 84 56Z" fill="var(--case-line)" stroke="var(--case-line)"/>`+`<rect x="84" y="46" width="72" height="10" fill="var(--wood)"/>`+SK.cases(84,46,3,2,24,18)+SK.ring(76,50,88,24)+SK.note(8,145,"bottom pallet's top tier crushed"));
+    case "broken": return v(SK.floor()+`<rect x="84" y="120" width="72" height="10" fill="var(--wood)"/><path d="M114 120 l6 5 l-4 2 l6 3" stroke="var(--bad)" stroke-width="2" fill="none"/>`+SK.cases(84,120,1,5,24,18)+SK.cases(108,126,1,5,24,18)+SK.cases(132,120,1,5,24,18)+SK.ring(100,96,40,40)+SK.note(20,24,"cracked deck board, middle sags"));
+    case "gaps": return v(`<rect x="12" y="20" width="200" height="110" fill="none" stroke="var(--floor)" stroke-width="2"/><line x1="212" y1="20" x2="212" y2="130" stroke="var(--accent)" stroke-width="4"/>`+SK.note(214,16,"door","var(--accent-ink)")+[[16,24],[16,76],[70,24],[70,76]].map(([x,y])=>`<rect x="${x}" y="${y}" width="50" height="48" fill="var(--case)" stroke="var(--case-line)"/>`).join("")+SK.ring(126,26,82,98)+SK.note(142,74,"empty,")+SK.note(142,88,"no bars")+SK.note(14,145,"top view · nothing holds it"));
+    case "wet": return v(SK.floor()+SK.pallet(84,72)+SK.cases(84,120,3,5,24,18)+SK.cases(84,120,3,2,24,18,"var(--case-line)")+`<g stroke="var(--wrap)" stroke-width="2" stroke-linecap="round"><line x1="96" y1="90" x2="96" y2="98"/><line x1="120" y1="88" x2="120" y2="100"/><line x1="144" y1="92" x2="144" y2="99"/></g><rect x="190" y="40" width="10" height="60" rx="5" fill="none" stroke="var(--muted)" stroke-width="2"/><circle cx="195" cy="104" r="8" fill="var(--bad)"/><rect x="193" y="62" width="4" height="40" fill="var(--bad)"/>`+SK.ring(78,80,84,44)+SK.note(14,24,"soft wet bottoms · check reefer temp"));
+    case "seal": return v(`<rect x="30" y="20" width="80" height="110" fill="var(--soft)" stroke="var(--floor)" stroke-width="2"/><rect x="112" y="20" width="80" height="110" fill="var(--soft)" stroke="var(--floor)" stroke-width="2"/><line x1="60" y1="20" x2="60" y2="130" stroke="var(--muted)" stroke-width="4"/><line x1="160" y1="20" x2="160" y2="130" stroke="var(--muted)" stroke-width="4"/><circle cx="160" cy="80" r="7" fill="none" stroke="var(--t-cov)" stroke-width="3"/><rect x="150" y="88" width="50" height="14" rx="3" fill="var(--t-cov)"/><text x="153" y="98" font-family="IBM Plex Mono,monospace" font-size="9" fill="#fff">7959923</text>`+SK.note(8,145,"seal # must match the BOL","var(--good)"));
+    default: return v(SK.floor()+SK.stack(84));
+  }
+}
+const SEV = {critical:["var(--bad)","Critical"], major:["var(--warn)","Major"], minor:["var(--muted)","Minor"], good:["var(--good)","Target"]};
+
+function photoCard(p, withQuiz){
+  const src = p.asset ? "/_blob/" + encodeURIComponent(p.asset) : (p.url||"");
+  const spots = (p.spots||[]).map((s,i)=>`<span class="spot" style="left:${Number(s.x)}%;top:${Number(s.y)}%">${i+1}</span>`).join("");
+  const vpill = {bad:'<span class="pill bad">Problem</span>', good:'<span class="pill good">Good</span>', fixed:'<span class="pill good">Fixed</span>', doc:'<span class="pill plain">Paperwork</span>'}[p.verdict]||"";
+  const tags = (p.defects||[]).map(d=>{const f=state.defects.find(x=>x.id===d);return `<span class="pill plain">${esc(f?f.name:d)}</span>`;}).join(" ");
+  return `<article class="photo"><div class="shot"><img src="${esc(src)}" alt="${esc(p.title)}" loading="lazy">${spots}</div>
+    <div class="photo-body"><div class="order-title">${p.wn?`<span class="tag">WN-${esc(p.wn)}</span>`:""}<h3>${esc(p.title)}</h3>${vpill}</div>
+    <div class="muted">${esc(p.stage||"")}</div>
+    ${(p.spots||[]).length?`<ol class="spots">${p.spots.map(s=>`<li>${esc(s.label)}</li>`).join("")}</ol>`:""}
+    ${p.lesson?`<div><span class="eyebrow">Lesson</span><div>${esc(p.lesson)}</div></div>`:""}
+    ${tags?`<div class="chips">${tags}</div>`:""}</div></article>`;
+}
+
+const LOAD = {
+  guide(){
+    if(!state.defects.length) return emptyBox("defects");
+    const order = {good:0,critical:1,major:2,minor:3};
+    return `<div class="note">Learn the target first, then every way a load goes wrong. Each card says what you'll see in a photo, why it happens, what the fix is and how it changes the quote.</div>
+    <div class="defects">${[...state.defects].sort((a,b)=>(order[a.severity]??9)-(order[b.severity]??9)||(a.order||0)-(b.order||0)).map(d=>{const [c,l]=SEV[d.severity]||SEV.minor;return `<article class="defect" style="--sev:${c}">
+      <div class="order-title"><h3>${esc(d.name)}</h3><span class="sev">${esc(l)}</span></div>
+      ${sketch(d.sketch||d.id)}
+      <dl>${[["What you see",d.look],["Why it happens",d.cause],["Risk",d.risk],["The fix",d.fix],["Quote it",d.quote],["Ask the WHS for",d.ask]].filter(x=>x[1]).map(([t,v])=>`<div><dt>${t}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>
+      ${(d.seenOn||[]).length?`<div class="note">Seen on ${d.seenOn.map(w=>`<span class="tag">WN-${esc(w)}</span>`).join(" ")}</div>`:""}
+    </article>`;}).join("")}</div>`;
+  },
+  photos(){
+    const list = [...state.photos].sort((a,b)=>(a.order??99)-(b.order??99));
+    return `${list.length?`<div class="photos">${list.map(p=>photoCard(p)).join("")}</div>`:emptyBox("photos")}
+    ${uploadForm()}`;
+  },
+  train(){
+    const pool = state.photos.filter(p=>p.quiz&&p.quiz.options);
+    if(!pool.length) return emptyBox("quiz photos");
+    const z = ui.quiz, p = pool[z.i % pool.length], q = p.quiz;
+    const src = p.asset ? "/_blob/" + encodeURIComponent(p.asset) : "";
+    const answered = z.picked!==null;
+    return `<div class="quiz"><div class="row" style="justify-content:space-between"><span class="eyebrow">Photo ${z.i % pool.length + 1} of ${pool.length}</span><span class="score">Score ${z.right}/${z.seen}</span></div>
+      <div class="photo"><div class="shot"><img src="${esc(src)}" alt="Quiz photo">${answered?(p.spots||[]).map((s,i)=>`<span class="spot" style="left:${Number(s.x)}%;top:${Number(s.y)}%">${i+1}</span>`).join(""):""}</div>
+      <div class="photo-body"><h3>${esc(q.question)}</h3>
+      <div class="opts">${q.options.map((o,i)=>`<button class="opt${answered?(i===q.answer?" right":(i===z.picked?" wrong":"")):""}" data-opt="${i}" ${answered?"disabled":""}>${esc(o)}</button>`).join("")}</div>
+      ${answered?`<div><b>${z.picked===q.answer?"Right.":"Not quite."}</b> ${esc(q.why||p.lesson||"")}</div>${(p.spots||[]).length?`<ol class="spots">${p.spots.map(s=>`<li>${esc(s.label)}</li>`).join("")}</ol>`:""}<button class="btn" data-next>Next photo</button>`:""}
+      </div></div></div>`;
+  },
+  checklist(){
+    const steps = [
+      ["Before anything moves","Wide shot from the open doors, then one shot down each side. This is your proof of how it arrived."],
+      ["Each problem pallet","Close-ups of every leaning, fallen or crushed pallet, with something in frame for scale."],
+      ["Paperwork","BOL and any manifest, flat and readable: pallet count, seal number, temp instructions, live or drop."],
+      ["Reefer loads","The reefer display showing setpoint and actual temp. Ask for a pulp temp on produce if anything looks wet or frozen."],
+      ["During the work","Progress shots every hour on hourly jobs. No pictures, no full price."],
+      ["Damaged freight","Damaged cases pulled onto their own pallet, labeled DAMAGED, counted. The count goes on the BOL as an exception."],
+      ["Completed load","Same wide shot from the doors: square stacks, wrap down to the pallet, load bars or straps in place, fork openings facing the door."],
+      ["Seal","Close-up of the new seal on the door, number readable. It goes on the BOL and to the customer."]
+    ];
+    return `<div class="box"><h2>The photo set to ask for, every time</h2><div class="muted">Send this list to the warehouse when the job is confirmed. If a shot is missing, ask before the driver leaves.</div>
+      <ol class="steps checklist">${steps.map(([t,d])=>`<li><b>${esc(t)}</b><span class="muted">${esc(d)}</span></li>`).join("")}</ol></div>
+      <div class="box"><h2>Three-second scan</h2><ol class="steps">
+      <li><b>Edges:</b> are the stack edges vertical and parallel to the walls? Any lean or bulge is a problem.</li>
+      <li><b>Bottoms:</b> does the wrap reach the wood? Are any cases crushed, wet or hanging off?</li>
+      <li><b>Floor:</b> anything on the floor or in the gaps? Loose cases, broken boards, product.</li>
+      <li><b>Securement:</b> load bars, straps or airbags at the back, and no big empty space near the doors.</li>
+      <li><b>Orientation:</b> fork openings facing the doors so the receiver can unload.</li></ol></div>`;
+  }
+};
+
+function uploadForm(){
+  if(!assets) return `<div class="note">Photo upload works for the board's owner in claude.ai. You can also send photos to Claude with the WN# and it will add them.</div>`;
+  const ticks = state.defects.filter(d=>d.severity!=="good").map(d=>`<label><input type="checkbox" name="def" value="${esc(d.id)}">${esc(d.name)}</label>`).join("");
+  return `<form class="up box" id="upform"><h2>Add a photo</h2>
+    <input type="file" id="upfile" accept="image/*" required>
+    <div class="two"><input type="text" id="upwn" placeholder="WN# (e.g. 13114)"><input type="text" id="uptitle" placeholder="Short title" required>
+    <select id="upverdict"><option value="bad">Problem</option><option value="good">Good</option><option value="fixed">Fixed</option><option value="doc">Paperwork</option></select>
+    <select id="upstage"><option>Customer's photo</option><option>Arrival</option><option>During work</option><option>Completion</option><option>Paperwork</option></select></div>
+    <div class="tickgrid">${ticks}</div>
+    <textarea id="uplesson" placeholder="What should you notice? (Claude can add numbered markers later)"></textarea>
+    <div class="row"><button class="btn" type="submit">Upload photo</button><span class="note" id="upmsg"></span></div></form>`;
+}
+
 function ruleRow(r){
   return `<div class="rule"><b>${esc(r.text)}</b><span class="note">${esc(r.why||"")}${r.wn?` <span class="tag">WN-${esc(r.wn)}</span>`:""}</span></div>`;
 }
@@ -315,7 +460,12 @@ $("#tabs").addEventListener("click", e=>{
 });
 $("#view").addEventListener("click", e=>{
   const s = e.target.closest("[data-svc]"); if(s){ ui.svc = s.dataset.svc; render(); return; }
-  const r = e.target.closest("[data-region]"); if(r){ ui.whRegion = r.dataset.region; render(); }
+  const r = e.target.closest("[data-region]"); if(r){ ui.whRegion = r.dataset.region; render(); return; }
+  const ls = e.target.closest("[data-loadsub]"); if(ls){ ui.loadSub = ls.dataset.loadsub; render(); return; }
+  const op = e.target.closest("[data-opt]"); if(op && ui.quiz.picked===null){
+    const pool = state.photos.filter(p=>p.quiz&&p.quiz.options), p = pool[ui.quiz.i % pool.length];
+    ui.quiz.picked = Number(op.dataset.opt); ui.quiz.seen++; if(ui.quiz.picked===p.quiz.answer) ui.quiz.right++; render(); return; }
+  if(e.target.closest("[data-next]")){ ui.quiz.i++; ui.quiz.picked=null; render(); }
 });
 $("#view").addEventListener("input", e=>{ if(e.target.id==="gq"){ ui.q = e.target.value; render(); } });
 $("#view").addEventListener("change", async e=>{
@@ -324,17 +474,30 @@ $("#view").addEventListener("change", async e=>{
   if(t.dataset.aid && db){ try{ await db.collection("questions").doc(t.dataset.aid).update({answer:t.value}); flash("Answer saved"); }catch(err){ flash("Couldn't save the answer."); } finally { render(); } }
 });
 $("#view").addEventListener("submit", async e=>{
+  if(e.target.id==="upform"){ e.preventDefault(); await uploadPhoto(); return; }
   if(e.target.id!=="qform") return; e.preventDefault();
   const inp = $("#qnew"), text = inp.value.trim(); if(!text||!db) return;
   try{ await db.collection("questions").add({text, done:false, answer:"", date:new Date().toISOString().slice(0,10)}); inp.value=""; }
   catch(err){ flash("Couldn't add the question. You may have view-only access."); }
 });
+async function uploadPhoto(){
+  const f = $("#upfile").files[0], msg = $("#upmsg"); if(!f||!assets||!db) return;
+  msg.textContent = "Uploading…";
+  try{
+    const up = await assets.upload(f);
+    const defs = [...document.querySelectorAll('#upform input[name=def]:checked')].map(x=>x.value);
+    await db.collection("photos").add({asset:up.id, wn:$("#upwn").value.trim().replace(/^WN-?/i,""), title:$("#uptitle").value.trim(),
+      verdict:$("#upverdict").value, stage:$("#upstage").value, defects:defs, lesson:$("#uplesson").value.trim(), spots:[], order:50, date:new Date().toISOString().slice(0,10)});
+    flash("Photo added");
+  }catch(err){ msg.textContent = "Upload failed: " + (err && err.message || "try a smaller image"); }
+}
 function flash(msg){ const s=$("#syncState"); s.textContent = msg; clearTimeout(flash.t); flash.t=setTimeout(()=>s.textContent = loaded?"Live":"", 2500); }
 
 render();
 (async()=>{
   db = window.claude?.use ? await window.claude.use("db") : null;
   if(!db){ syncFailed = true; $("#syncState").textContent = "Offline: open in claude.ai to load"; render(); return; }
+  window.claude.use("assets").then(a=>{ assets = a; render(); }).catch(()=>{});
   try{ const user = await window.claude.use("user"); const w = user?.can ? user.can("data.write") : null; if(w===false) canWrite=false; }catch(e){}
   let pending = new Set(COLS);
   COLS.forEach(c=>{
