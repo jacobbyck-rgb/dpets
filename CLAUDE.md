@@ -25,3 +25,12 @@ Carrier pays → the Load # in the app must be changed to the carrier. Track `pa
 New emails in Front (ADW ticket etc.): Compose new, tag with the WN#, add to the Diamond Pet mailbox (diamondpet@warehousenow.com).
 
 Keep Diamond paperwork (PDFs, BOLs, stickers, photos) out of git.
+
+## Order study guide (non-Diamond orders)
+
+Jacob's learning guide: https://claude.ai/code/artifact/9a623705-28c1-4927-bd83-60d160f585ba (Claude Docs doc).
+When he sends a WN# to study, read its Slack channel (`#<WN#>-city-st-service-customer-region`) start to finish, then in the doc:
+add a case study (template under Case studies), a row in the case-study table, and any new rules, warehouses,
+glossary terms and open questions. A new service type (storage, transload, disposal, mobile...) gets a row and its own
+process under "Processes by service". Never drop what's already there.
+Team flow: load board/Front → QB (channel + fast reply) → Coverage (warehouse bids, cx quote) → account owner (approval, app) → Ops (warehouse, driver, pics, cx updates) → Accounting (final costs, invoice).
