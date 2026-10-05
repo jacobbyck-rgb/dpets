@@ -33,3 +33,6 @@ App Load # = the Costco PO from the email subject (asked Genderson whether it sh
 New emails in Front (ADW ticket etc.): Compose new, tag with the WN#, add to the Diamond Pet mailbox (diamondpet@warehousenow.com).
 
 Keep Diamond paperwork (PDFs, BOLs, stickers, photos) out of git.
+
+People: Genderson = Grant = "G" (Genderson Tarazona, "Grant Tar", grant@warehousenow.com) — one person. He requests Costco portal appointments (Jacob has no portal login yet).
+ADW contact by depot: Krista Davidson = NE (NJ 175 Monroe Twp, MD 1052 Frederick); Chanh Rodriguez = West (960 Mira Loma); Stacy = Sumner (171).
