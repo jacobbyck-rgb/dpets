@@ -51,3 +51,4 @@ scope change (more pallets/hours/new service) · vendor price change after appro
 customer complaint, time/billing dispute or discount ask · service failure (crew short/no-show, driver left, not finished, rejected) ·
 damage, disposal, temp loss or possible claim · safety (customer driver doing labor, PPE, injury) · timeline we told the customer slips ·
 payment risk (paying vendor off-quote, unpaid new customer).
+Damage: get the warehouse's disposal rate right away. If an hour passes with no answer, reach Danielle. Never tell the customer we'll dispose; report the damage and ask how they want it handled (dispose, back on the truck, salvage).
