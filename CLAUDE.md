@@ -39,5 +39,6 @@ ADW contact by depot: Krista Davidson = NE (NJ 175 Monroe Twp, MD 1052 Frederick
 Billing rule (G, 10/06): anything the WH push & wraps counts as a full rework on our (customer) side. E.g. 5 reworked + 4 push & wrapped = bill 9 reworked pallets.
 Customer bill = in/outs (unload + reload) on EVERY pallet offloaded at the WH (confirm the count with the WH; FTL 37 on the BOL = 37 in/outs) + rework pallets + delivery.
 Runners Inc charges a $125 rework minimum on small loads (12598, 12840) — quote 1–2 pallet Runners jobs at the minimum.
+Runners Inc emails (Shoja): always To snabavi@runnersinc.com, ops@runnersinc.com AND freddock@runnersinc.com (Frederick dock; Jacob 10/06).
 Single damaged bag returned at the Costco receiver (carrier emails "DISPOSITION REQUIRED", e.g. AMX on PO 001740921500, 10/06): Anna replies with the SOP template. It never gets a WN# or Slack channel and doesn't go on the board. Optional: send ADW a ticket for it.
 Every email draft for Jacob starts with To:, Cc: and Subject: lines, then the body.
