@@ -36,3 +36,5 @@ Keep Diamond paperwork (PDFs, BOLs, stickers, photos) out of git.
 
 People: Genderson = Grant = "G" (Genderson Tarazona, "Grant Tar", grant@warehousenow.com) — one person. He requests Costco portal appointments (Jacob has no portal login yet).
 ADW contact by depot: Krista Davidson = NE (NJ 175 Monroe Twp, MD 1052 Frederick); Chanh Rodriguez = West (960 Mira Loma); Stacy = Sumner (171).
+Billing rule (G, 10/06): anything the WH push & wraps counts as a full rework on our (customer) side. E.g. 5 reworked + 4 push & wrapped = bill 9 reworked pallets.
+Runners Inc charges a $125 rework minimum on small loads (12598, 12840) — quote 1–2 pallet Runners jobs at the minimum.
