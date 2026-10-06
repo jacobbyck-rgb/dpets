@@ -43,3 +43,4 @@ Runners Inc emails (Shoja): always To snabavi@runnersinc.com, ops@runnersinc.com
 Single damaged bag returned at the Costco receiver (carrier emails "DISPOSITION REQUIRED", e.g. AMX on PO 001740921500, 10/06): Anna replies with the SOP template. It never gets a WN# or Slack channel and doesn't go on the board. Optional: send ADW a ticket for it.
 Every email draft for Jacob starts with To:, Cc: and Subject: lines, then the body.
 When telling ADW (Krista etc.) a Costco appt was requested/approved, attach the portal screenshot.
+Carrier asks WarehouseNow for extra stop / out-of-route miles / detention to drop a refused pallet at our WH: that is between the carrier and Diamond, not us (Hanson 10/06). Point them to Diamond; note how fast we gave the address.
