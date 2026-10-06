@@ -44,3 +44,10 @@ When he says "study WN-#####", read its Slack channel (`#<WN#>-city-st-service-c
   broken, gaps, wet, seal); add the WN# to `seenOn` when an order shows it. Photos are Diamond-free customer data: never commit them.
 Read before writing and pin with `if_version`; never drop existing rows (questions hold Jacob's answers).
 Team flow: load board/Front → QB (channel + fast reply) → Coverage (warehouse bids, cx quote) → account owner (approval, app) → Ops (warehouse, driver, pics, cx updates) → Accounting (final costs, invoice).
+
+## Escalate to Danielle (Jacob's boss) — flag it every time
+When any update shows one of these, start the reply with "⚠️ Loop in Danielle" plus a 2-line Slack draft to her:
+scope change (more pallets/hours/new service) · vendor price change after approval or margin near $0/negative ·
+customer complaint, time/billing dispute or discount ask · service failure (crew short/no-show, driver left, not finished, rejected) ·
+damage, disposal, temp loss or possible claim · safety (customer driver doing labor, PPE, injury) · timeline we told the customer slips ·
+payment risk (paying vendor off-quote, unpaid new customer).
