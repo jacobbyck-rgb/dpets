@@ -42,3 +42,4 @@ Runners Inc charges a $125 rework minimum on small loads (12598, 12840) — quot
 Runners Inc emails (Shoja): always To snabavi@runnersinc.com, ops@runnersinc.com AND freddock@runnersinc.com (Frederick dock; Jacob 10/06).
 Single damaged bag returned at the Costco receiver (carrier emails "DISPOSITION REQUIRED", e.g. AMX on PO 001740921500, 10/06): Anna replies with the SOP template. It never gets a WN# or Slack channel and doesn't go on the board. Optional: send ADW a ticket for it.
 Every email draft for Jacob starts with To:, Cc: and Subject: lines, then the body.
+When telling ADW (Krista etc.) a Costco appt was requested/approved, attach the portal screenshot.
