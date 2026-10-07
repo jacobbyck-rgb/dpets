@@ -50,7 +50,7 @@ When any update shows one of these, start the reply with "⚠️ Loop in Daniell
 scope change (more pallets/hours/new service) · vendor price change after approval or margin near $0/negative ·
 customer complaint, time/billing dispute or discount ask · service failure (crew short/no-show, driver left, not finished, rejected) ·
 damage, disposal, temp loss or possible claim · safety (customer driver doing labor, PPE, injury) · timeline we told the customer slips ·
-payment risk (paying vendor off-quote, unpaid new customer).
+payment risk (paying vendor off-quote, unpaid new customer). · anything Jacob hasn't handled before.
 Damage: get the warehouse's disposal rate right away. If an hour passes with no answer, reach Danielle. Never tell the customer we'll dispose; report the damage and ask how they want it handled (dispose, back on the truck, salvage).
 
 ## Account Expansion Map (repeat non-Diamond accounts)
@@ -61,3 +61,4 @@ New contact/location from an order → read the company doc, append with the nex
 ## Drafting Slack posts
 Tag @ops-west / @coverage only when they must act; never "for vis" on finished actions (each tag adds an Ops task).
 Warehouse cost changes → tag Sebastian (Coverage). Sign a COD before sending it.
+Driver paid the warehouse directly → don't bill the customer on top (it exposes margin); hand to Danielle.
