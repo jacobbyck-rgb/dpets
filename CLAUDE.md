@@ -57,3 +57,7 @@ Damage: get the warehouse's disposal rate right away. If an hour passes with no 
 https://claude.ai/artifact/XtMP875zicgpcVqSjMsvW3 (shared db: `companies/<key>` with locations[] + contacts[] (ids like `cre-l03`, `cre-c02`),
 `track/<rowId>` {status, notes, at} written by the page). Accounts: cre, mvt, bison, transloop, arrive, artur, pace, giltner, backhaul.
 New contact/location from an order → read the company doc, append with the next id, write with `if_version`. Never overwrite `track`.
+
+## Drafting Slack posts
+Tag @ops-west / @coverage only when they must act; never "for vis" on finished actions (each tag adds an Ops task).
+Warehouse cost changes → tag Sebastian (Coverage). Sign a COD before sending it.
