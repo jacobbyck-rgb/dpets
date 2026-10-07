@@ -52,3 +52,8 @@ customer complaint, time/billing dispute or discount ask · service failure (cre
 damage, disposal, temp loss or possible claim · safety (customer driver doing labor, PPE, injury) · timeline we told the customer slips ·
 payment risk (paying vendor off-quote, unpaid new customer).
 Damage: get the warehouse's disposal rate right away. If an hour passes with no answer, reach Danielle. Never tell the customer we'll dispose; report the damage and ask how they want it handled (dispose, back on the truck, salvage).
+
+## Account Expansion Map (repeat non-Diamond accounts)
+https://claude.ai/artifact/XtMP875zicgpcVqSjMsvW3 (shared db: `companies/<key>` with locations[] + contacts[] (ids like `cre-l03`, `cre-c02`),
+`track/<rowId>` {status, notes, at} written by the page). Accounts: cre, mvt, bison, transloop, arrive, artur, pace, giltner, backhaul.
+New contact/location from an order → read the company doc, append with the next id, write with `if_version`. Never overwrite `track`.
