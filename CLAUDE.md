@@ -42,7 +42,7 @@ Customer bill = in/outs (unload + reload) on EVERY pallet offloaded at the WH (c
 Runners Inc charges a $125 rework minimum on small loads (12598, 12840) — quote 1–2 pallet Runners jobs at the minimum.
 Runners Inc emails (Shoja): always To snabavi@runnersinc.com, ops@runnersinc.com AND freddock@runnersinc.com (Frederick dock; Jacob 10/06).
 Single damaged bag returned at the Costco receiver (carrier emails "DISPOSITION REQUIRED", e.g. AMX on PO 001740921500, 10/06): Anna replies with the SOP template. It never gets a WN# or Slack channel and doesn't go on the board. Optional: send ADW a ticket for it.
-Every email draft for Jacob starts with To:, Cc: and Subject: lines, then the body.
+Every email draft for Jacob starts with To:, Cc: and Subject: lines, then the body. End with "Thank you," only - NO name (Front adds his signature; Jacob 10/07).
 When telling ADW (Krista etc.) a Costco appt was requested/approved, attach the portal screenshot.
 Carrier asks WarehouseNow for extra stop / out-of-route miles / detention to drop a refused pallet at our WH: that is between the carrier and Diamond, not us (Hanson 10/06). Point them to Diamond; note how fast we gave the address.
 Detention / layover rule (G 10/06): WarehouseNow pays ONLY when (1) we take more than 2 hours from the OS&D report to give the WH address AND get the driver offloaded, or (2) we fail to provide a WH in a timely manner. Otherwise no.
