@@ -62,3 +62,13 @@ New contact/location from an order → read the company doc, append with the nex
 Tag @ops-west / @coverage only when they must act; never "for vis" on finished actions (each tag adds an Ops task).
 Warehouse cost changes → tag Sebastian (Coverage). Sign a COD before sending it.
 Driver paid the warehouse directly → don't bill the customer on top (it exposes margin); hand to Danielle.
+
+## Load Situations Playbook (lessons from 81 non-Diamond orders)
+https://claude.ai/artifact/FDpopwcSroSLFid1S6xbA8 — cases by stage, Jacob's "don't repeat" list, checklists, quiz.
+When drafting or advising, watch for these repeats and call them out:
+- Intake: confirm truck location; read BOL temp (app often says dry); who pays → change customer in app; ask load/PO # early.
+- Quote: per pallet with est. count (no unknown-count all-in); $350 min for 1–3 pallets; OT/weekend fee; never warehouse rates in cx quote; don't cut Coverage's price; name city/warehouse/work day/pickup day.
+- Approval: written yes → post "approved" in channel + move to Approved in app. Driver is not the customer.
+- Before arrival: driver name/phone/ETA to whs, whs confirms back, send SOP (no driver payment, wrap to pallet, 2 load bars, seal, photos), written pallet cap.
+- Close: seal photo before driver leaves; vendor invoice in writing vs quote (tag Coverage); final = units×rate; COD signed and sent before complete; green complete before invoice; check invoice total + bill-to.
+- New customer: collect payment before release. Reply to cx emails within 10 min. G only for escalations; after 4 PM CT tag night ops.
