@@ -71,6 +71,7 @@ When drafting or advising, watch for these repeats and call them out:
 - Quote: per pallet with est. count (no unknown-count all-in); $350 min for 1–3 pallets; OT/weekend fee; never warehouse rates in cx quote; don't cut Coverage's price; name city/warehouse/work day/pickup day.
 - Approval: written yes → post "approved" in channel + move to Approved in app. Driver is not the customer.
 - Before arrival: driver name/phone/ETA to whs, whs confirms back, send SOP (no driver payment, wrap to pallet, 2 load bars, seal, photos), written pallet cap.
+  General rule (10/8): any customer, >10 pallets needing rework → whs must tell us before working them; cx OK in writing first. Put it in every SOP.
 - Close: seal photo before driver leaves; vendor invoice in writing vs quote (tag Coverage); final = units×rate; COD signed and sent before complete; green complete before invoice; check invoice total + bill-to.
 - New customer: collect payment before release. Reply to cx emails within 10 min. G only for escalations; after 4 PM CT tag night ops.
 Reminders tab (same artifact, db `reminders/<trigger id>` {title, wn, detail, when ISO, recurring, status open|done|cancelled, source claude|jacob}):
