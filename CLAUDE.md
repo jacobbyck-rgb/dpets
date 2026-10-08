@@ -81,3 +81,8 @@ an email/action is done. G (10/6): don't tag him on things already learned (mast
 Top coaching to apply in drafts: ask G in the order channel not DM; G only for escalations/new stuff (whs questions → Ops/coverer);
 tag one person; never paste whs messages/PDFs to cx or Diamond (filter; POD/sticker only); answer the email even after a text
 ("per our conversation"); real dates not "this day"; vendor bill over quote → Johan before paying, invoice in writing; check every invoice yourself.
+MAIN HUB = Load Situations Playbook (Jacob prefers it over the study board). `orders/<wn>` there {wn, customer, city, state, service, region,
+slack (channel name), slackUrl (https://warehousenowhq.slack.com/archives/<channel id>), status active|closed, diamond, cases, summary, updated}:
+add each new order channel; set status closed when the channel is archived; bump `cases` when a case is added. Studied orders still go to the study board too.
+Freight Floor Basics (https://claude.ai/artifact/SU5ah9fxgfLPGqAHGMoVVJ, scratchpad freight-101.html, static): keep updating — new term,
+load type or situation from an order → add it there and republish.
