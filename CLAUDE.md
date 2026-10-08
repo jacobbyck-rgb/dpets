@@ -78,3 +78,6 @@ Morning lesson routine: trig_01JpB5CJAfniuX37rMs6nCHf (weekdays 6:53 CT), progre
 Coaching ("How they want it done", same artifact, db `coaching/<id>` {who, date, wn, quote, rule, topic}): any correction or "moving forward"
 from Genderson/Danielle/Sam/team → add a row right away and follow it in every draft. G (10/7): tag only when they must act; no tags after
 an email/action is done. G (10/6): don't tag him on things already learned (master POs) — only new parts.
+Top coaching to apply in drafts: ask G in the order channel not DM; G only for escalations/new stuff (whs questions → Ops/coverer);
+tag one person; never paste whs messages/PDFs to cx or Diamond (filter; POD/sticker only); answer the email even after a text
+("per our conversation"); real dates not "this day"; vendor bill over quote → Johan before paying, invoice in writing; check every invoice yourself.
