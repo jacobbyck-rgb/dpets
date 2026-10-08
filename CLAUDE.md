@@ -75,3 +75,6 @@ When drafting or advising, watch for these repeats and call them out:
 Reminders tab (same artifact, db `reminders/<trigger id>` {title, wn, detail, when ISO, recurring, status open|done|cancelled, source claude|jacob}):
 every time a reminder is created (send_later/create_trigger) add its row; when cancelled set status "cancelled"; when one fires and is handled set "done".
 Morning lesson routine: trig_01JpB5CJAfniuX37rMs6nCHf (weekdays 6:53 CT), progress in study board `meta/lessons`.
+Coaching ("How they want it done", same artifact, db `coaching/<id>` {who, date, wn, quote, rule, topic}): any correction or "moving forward"
+from Genderson/Danielle/Sam/team → add a row right away and follow it in every draft. G (10/7): tag only when they must act; no tags after
+an email/action is done. G (10/6): don't tag him on things already learned (master POs) — only new parts.
