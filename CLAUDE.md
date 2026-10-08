@@ -72,3 +72,6 @@ When drafting or advising, watch for these repeats and call them out:
 - Before arrival: driver name/phone/ETA to whs, whs confirms back, send SOP (no driver payment, wrap to pallet, 2 load bars, seal, photos), written pallet cap.
 - Close: seal photo before driver leaves; vendor invoice in writing vs quote (tag Coverage); final = units×rate; COD signed and sent before complete; green complete before invoice; check invoice total + bill-to.
 - New customer: collect payment before release. Reply to cx emails within 10 min. G only for escalations; after 4 PM CT tag night ops.
+Reminders tab (same artifact, db `reminders/<trigger id>` {title, wn, detail, when ISO, recurring, status open|done|cancelled, source claude|jacob}):
+every time a reminder is created (send_later/create_trigger) add its row; when cancelled set status "cancelled"; when one fires and is handled set "done".
+Morning lesson routine: trig_01JpB5CJAfniuX37rMs6nCHf (weekdays 6:53 CT), progress in study board `meta/lessons`.
