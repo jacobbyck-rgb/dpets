@@ -20,6 +20,7 @@ New Diamond orders get a Slack channel from Capri (e.g. `#13135-monrovia-md-rewo
 some start under the carrier's name, e.g. `...-pace-logistics-...`, and get renamed). They land in Jacob's
 "Diamond Pet" sidebar section. Track only NEW orders as they come in (plus the orders already on the board);
 don't backfill the old channels. When Jacob says "update WN-#####", read that channel yourself and update the board.
+Otherwise don't read the Slack channels by default; work from what Jacob sends. Don't draft Slack asks to the warehouse/relo team: Jacob asks in the thread himself (10/08).
 
 ## After changing the page itself
 
