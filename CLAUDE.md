@@ -4,7 +4,8 @@ Live page: https://claude.ai/artifact/YRsSGGsJxgZNavYAWCbgQn (shared db: `orders
 
 ## When Jacob sends an update (email, Slack, screenshot, PDF)
 
-Update the live board right away, without being asked, using ArtifactData on the URL above:
+DIAMOND IS HANDLED IN ANOTHER THREAD (10/8): if an update here is Diamond, don't touch the board or draft — just say "Diamond, skipping".
+Old rule (only if Jacob asks again): update the live board right away, without being asked, using ArtifactData on the URL above:
 
 - Read the order first (`get orders/WN-#####`) and pin writes with `if_version`.
 - Change every field the update touches: `stage` (+ `stageSince` = today when the stage moves),
