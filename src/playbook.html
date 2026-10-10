@@ -1771,7 +1771,7 @@ function nextFor(o) {
   const contacts = adwwFor(o.depotCode).map(r => r.name.trim()).join(' / ') || 'ADW';
   return (MASTER_PO_DEPOTS.includes(o.depotCode)
     ? `Master PO depot. Hold it and add it to the Wednesday request (${nextWednesday()}). When Diamond sends the Master PO, request the appointment.`
-    : `Ask ${contacts} to refresh the PO ${refreshWhen()}, then request the appointment in the portal.`) + (o.quoteUpdated ? '' : ' Update the app quote to the actual reworked count if you haven\u2019t.');
+    : `Ask ${contacts} to refresh the PO for delivery this week, then request the appointment in the portal.`) + (o.quoteUpdated ? '' : ' Update the app quote to the actual reworked count if you haven\u2019t.');
 }
 function lateness(o) {
   const st = stageOf(o.stage);
@@ -2028,7 +2028,7 @@ function renderBoard() {
     const name = list[0].depotName || list[0].dest || 'Unknown depot';
     const reps = adwwFor(code).map(r => r.name.trim()).join(' / ') || 'ADW';
     const lines = list.map(o => `${o.po || '?'} – ${o.qty || (o.pallets + ' pallets')} // WN-${o.wn}`).join('\n');
-    const wedText = `Hi Jan,\n\nPer the weekly process, here are the refused POs we reworked and are holding this week:\n\n${lines}\n\nCan we get a Master PO for these so we can schedule delivery?\n\nThank you,`;
+    const wedText = `Hi Jan,\n\nPer the weekly process, here are the refused POs we reworked and are holding this week:\n\n${lines}\n\nCan we get a Master PO for these so we can schedule delivery?\n\nThanks,\nJacob`;
     const id = 'wed-' + code;
     return `<div class="book"><b>${esc(code)} · ${esc(name)} · ${list.length} order${list.length === 1 ? '' : 's'}, ${plts} pallet${plts === 1 ? '' : 's'}</b>
       <span>${master ? `Master PO depot. Request one Master PO on Wednesday (${esc(nextWednesday())}), then book one truck for all of them.` : `Ask ${esc(reps)} to refresh ${list.length > 1 ? 'these POs' : 'the PO'}, then request the appointment. One request per truck per delivery location: put POs going on the same truck on one request with the blue +.`}</span>
@@ -2379,7 +2379,7 @@ function rhythmTasks(dow) {
       const reps = adwwFor(code);
       const to = ['jtappel@diamondpet.com', ...reps.map(r => r.email)].filter(Boolean).join('; ');
       const plts = list.reduce((a, o) => a + (+o.pallets || 0), 0);
-      const body = `To: ${to}\nSubject: Master PO request – refused Diamond pallets – ${code} ${name} – week of ${new Date(rhDate() + 'T12:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}\n\nHi Jan,\n\nPer the weekly process, here are the refused POs we reworked and are holding this week for ${code} ${name} (${plural(plts, 'pallet')}, ${list[0].wh || 'WH'}):\n\n${list.flatMap(teamLines).join('\n')}\n\nCostco POs: ${list.map(o => o.po).filter(Boolean).join(', ')}\n\nCan we get a Master PO for these so we can schedule delivery?\n\nThank you,`;
+      const body = `To: ${to}\nSubject: Master PO request – refused Diamond pallets – ${code} ${name} – week of ${new Date(rhDate() + 'T12:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}\n\nHi Jan,\n\nPer the weekly process, here are the refused POs we reworked and are holding this week for ${code} ${name} (${plural(plts, 'pallet')}, ${list[0].wh || 'WH'}):\n\n${list.flatMap(teamLines).join('\n')}\n\nCostco POs: ${list.map(o => o.po).filter(Boolean).join(', ')}\n\nCan we get a Master PO for these so we can schedule delivery?\n\nThanks,\nJacob`;
       day('mpo-' + k, `Request a master PO: ${k === code ? code + ' ' + name : k} (${plural(list.length, 'order')}, ${plural(plts, 'pallet')})`, 'Send this email. When the master PO comes back, put it in each order’s Master PO field: they then show up on Thursday’s booking list.', list, o => wasText(o) + (inAge(o) > 7 ? ' \u00b7 held over a week' : ''), body);
     });
     if (!ready.length) day('mpo-none', 'Master PO requests', 'Nothing at a master PO depot is at Ready. Nothing to request this week.', []);
@@ -2388,7 +2388,7 @@ function rhythmTasks(dow) {
     const ob = {}; other.forEach(o => (ob[o.depotCode || '?'] ||= []).push(o));
     Object.entries(ob).forEach(([code, list]) => {
       const reps = adwwFor(code);
-      const body = `To: ${reps.map(r => r.email).filter(Boolean).join('; ') || '(ADW contact)'}\nSubject: PO refresh for redelivery – ${list.map(o => 'WN-' + o.wn).join(', ')}\n\nHi ${reps.map(r => r.name.trim().split(' ')[0]).join(' / ') || 'team'},\n\nThese are reworked and ready to go back to ${code} ${list[0].depotName || list[0].dest || ''}. Can you refresh the PO${list.length > 1 ? 's' : ''} ${refreshWhen()}?\n\n${list.flatMap(teamLines).join('\n')}\n\nCostco PO${list.length > 1 ? 's' : ''}: ${list.map(o => o.po).filter(Boolean).join(', ')}\n\nThank you,`;
+      const body = `To: ${reps.map(r => r.email).filter(Boolean).join('; ') || '(ADW contact)'}\nSubject: PO refresh for redelivery – ${list.map(o => 'WN-' + o.wn).join(', ')}\n\nHi ${reps.map(r => r.name.trim().split(' ')[0]).join(' / ') || 'team'},\n\nThese are reworked and ready to go back to ${code} ${list[0].depotName || list[0].dest || ''}. Can you refresh the PO${list.length > 1 ? 's' : ''} so we can request delivery this week?\n\n${list.flatMap(teamLines).join('\n')}\n\nCostco PO${list.length > 1 ? 's' : ''}: ${list.map(o => o.po).filter(Boolean).join(', ')}\n\nThanks,\nJacob`;
       day('refresh-' + code, `Ask ADW to refresh POs: ${code} ${list[0].depotName || ''}`, 'Not a master PO depot, so each PO gets refreshed and booked on its own (one request per truck).', list, null, body);
     });
   }
@@ -2534,13 +2534,6 @@ const KNOWN_WH_QUOTES = {
   'BET-PIS-NJ': { un: 7.5, re: 7.5, rw: 45, del: 400, src: 'Go to Warehouses ($15 handling split in/out, $45 rework, $400 delivery)' },
   'RUN-FRE-MD': { un: 5, re: 5, rw: 40, src: 'the WN-13133 bid accepted in the app (Shoja, $5 / $5 / $40)' },
 };
-// Refresh target: Mon-Wed -> this week; Thu-Sun -> the coming Tuesday (rework + appt need a few days; Sumner/SLC allow +/-2 days)
-function refreshWhen() {
-  const d = new Date(), wd = d.getDay();
-  if (wd >= 1 && wd <= 3) return 'for delivery this week';
-  const t = new Date(d); t.setDate(d.getDate() + ((9 - wd) % 7 || 7));
-  return `to Tue ${t.getMonth() + 1}/${t.getDate()}`;
-}
 let lastWh = null;
 function build() {
   const v = id => $(id).value.trim();
@@ -2666,7 +2659,7 @@ Subject: ${subject}
 
 ${hour < 12 ? 'Morning' : 'Afternoon'}
 
-See attached ticket for this PO we received ${recvWord} at the ${st} depot, ${stage}, can we refresh the PO ${refreshWhen()}?
+See attached ticket for this PO we received ${recvWord} at the ${st} depot, ${stage}, can we refresh the PO for delivery this week?
 
 Costco PO ${po} · WarehouseNow PO ${whn}
 SKU\tProduct Name\tQty
