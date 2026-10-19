@@ -1,0 +1,474 @@
+<title>Diamond Handoff Training</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a run-of-show for a screen-share. Agenda rail on the left (sticky on desktop),
+   one section per agenda block, real WN#s and POs in mono like on a BOL. Same look as the playbook. */
+:root {
+  --bg: #eceff3; --surface: #ffffff; --sunken: #f5f7f9; --ink: #15202b; --muted: #5a6876; --line: #d3dae2;
+  --accent: #1d4e89; --accent-ink: #ffffff; --tag: #e8a317; --tag-soft: #fdf3dc;
+  --ok: #2e7d4f; --ok-soft: #e3f2e9; --bad: #b42318; --bad-soft: #fbe6e4;
+  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --body: "Barlow", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --radius: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e141a; --surface: #161f28; --sunken: #121a22; --ink: #e5ebf0; --muted: #94a2af; --line: #2a3742;
+    --accent: #7fb0e8; --accent-ink: #0e141a; --tag: #f2b84b; --tag-soft: #3a2e14;
+    --ok: #6cc795; --ok-soft: #173326; --bad: #f08a80; --bad-soft: #3d1c19; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e141a; --surface: #161f28; --sunken: #121a22; --ink: #e5ebf0; --muted: #94a2af; --line: #2a3742;
+  --accent: #7fb0e8; --accent-ink: #0e141a; --tag: #f2b84b; --tag-soft: #3a2e14;
+  --ok: #6cc795; --ok-soft: #173326; --bad: #f08a80; --bad-soft: #3d1c19; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 15px/1.55 var(--body); }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.1; margin: 0; }
+h2 { font-size: 1.8rem; font-weight: 700; }
+h3 { font-size: 1.2rem; font-weight: 600; letter-spacing: .02em; }
+p { margin: 0; }
+a { color: var(--accent); }
+.mono, code { font-family: var(--mono); font-size: .88em; font-variant-numeric: tabular-nums; }
+.label { font: 600 .72rem/1.2 var(--body); text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header.top { background: var(--surface); border-bottom: 1px solid var(--line); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top .wrap { padding-block: 22px 18px; display: grid; gap: 10px; }
+.brand { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+.brand h1 { font-size: 2.3rem; font-weight: 700; }
+.brand h1 span { color: var(--tag); }
+.sub { color: var(--muted); max-width: 72ch; }
+.toplinks { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 7px 12px; border-radius: 4px; font: 600 .88rem/1.2 var(--body); text-decoration: none; cursor: pointer; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn:hover { border-color: var(--accent); }
+
+.layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 24px; padding-block: 24px 64px; align-items: start; }
+@media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+nav.agenda { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; display: grid; gap: 2px; }
+@media (max-width: 860px) { nav.agenda { position: static; } }
+nav.agenda .label { margin-bottom: 6px; }
+nav.agenda a { display: grid; grid-template-columns: 22px 1fr auto; gap: 6px; align-items: baseline; padding: 6px 6px; border-radius: 4px; text-decoration: none; color: var(--ink); font-size: .92rem; }
+nav.agenda a:hover { background: var(--sunken); }
+nav.agenda a b { font: 700 1rem/1 var(--display); color: var(--tag); }
+nav.agenda a small { color: var(--muted); font-family: var(--mono); font-size: .74rem; }
+nav.agenda .total { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 8px; font-size: .84rem; color: var(--muted); display: flex; justify-content: space-between; }
+
+main { display: grid; gap: 36px; min-width: 0; }
+section { display: grid; gap: 14px; scroll-margin-top: 16px; min-width: 0; }
+.sec-head { display: grid; gap: 4px; }
+.sec-head .label b { color: var(--tag); }
+.lede { color: var(--muted); max-width: 72ch; }
+.lede strong { color: var(--ink); }
+.say { border-left: 3px solid var(--tag); background: var(--tag-soft); padding: 10px 12px; border-radius: 0 4px 4px 0; font-size: .93rem; max-width: 80ch; }
+.say .label { color: var(--ink); display: block; margin-bottom: 2px; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; min-width: 0; display: grid; gap: 10px; align-content: start; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+ul.tight { margin: 0; padding-left: 18px; display: grid; gap: 5px; font-size: .93rem; }
+ul.tight li b { font-weight: 600; }
+
+.day { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+@media (max-width: 760px) { .day { grid-template-columns: 1fr; } }
+.day > div { padding: 14px 16px; border-right: 1px solid var(--line); display: grid; gap: 8px; align-content: start; }
+.day > div:last-child { border-right: 0; }
+@media (max-width: 760px) { .day > div { border-right: 0; border-bottom: 1px solid var(--line); } .day > div:last-child { border-bottom: 0; } }
+.day .when { font: 600 .78rem/1 var(--mono); color: var(--muted); }
+
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; padding: 9px 11px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font: 600 .72rem/1.2 var(--body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); background: var(--sunken); white-space: nowrap; }
+td.n { font: 700 1.2rem/1 var(--display); color: var(--tag); width: 36px; }
+td.where { color: var(--muted); font-size: .86rem; }
+table.life { min-width: 760px; }
+
+.case { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 8px; min-width: 0; }
+.case-top { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+.case-top .wn { font: 700 1.25rem/1 var(--display); }
+.case-top .meta { color: var(--muted); font-size: .86rem; }
+.case .what { font-size: .92rem; }
+.case .lesson { font-size: .9rem; border-left: 3px solid var(--accent); padding-left: 10px; }
+.case .lesson b { font-weight: 600; }
+.tagrow { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 600 .74rem/1 var(--body); padding: 4px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--sunken); color: var(--muted); }
+
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.rules ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: .92rem; }
+.rules .card h3 { display: flex; justify-content: space-between; align-items: baseline; }
+
+.money { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; font-size: .93rem; font-variant-numeric: tabular-nums; }
+.money span:nth-child(even) { font-family: var(--mono); text-align: right; }
+.money .sum { border-top: 1px solid var(--line); padding-top: 6px; font-weight: 600; }
+
+dl.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 14px; margin: 0; font-size: .9rem; }
+dl.kv dt { font-weight: 600; }
+dl.kv dd { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
+@media (max-width: 520px) { dl.kv { grid-template-columns: 1fr; } dl.kv dd { margin-bottom: 6px; } }
+
+.flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: .9rem; }
+.flow span.s { padding: 6px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+.flow span.a { color: var(--muted); }
+
+.checks { display: grid; gap: 4px; }
+.checks label { display: grid; grid-template-columns: 22px 1fr; gap: 8px; padding: 7px 8px; border-radius: 4px; cursor: pointer; font-size: .93rem; }
+.checks label:hover { background: var(--sunken); }
+.checks input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--accent); }
+.checks input:checked + span { color: var(--muted); text-decoration: line-through; }
+.progress { display: flex; align-items: center; gap: 10px; font-size: .88rem; color: var(--muted); }
+.progress .track { flex: 1; max-width: 260px; height: 8px; background: var(--sunken); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.progress .fill { height: 100%; background: var(--ok); width: 0; transition: width .2s; }
+@media (prefers-reduced-motion: reduce) { .progress .fill { transition: none; } }
+.warn { border-left: 3px solid var(--bad); background: var(--bad-soft); padding: 10px 12px; border-radius: 0 4px 4px 0; font-size: .92rem; }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <h1>Diamond <span>◆</span> Handoff Training</h1>
+      <p class="label">Jacob → Genderson · Mon 10/19</p>
+    </div>
+    <p class="sub">How I run the Diamond Pet Foods rework account day to day: what comes in, what I do with it, where it lives, and the rules I follow. Each block has a "show on screen" note so we can walk through the real tools as we go.</p>
+    <div class="toplinks">
+      <a class="btn primary" href="https://claude.ai/artifact/YRsSGGsJxgZNavYAWCbgQn" target="_blank" rel="noopener">Open the live playbook + board</a>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="agenda" aria-label="Agenda">
+    <span class="label">Agenda</span>
+    <a href="#account"><b>1</b><span>The account in 5 minutes</span><small>5m</small></a>
+    <a href="#day"><b>2</b><span>A day in my seat</span><small>10m</small></a>
+    <a href="#lifecycle"><b>3</b><span>One order, start to finish</span><small>15m</small></a>
+    <a href="#cases"><b>4</b><span>The special cases</span><small>15m</small></a>
+    <a href="#money"><b>5</b><span>Quotes, billing, invoices</span><small>10m</small></a>
+    <a href="#board"><b>6</b><span>The board + Claude</span><small>10m</small></a>
+    <a href="#rules"><b>7</b><span>Rules cheat sheet</span><small>5m</small></a>
+    <a href="#people"><b>8</b><span>Who's who</span><small>5m</small></a>
+    <a href="#signoff"><b>9</b><span>Hands-on + sign-off</span><small>15m</small></a>
+    <div class="total"><span>Total</span><span class="mono">~90 min</span></div>
+  </nav>
+
+  <main>
+
+    <section id="account">
+      <div class="sec-head">
+        <p class="label"><b>1</b> · 5 min</p>
+        <h2>The account in 5 minutes</h2>
+      </div>
+      <p class="lede">A Costco depot (sometimes Chewy) refuses part of a Diamond load, usually damaged bags or a shifted load. The carrier is stuck holding it. <strong>We find a crossdock near the depot, get the driver unloaded, have the WH rework the pallets, then book the redelivery back into Costco.</strong> We bill Diamond per pallet. Nothing is planned ahead: every order starts with a refusal.</p>
+      <div class="flow" aria-label="Order flow">
+        <span class="s">Refusal</span><span class="a">→</span>
+        <span class="s">WH address to carrier</span><span class="a">→</span>
+        <span class="s">ADW ticket</span><span class="a">→</span>
+        <span class="s">Rework + count</span><span class="a">→</span>
+        <span class="s">PO refresh / master PO</span><span class="a">→</span>
+        <span class="s">Costco appt</span><span class="a">→</span>
+        <span class="s">Deliver + POD</span><span class="a">→</span>
+        <span class="s">Quotes final → Mariah invoices</span>
+      </div>
+      <div class="grid3">
+        <div class="card"><h3>The key is the PO</h3><p style="font-size:.92rem">Diamond, ADW and Costco all track by the <b>Costco PO</b>. We track by <b>WN#</b>. Always keep both side by side, in every email and on every label.</p></div>
+        <div class="card"><h3>Speed is the job</h3><p style="font-size:.92rem">Diamond's BOL promises the carrier an answer in <b>20 minutes</b>. Order: carrier gets the WH address first, then the WH hears what's coming, then ADW gets the ticket the same day.</p></div>
+        <div class="card"><h3>Thin margin on purpose</h3><p style="font-size:.92rem">$400 deliveries are hard to hit; the rework spread covers it. We keep the account for the name and the Costco / Sam's / Chewy visibility. <b>Every new carrier or contact is a lead.</b></p></div>
+      </div>
+    </section>
+
+    <section id="day">
+      <div class="sec-head">
+        <p class="label"><b>2</b> · 10 min</p>
+        <h2>A day in my seat</h2>
+      </div>
+      <div class="day">
+        <div>
+          <span class="when">MORNING</span>
+          <h3>Sweep</h3>
+          <ul class="tight">
+            <li><b>Front</b> Diamond Pet mailbox: new OS&amp;D reports, ADW replies, carrier ETAs</li>
+            <li><b>Slack</b> "Diamond Pet" section: new Capri channels = new orders</li>
+            <li><b>Costco portal</b>: any APPT REQUESTED now APPROVED / REVISED?</li>
+            <li><b>Board</b>: Order board sorted by stage; anything red is late</li>
+          </ul>
+        </div>
+        <div>
+          <span class="when">ALL DAY</span>
+          <h3>React</h3>
+          <ul class="tight">
+            <li>New refusal: WH address to the carrier inside 20 min</li>
+            <li>Pass driver info / ETA from the carrier to the WH (carriers never get WH emails)</li>
+            <li>Chase WH for arrival photos, bag counts by SKU, rework photos</li>
+            <li>Send ADW the ticket, the counts, the portal screenshot</li>
+            <li>Request appts as soon as a PO is refreshed (Sumner fills up fast)</li>
+          </ul>
+        </div>
+        <div>
+          <span class="when">END OF DAY</span>
+          <h3>Close the loop</h3>
+          <ul class="tight">
+            <li>Every update goes on the board (stage, next step, dated note)</li>
+            <li>App quotes match what the WH actually did</li>
+            <li>PODs in → Krista / Chanh / Thomas, then closeout</li>
+            <li>Tomorrow's deliveries: WH and carrier both have the conf # and time</li>
+          </ul>
+        </div>
+      </div>
+      <p class="say"><span class="label">Show on screen</span>Front Diamond Pet mailbox → the "Diamond Pet" Slack sidebar → Costco Supplier Portal appointment list → the board's Deliveries view.</p>
+    </section>
+
+    <section id="lifecycle">
+      <div class="sec-head">
+        <p class="label"><b>3</b> · 15 min</p>
+        <h2>One order, start to finish</h2>
+        <p class="lede">Walk it with <span class="mono">WN-13356</span> (Frederick MD, Runners, 1 pallet, 16 good + 3 damaged bags) and point out each step on the real thread.</p>
+      </div>
+      <div class="scroll">
+        <table class="life">
+          <thead><tr><th></th><th>Step</th><th>What I do</th><th>Where</th></tr></thead>
+          <tbody>
+            <tr><td class="n">1</td><td><b>Refusal comes in</b></td><td>Carrier or Diamond OS&amp;D reports it. #qb-team / Capri opens the Slack channel and the app order. Grab the BOL, the <b>receiver rejection sticker</b> and photos.</td><td class="where">Front, Slack, app</td></tr>
+            <tr><td class="n">2</td><td><b>Pick the WH</b></td><td>Go-to WH for that depot (starred on the Warehouses tab). Check its hours. Send the carrier the name, address, hours and WN# for check-in.</td><td class="where">Board → Warehouses</td></tr>
+            <tr><td class="n">3</td><td><b>Heads-up to the WH</b></td><td>WN#, pallets, SKUs, BOL + sticker + photos. Runners: always To Shoja, ops@ <b>and</b> freddock@.</td><td class="where">Front (tag WN#)</td></tr>
+            <tr><td class="n">4</td><td><b>ADW ticket</b></td><td>Same day, to the depot's ADW rep, cc diamondosd@ + diamondpet@warehousenow.com. Use the Ticket builder for the subject line and table.</td><td class="where">Board → Ticket builder, Front</td></tr>
+            <tr><td class="n">5</td><td><b>Arrival + rework</b></td><td>WH confirms what was actually offloaded (13356: label said 28, only 19 arrived). Rework, bag count by SKU, photos. Under 10 damaged bags: dispose, don't wait for Thomas.</td><td class="where">Front / WH texts</td></tr>
+            <tr><td class="n">6</td><td><b>Real count to ADW</b></td><td>Send the good-bag count. On a master PO Costco still enters full pallets; ADW notes the shortage with the buyer.</td><td class="where">Front</td></tr>
+            <tr><td class="n">7</td><td><b>PO for redelivery</b></td><td>Frederick: Wednesday master PO from Krista. Sumner: Grey refreshes the PO. Mira Loma: Chanh may issue a master. FTL: original PO.</td><td class="where">Front</td></tr>
+            <tr><td class="n">8</td><td><b>Costco appointment</b></td><td>Set the real Requested DLV date <b>before</b> clicking Request. Screenshot to ADW. When APPROVED: conf #, date, time, every PO to the WH + carrier.</td><td class="where">Costco Supplier Portal</td></tr>
+            <tr><td class="n">9</td><td><b>Deliver + POD</b></td><td>POD with the receiving sticker listing every PO. Send to ADW (and Thomas for Chewy).</td><td class="where">Front, #diamond-deliveries</td></tr>
+            <tr><td class="n">10</td><td><b>Close out</b></td><td>Final WH + customer cost in the app, status Complete. Mariah invoices Jan on a separate chain.</td><td class="where">App Quotes tab, Slack</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="say"><span class="label">Show on screen</span>Open WN-13356 on the Order board: the to-do line, the dated notes, and how the stage moved from inbound → atwh → ready.</p>
+    </section>
+
+    <section id="cases">
+      <div class="sec-head">
+        <p class="label"><b>4</b> · 15 min</p>
+        <h2>The special cases</h2>
+        <p class="lede">Each one is a real order that taught a rule. Statuses are as of the last board update (10/09).</p>
+      </div>
+      <div class="grid2">
+        <div class="case">
+          <div class="case-top"><span class="wn">WN-13133 + 13135</span><span class="meta">Frederick MD · Runners</span></div>
+          <div class="tagrow"><span class="chip">Master PO</span><span class="chip">One truck</span></div>
+          <p class="what">Two refusals rode one master PO <span class="mono">10521006238</span>, one Costco appt, one truck. Delivery $400 charged once (on 13135).</p>
+          <p class="lesson"><b>Rule:</b> Frederick runs a weekly cycle. Krista issues one master every <b>Wednesday</b>; anything arriving Wed–Sun waits for the next one. Keep Jan cc'd.</p>
+        </div>
+        <div class="case">
+          <div class="case-top"><span class="wn">WN-13026 / 13073 / 13241 / 12472</span><span class="meta">Sumner WA · GEF / Syndicate</span></div>
+          <div class="tagrow"><span class="chip">PO refresh</span><span class="chip">No master</span></div>
+          <p class="what">Four POs, 6 pallets, one 10/13 appt request. Grey refreshed each PO first, then everything went on one request.</p>
+          <p class="lesson"><b>Rule:</b> Sumner has no master PO. Ask Grey (keep Stacy + Grey on every email) to refresh, then request the appt right away. ±2 day grace from the PO date.</p>
+        </div>
+        <div class="case">
+          <div class="case-top"><span class="wn">WN-13343</span><span class="meta">Mira Loma CA · Sky High (Sydul)</span></div>
+          <div class="tagrow"><span class="chip">Portal date trap</span></div>
+          <p class="what">The appt got requested for the PO arrival date (10/10) because the portal defaults to it. Had to cancel and get a PO date change. Chanh then gave master <span class="mono">9601008164</span>.</p>
+          <p class="lesson"><b>Rule:</b> set the Requested DLV Date <b>before</b> clicking Request Appointment. Outside the PO window you need ADW to move the date, then Refresh Date.</p>
+        </div>
+        <div class="case">
+          <div class="case-top"><span class="wn">WN-13088 + 13315</span><span class="meta">Chewy AVP1 / RNO1</span></div>
+          <div class="tagrow"><span class="chip">Chewy</span><span class="chip">No ADW</span></div>
+          <p class="what">Chewy refusals: Thomas approves, we book the truck and request in the Chewy portal. 13088's first request went to AVF1 instead of AVP1 and never got an answer.</p>
+          <p class="lesson"><b>Rule:</b> submit once (every resubmit restarts the 48-hour clock), double-check the FC code, carrier name + SCAC required. AVP1 redeliveries: offer CoreX Gress first.</p>
+        </div>
+        <div class="case">
+          <div class="case-top"><span class="wn">WN-13407</span><span class="meta">Holland MI · Wes Lumpers</span></div>
+          <div class="tagrow"><span class="chip">Carrier pays</span><span class="chip">Shifted load</span></div>
+          <p class="what">26 pallets, ~20 reworked plus air bags. Pace (carrier) pays, so the invoice and the app Load # go to the carrier.</p>
+          <p class="lesson"><b>Rule:</b> payer is Diamond unless Thomas says the carrier pays. No handling/rework rates in carrier emails, only add-ons they choose (air bags $25).</p>
+        </div>
+        <div class="case">
+          <div class="case-top"><span class="wn">WN-13087 + 12884</span><span class="meta">Monroe Twp NJ · Chem</span></div>
+          <div class="tagrow"><span class="chip">FTL</span><span class="chip">"No appt found"</span></div>
+          <p class="what">31-pallet shifted load plus a 1-pallet rework, both on master <span class="mono">1751005197</span>, Fri 10/09 07:30.</p>
+          <p class="lesson"><b>Rule:</b> "No appointment found" in the portal can mean it already <b>delivered</b>. Check portal history / ask for the POD before saying something wasn't done.</p>
+        </div>
+      </div>
+      <p class="say"><span class="label">Show on screen</span>Board → Tracker → PO map, to show how a master PO groups several WN#s.</p>
+    </section>
+
+    <section id="money">
+      <div class="sec-head">
+        <p class="label"><b>5</b> · 10 min</p>
+        <h2>Quotes, billing, invoices</h2>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <h3>What Diamond gets billed</h3>
+          <div class="money">
+            <span>Handled (in + out), every pallet offloaded</span><span>$25 / plt</span>
+            <span>Reworked (push &amp; wrap counts as rework)</span><span>$65 / plt</span>
+            <span>Redelivery, once per truck</span><span>$400</span>
+            <span class="sum">Example: 3 offloaded, 3 reworked, 1 truck</span><span class="sum">$670</span>
+          </div>
+          <p style="font-size:.86rem;color:var(--muted)">The app still shows $12.50 in + $12.50 out; Mariah merges them into one $25 line. Weekends / redelivery extras are added by hand.</p>
+        </div>
+        <div class="card">
+          <h3>Who does what</h3>
+          <ul class="tight">
+            <li><b>Me:</b> keep WH + customer quotes in the app matching what really happened (pallet counts, rework, delivery, storage).</li>
+            <li><b>Mariah:</b> invoices once the order is Complete and has a POD. Diamond-paid invoices go to <b>Jan directly, on a separate chain</b>.</li>
+            <li><b>Carrier pays:</b> invoice goes to the carrier on the order thread; change the app Load # to the carrier.</li>
+            <li><b>Runners:</b> $135 rework minimum on 1–2 pallet jobs; 1 week free storage.</li>
+            <li><b>Detention:</b> we pay only if we took 2+ hours to give the address and get the driver offloaded, or failed to give a WH.</li>
+          </ul>
+        </div>
+      </div>
+      <p class="say"><span class="label">Show on screen</span>App Quotes tab on one closed order (WN-11757): WH final vs customer final.</p>
+    </section>
+
+    <section id="board">
+      <div class="sec-head">
+        <p class="label"><b>6</b> · 10 min</p>
+        <h2>The board + Claude</h2>
+        <p class="lede">The playbook page is the shared board. Anyone with the link sees the same data. I keep it current by sending Claude whatever comes in.</p>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <h3>Tabs I actually use</h3>
+          <dl class="kv">
+            <dt>Order board</dt><dd>One card per WN#: stage, next step, to-do, dated notes</dd>
+            <dt>Tracker</dt><dd>Table / Pipeline / Deliveries / PO map views of the same orders</dd>
+            <dt>Ticket builder</dt><dd>Paste a PO → ADW subject line, ticket table, who-gets-what send list</dd>
+            <dt>Appointments</dt><dd>What's requested, approved, delivering this week</dd>
+            <dt>Warehouses</dt><dd>Go-to WH per depot with contacts, hours, rates</dd>
+          </dl>
+        </div>
+        <div class="card">
+          <h3>My loop with Claude</h3>
+          <ul class="tight">
+            <li><b>Slack is connected.</b> New order comes in → I tell Claude "for order 11422" and it finds that order's Capri channel and reads it.</li>
+            <li><b>Emails: I screenshot them into the chat</b> (or paste / attach the PDF). Claude reads them and runs the next steps.</li>
+            <li>Claude updates that WN# on the board: stage, PO, appt, counts, next step, a dated note.</li>
+            <li>Claude drafts the reply (To / Cc / Subject, ends "Thank you,").</li>
+            <li>I review and send it from Front, tagged with the WN#.</li>
+          </ul>
+          <p class="say" style="margin-top:4px"><span class="label">Next step</span>Have <b>Mike</b> connect the email (Diamond Pet mailbox) too. Then Claude can read the emails directly and have the replies ready, with no screenshots.</p>
+        </div>
+      </div>
+      <div class="warn">The board was last updated <b>10/09</b>. Before relying on any status, catch it up from Front/Slack for everything since then.</div>
+    </section>
+
+    <section id="rules">
+      <div class="sec-head">
+        <p class="label"><b>7</b> · 5 min</p>
+        <h2>Rules cheat sheet</h2>
+      </div>
+      <div class="rules">
+        <div class="card">
+          <h3>Carriers + warehouses</h3>
+          <ol>
+            <li>Carrier gets the WH address within 20 min. Note how fast we gave it.</li>
+            <li>Carriers send driver info / ETAs / docs to <b>us</b>. Never give a carrier the WH emails.</li>
+            <li>Extra stop / out-of-route miles to drop at our WH is between the carrier and Diamond.</li>
+            <li>Check WH hours before quoting them (Runners 0800–1700 M–F).</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h3>ADW + Costco</h3>
+          <ol>
+            <li>Ticket to the depot's ADW rep same day, cc diamondosd@ + diamondpet@.</li>
+            <li>Attach the portal screenshot when telling ADW an appt was requested / approved.</li>
+            <li>Set the real delivery date before Request Appointment.</li>
+            <li>Never change SKUs on a ticket. Escalate.</li>
+            <li>Single damaged bag returned at the receiver: Anna's SOP template, no WN#.</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h3>Emails</h3>
+          <ol>
+            <li>New thread in Front: Compose, tag the WN#, Diamond Pet mailbox.</li>
+            <li>Every draft: To / Cc / Subject, then body, end with "Thank you," (Front adds the signature).</li>
+            <li>Always list PO #s next to WN #s.</li>
+            <li>Before saying something wasn't done, search Front, Slack and the board. Say "I can't find it."</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section id="people">
+      <div class="sec-head">
+        <p class="label"><b>8</b> · 5 min</p>
+        <h2>Who's who</h2>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <h3>ADW (by depot)</h3>
+          <dl class="kv">
+            <dt>Krista Davidson</dt><dd>Frederick MD 1052 + Monroe Twp NJ 175 · KDavidson@adww.com</dd>
+            <dt>Chanh Rodriguez</dt><dd>Mira Loma CA 960 · Crodriguez@adww.com, with CShults@adww.com</dd>
+            <dt>Stacy + Grey Secord</dt><dd>Sumner WA 171 · Grey refreshes POs · Gsecord@acosta.com</dd>
+            <dt>Mark Taylor, Lida Mcghee-Rowell</dt><dd>Morris IL 267</dd>
+          </dl>
+        </div>
+        <div class="card">
+          <h3>Diamond + internal</h3>
+          <dl class="kv">
+            <dt>Thomas Stone</dt><dd>Diamond · approves reworks, Chewy, who pays</dd>
+            <dt>Jan Tappel</dt><dd>Diamond OS&amp;D · master PO process, gets invoices</dd>
+            <dt>Mariah</dt><dd>Sends every Diamond invoice</dd>
+            <dt>Anna / #qb-team</dt><dd>Intake, Slack channel, SOP replies</dd>
+            <dt>Hanson</dt><dd>Escalations, returns to the plant</dd>
+          </dl>
+        </div>
+      </div>
+      <p class="say"><span class="label">Show on screen</span>Board → How it works → "Current contacts" cards have every email and phone.</p>
+    </section>
+
+    <section id="signoff">
+      <div class="sec-head">
+        <p class="label"><b>9</b> · 15 min</p>
+        <h2>Hands-on + sign-off</h2>
+        <p class="lede">Genderson drives one live order while I watch. Tick each one off as he does it alone.</p>
+      </div>
+      <div class="card">
+        <div class="progress"><span id="pct">0 of 0</span><div class="track"><div class="fill" id="fill"></div></div></div>
+        <div class="checks" id="checks">
+          <label><input type="checkbox" id="c1"><span>Find the go-to WH for a depot and send the carrier the address</span></label>
+          <label><input type="checkbox" id="c2"><span>Send the WH heads-up with paperwork, tagged with the WN# in Front</span></label>
+          <label><input type="checkbox" id="c3"><span>Build and send an ADW ticket from the Ticket builder</span></label>
+          <label><input type="checkbox" id="c4"><span>Send ADW the real bag count after rework</span></label>
+          <label><input type="checkbox" id="c5"><span>Request a Costco appt with the right date and screenshot it to ADW</span></label>
+          <label><input type="checkbox" id="c6"><span>Pass an approved conf # + time + every PO to the WH and carrier</span></label>
+          <label><input type="checkbox" id="c7"><span>Update the app quotes to match what the WH did</span></label>
+          <label><input type="checkbox" id="c8"><span>Update a WN# on the board (stage, next step, dated note)</span></label>
+          <label><input type="checkbox" id="c9"><span>Close out an order: POD to ADW, final costs, Complete</span></label>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+(function () {
+  var KEY = 'diamond-training-checks';
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('#checks input'));
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { saved = {}; }
+  function render() {
+    var done = boxes.filter(function (b) { return b.checked; }).length;
+    document.getElementById('pct').textContent = done + ' of ' + boxes.length;
+    document.getElementById('fill').style.width = (boxes.length ? done / boxes.length * 100 : 0) + '%';
+  }
+  boxes.forEach(function (b) {
+    b.checked = !!saved[b.id];
+    b.addEventListener('change', function () {
+      saved[b.id] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+      render();
+    });
+  });
+  render();
+})();
+</script>
